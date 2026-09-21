@@ -1,0 +1,29 @@
+# IMPLEMENTATION_PROGRESS.md
+
+- [x] Project audit — bare Next.js 16 scaffold; deps present; no design assets in repo; UI/UX Pro Max skill consulted
+- [x] IMPLEMENTATION_PLAN.md + this tracker created
+- [x] Design system (tokens, fonts, UI primitives) — `globals.css`, `components/ui/`
+- [x] Database schema + migrations + `.env.example` (`drizzle.config.ts`, `local.db` present)
+- [x] Authentication (login/logout/sessions/proxy guard) — actions + lib + login page implemented
+- [x] Roles & permissions (RBAC + data scope) — `permissions.ts`, `scope.ts` implemented
+- [x] Child actions, user actions, duplicate actions, monitoring actions, QR actions, notifications actions — all implemented
+- [x] Application shell (sidebar/topbar/responsive nav) — `components/app-shell.tsx`, `(app)/layout.tsx`
+- [x] Child Registry (search/filter/sort/pagination) — `/children` with `listChildren`
+- [x] Child Profile — `/children/[id]` with profile + history + QR
+- [x] Child creation — `/children/new`
+- [x] Child edit — `/children/[id]/edit`
+- [x] Validation workflow — `/validation` with queue
+- [x] Dashboard — `/dashboard` with stats + chart placeholders
+- [x] Barangay Monitoring — `/monitoring` with overview cards
+- [x] Reports — `/reports` with export buttons
+- [x] QR Studio — `/qr`
+- [x] Audit Logs — `/activity-logs` (admin/LGU)
+- [x] User Management — `/users` (admin only)
+- [x] Notifications — `/notifications`
+- [x] Settings — `/settings`
+- [x] QR Verification — `/verify`, `/verify/[token]`, `/verify/result`
+- [ ] Responsive QA
+- [ ] Accessibility QA
+- [ ] Security QA
+- [ ] Automated tests
+- [ ] Production build (lint + build green)

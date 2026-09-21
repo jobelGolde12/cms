@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Municipal Child Mapping System — design tokens
+   Style: "Accessible & Ethical" (UI/UX Pro Max) — high contrast, WCAG-first.
+   Palette: deep civic navy + action blue on a cool off-white.
+--------------------------------------------------------------------------- */
+
+@theme {
+  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular, monospace;
+
+  /* Brand — civic navy ramp (slate-based) */
+  --color-brand-50: #f8fafc;
+  --color-brand-100: #f1f5f9;
+  --color-brand-200: #e2e8f0;
+  --color-brand-300: #cbd5e1;
+  --color-brand-400: #94a3b8;
+  --color-brand-500: #64748b;
+  --color-brand-600: #475569;
+  --color-brand-700: #334155;
+  --color-brand-800: #1e293b;
+  --color-brand-900: #0f172a;
+  --color-brand-950: #020617;
+
+  /* Action — governmental blue for primary CTAs and links */
+  --color-action-50: #f0f9ff;
+  --color-action-100: #e0f2fe;
+  --color-action-200: #bae6fd;
+  --color-action-500: #0ea5e9;
+  --color-action-600: #0284c7;
+  --color-action-700: #0369a1;
+  --color-action-800: #075985;
+
+  /* Semantic status colors (always paired with icons/labels, never color-only) */
+  --color-status-verified: #047857;
+  --color-status-verified-bg: #ecfdf5;
+  --color-status-pending: #b45309;
+  --color-status-pending-bg: #fffbeb;
+  --color-status-error: #b91c1c;
+  --color-status-error-bg: #fef2f2;
+  --color-status-info: #0369a1;
+  --color-status-info-bg: #f0f9ff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background-color: var(--color-brand-50);
+  color: var(--color-brand-950);
+  font-family: var(--font-sans);
+}
+
+/* Visible, high-contrast focus ring for keyboard navigation (3px). */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-action-600);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Numeric data (child codes, counts) renders in the mono ramp. */
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
