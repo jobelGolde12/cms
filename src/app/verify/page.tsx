@@ -17,7 +17,7 @@ export default async function VerifyPage() {
           <input
             name="token"
             placeholder="Verification token"
-            className="w-full rounded-lg border border-brand-300 px-4 py-2.5 text-sm text-brand-900 focus:outline-none focus:ring-2 focus:ring-action-600/40 bg-white"
+            className="w-full rounded-lg border border-brand-300 px-4 py-2.5 text-base sm:text-sm text-brand-900 focus:outline-none focus:ring-2 focus:ring-action-600/40 bg-white"
           />
           <button type="submit" className="rounded-lg bg-action-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-action-800 shadow-sm">
             Verify

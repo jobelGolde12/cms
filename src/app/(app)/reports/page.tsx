@@ -8,7 +8,7 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">Reports</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           { title: "School Report", desc: "Per-school consolidated data" },
           { title: "Barangay Report", desc: "Per-barangay consolidated data" },

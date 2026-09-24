@@ -35,12 +35,12 @@ export default async function ChildrenPage({
         </Link>
       </div>
 
-      <form className="flex gap-2" action="/children" method="GET">
+      <form className="flex flex-wrap gap-2" action="/children" method="GET">
         <input
           name="q"
           defaultValue={q}
           placeholder="Search name, code, barangay..."
-          className="w-full max-w-md rounded-lg border border-brand-300 px-4 py-2.5 text-sm text-brand-900 focus:outline-none focus:ring-2 focus:ring-action-600/40 bg-white"
+          className="w-full sm:max-w-md rounded-lg border border-brand-300 px-4 py-2.5 text-base sm:text-sm text-brand-900 focus:outline-none focus:ring-2 focus:ring-action-600/40 bg-white"
         />
         <Button type="submit" variant="outline" size="md">Search</Button>
       </form>

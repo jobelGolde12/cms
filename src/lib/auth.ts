@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { and, eq, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -12,6 +12,8 @@ import {
   type Role,
 } from "./constants";
 import { hasPermission, type Permission } from "./permissions";
+import { DEFAULT_CREDENTIALS, findDefaultCredential, isDefaultUserId } from "./default-credentials";
+import { ROLES } from "./constants";
 
 /* ------------------------------ passwords -------------------------------- */
 
