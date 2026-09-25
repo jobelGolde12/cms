@@ -2,33 +2,56 @@
  * Development seed script — Municipal Child Mapping System.
  *
  * Creates realistic FICTIONAL data (never real child information):
- *   - 14 barangays of Sta. Magdalena, Sorsogon
- *   - 13 public schools (DepEd Sta. Magdalena District)
- *   - 4 demo user accounts (admin / lgu / school / barangay)
- *   - ~60 fictional children across validation states
- *   - duplicate candidates, validation history, QR tokens, monitoring
- *     follow-ups, notifications and audit entries
+ *   - 1 municipality (Sta. Magdalena, Sorsogon) + 14 barangays
+ *   - 13 schools (reference entities — NOT accounts)
+ *   - roles (Barangay User / LGU User / System Administrator — NO school role)
+ *   - permissions + role_permissions
+ *   - default users (from DEFAULT_* env vars)
+ *   - ~60 fictional children across record statuses with addresses,
+ *     education, ECCD, disability records
+ *   - validation history, duplicate candidates (pending + not_duplicate),
+ *     monitoring records, interventions, follow-ups, QR events,
+ *     notifications, audit entries, system settings
  *
- * Usage: pnpm seed
- * The script is idempotent: it clears the application tables first.
+ * Idempotency: reference data is upserted by natural keys; transactional
+ * demo data is cleared and re-created deterministically (seeded RNG), so
+ * re-running produces the same records without duplicating reference rows.
+ *
+ * Reset: `npm run db:reset` drops all data (see package.json / docs).
  */
 
+import "dotenv/config";
+import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import bcrypt from "bcryptjs";
 import {
   auditLogs,
   barangays,
+  childAddresses,
+  childDisabilities,
+  childDuplicateCandidates,
+  childEducation,
+  childEccd,
+  childMonitoring,
+  childValidations,
   children,
-  duplicateCandidates,
-  monitoringFollowups,
+  interventions,
+  interventionFollowups,
+  municipalities,
   notifications,
-  qrTokens,
+  permissions,
+  qrVerifications,
+  reportExports,
   reports,
+  rolePermissions,
+  roles,
   schools,
   sessions,
+  systemSettings,
   users,
-  validationHistory,
 } from "../src/db/schema";
+import { PERMISSIONS, ROLE_PERMISSIONS } from "../src/lib/permissions";
+import type { Role } from "../src/lib/constants";
 import { randomToken } from "../src/lib/utils";
 
 const now = new Date();
@@ -52,6 +75,12 @@ const LAST_NAMES = [
   "Alonzo", "Miranda", "Sison", "Lacson",
 ];
 
+const MIDDLE_NAMES = [
+  "Alonzo", "Bautista", "Cruz", "Domingo", "Enriquez", "Flores", "Garcia",
+  "Hernandez", "Ignacio", "Jimenez", "Lumibao", "Mendoza", "Navarro", "Ortega",
+];
+
+/** The 14 barangays of Sta. Magdalena, Sorsogon. */
 const BARANGAY_NAMES = [
   "Barangay I Poblacion (San Francisco)",
   "Barangay II Poblacion (Mother of Perpetual Help)",
@@ -69,21 +98,21 @@ const BARANGAY_NAMES = [
   "San Sebastian (Bigo)",
 ];
 
-/* school, in insert order, referencing the barangay index used above */
-const SCHOOLS: { name: string; barangay: number }[] = [
-  { name: "Alig-igan Elementary School", barangay: 9 },
-  { name: "Bigo Elementary School", barangay: 13 },
-  { name: "Bilaoyon Elementary School", barangay: 10 },
-  { name: "Manangkas Elementary School", barangay: 4 },
-  { name: "Salvacion Elementary School", barangay: 6 },
-  { name: "San Antonio Elementary School", barangay: 7 },
-  { name: "San Rafael Elementary School", barangay: 11 },
-  { name: "San Sebastian Elementary School", barangay: 13 },
-  { name: "Sta. Magdalena Central School", barangay: 2 },
-  { name: "Talaonga Elementary School", barangay: 8 },
-  { name: "Uson Elementary School", barangay: 5 },
-  { name: "Sta. Magdalena National High School", barangay: 3 },
-  { name: "Talaonga National High School", barangay: 8 },
+/* school, referencing the barangay index (0-based) used above */
+const SCHOOLS: { name: string; barangay: number; code: string; type: string }[] = [
+  { name: "Alig-igan Elementary School", barangay: 9, code: "SM-ES-001", type: "elementary" },
+  { name: "Bigo Elementary School", barangay: 13, code: "SM-ES-002", type: "elementary" },
+  { name: "Bilaoyon Elementary School", barangay: 10, code: "SM-ES-003", type: "elementary" },
+  { name: "Manangkas Elementary School", barangay: 4, code: "SM-ES-004", type: "elementary" },
+  { name: "Salvacion Elementary School", barangay: 6, code: "SM-ES-005", type: "elementary" },
+  { name: "San Antonio Elementary School", barangay: 7, code: "SM-ES-006", type: "elementary" },
+  { name: "San Rafael Elementary School", barangay: 11, code: "SM-ES-007", type: "elementary" },
+  { name: "San Sebastian Elementary School", barangay: 13, code: "SM-ES-008", type: "elementary" },
+  { name: "Sta. Magdalena Central School", barangay: 1, code: "SM-ES-009", type: "elementary" },
+  { name: "Talaonga Elementary School", barangay: 8, code: "SM-ES-010", type: "elementary" },
+  { name: "Uson Elementary School", barangay: 5, code: "SM-ES-011", type: "elementary" },
+  { name: "Sta. Magdalena National High School", barangay: 2, code: "SM-NHS-001", type: "high_school" },
+  { name: "Talaonga National High School", barangay: 8, code: "SM-NHS-002", type: "high_school" },
 ];
 
 const GRADE_LEVELS = ["Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
@@ -92,14 +121,6 @@ const SCHOOL_YEAR = "2026-2027";
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
-
-function pick<T>(arr: readonly T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function rand(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 function mulberry32(seed: number) {
   let a = seed;
@@ -112,9 +133,19 @@ function mulberry32(seed: number) {
   };
 }
 
-/** ISO date for a child of the given age in years (birth ~SY start, 2026). */
+const rng = mulberry32(20260925);
+
+function pick<T>(arr: readonly T[]): T {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
+function rand(min: number, max: number): number {
+  return Math.floor(rng() * (max - min + 1)) + min;
+}
+
+/** ISO date for a child of the given age in years. */
 function birthForAge(age: number): string {
-  const year = 2026 - age;
+  const year = now.getFullYear() - age;
   const month = String(rand(1, 12)).padStart(2, "0");
   const day = String(rand(1, 28)).padStart(2, "0");
   return `${year}-${month}-${day}`;
@@ -125,29 +156,40 @@ function isoDaysAgo(days: number): Date {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Wipe tables (order matters — child-referencing first)                      */
+/*  1. Reference data (upserts — safe to re-run)                               */
 /* -------------------------------------------------------------------------- */
 
-await db.delete(notifications);
-await db.delete(auditLogs);
-await db.delete(monitoringFollowups);
-await db.delete(qrTokens);
-await db.delete(duplicateCandidates);
-await db.delete(validationHistory);
-await db.delete(children);
-await db.delete(reports);
-await db.delete(sessions);
-await db.delete(users);
-await db.delete(schools);
-await db.delete(barangays);
+const [muni] = await db
+  .insert(municipalities)
+  .values({
+    id: "muni-sta-magdalena",
+    name: "Municipality of Sta. Magdalena",
+    province: "Province of Sorsogon",
+    region: "Region V — Bicol",
+    shortName: "Sta. Magdalena",
+  })
+  .onConflictDoUpdate({
+    target: municipalities.id,
+    set: { name: "Municipality of Sta. Magdalena", updatedAt: now },
+  })
+  .returning();
 
-/* -------------------------------------------------------------------------- */
-/*  Organization                                                               */
-/* -------------------------------------------------------------------------- */
-
+// Barangays upserted by unique name.
 const barangayRows = await db
   .insert(barangays)
-  .values(BARANGAY_NAMES.map((name, i) => ({ id: `brg-${i + 1}`, name })))
+  .values(
+    BARANGAY_NAMES.map((name, i) => ({
+      id: `brg-${i + 1}`,
+      municipalityId: muni.id,
+      name,
+      code: `SM-BRGY-${String(i + 1).padStart(2, "0")}`,
+      isActive: true,
+    })),
+  )
+  .onConflictDoUpdate({
+    target: barangays.id,
+    set: { municipalityId: muni.id, isActive: true, updatedAt: now },
+  })
   .returning();
 
 const schoolRows = await db
@@ -155,65 +197,133 @@ const schoolRows = await db
   .values(
     SCHOOLS.map((s, i) => ({
       id: `sch-${i + 1}`,
+      barangayId: barangayRows[s.barangay]?.id ?? null,
       name: s.name,
-      barangayId: `brg-${s.barangay + 1}`,
+      schoolCode: s.code,
+      schoolType: s.type,
+      isActive: true,
     })),
   )
+  .onConflictDoUpdate({
+    target: schools.id,
+    set: { isActive: true, updatedAt: now },
+  })
   .returning();
 
 /* -------------------------------------------------------------------------- */
-/*  Users                                                                      */
+/*  2. Roles, permissions, role_permissions                                    */
 /* -------------------------------------------------------------------------- */
 
-const demoPassword = await bcrypt.hash("Admin123!", 10);
+const ROLE_DEFS: { id: string; name: string; description: string }[] = [
+  { id: "role-barangay", name: "Barangay User", description: "Encodes and submits child records for their barangay." },
+  { id: "role-lgu", name: "LGU User", description: "Municipality-wide validation, duplicate review and reporting." },
+  { id: "role-admin", name: "System Administrator", description: "Full system administration, users and settings." },
+];
+
+await db
+  .insert(roles)
+  .values(ROLE_DEFS)
+  .onConflictDoUpdate({
+    target: roles.id,
+    set: { updatedAt: now },
+  });
+
+const permissionRows = await db
+  .insert(permissions)
+  .values(
+    PERMISSIONS.map((name) => {
+      const [module, action] = name.split(".");
+      return {
+        id: `perm-${name.replace(/\./g, "-")}`,
+        name,
+        description: `${module} · ${action}`,
+        module,
+        action,
+      };
+    }),
+  )
+  .onConflictDoNothing()
+  .returning();
+
+// role_permissions composite-PK upsert
+await db
+  .insert(rolePermissions)
+  .values(
+    (Object.keys(ROLE_PERMISSIONS) as Role[]).flatMap((role) =>
+      ROLE_PERMISSIONS[role].map((perm) => ({
+        roleId: `role-${role}`,
+        permissionId: `perm-${perm.replace(/\./g, "-")}`,
+      })),
+    ),
+  )
+  .onConflictDoNothing();
+
+/* -------------------------------------------------------------------------- */
+/*  3. Default users (from DEFAULT_* env vars)                                 */
+/* -------------------------------------------------------------------------- */
+
+const { DEFAULT_CREDENTIALS } = await import("../src/lib/default-credentials");
+
+const barangayOf = (id: string | null): string | null =>
+  id && id.startsWith("brg-") ? id : null;
 
 const userRows = await db
   .insert(users)
-  .values([
-    {
-      id: "user-admin",
-      email: "admin@stamagdalena.gov.ph",
-      passwordHash: demoPassword,
-      firstName: "Karing",
-      lastName: "Magdalena",
-      role: "admin",
+  .values(
+    DEFAULT_CREDENTIALS.map((c, i) => ({
+      id: `user-${c.role}`,
+      email: c.email,
+      passwordHash: c.passwordHash,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      roleId: `role-${c.role}`,
+      barangayId: c.role === "barangay" ? barangayOf(c.barangayId) ?? "brg-9" : null,
       isActive: true,
-    },
-    {
-      id: "user-lgu",
-      email: "lgu@stamagdalena.gov.ph",
-      passwordHash: demoPassword,
-      firstName: "Lorna",
-      lastName: "Buenaventura",
-      role: "lgu",
-      isActive: true,
-    },
-    {
-      id: "user-school",
-      email: "school@stamagdalena.gov.ph",
-      passwordHash: demoPassword,
-      firstName: "Teresita",
-      lastName: "Dela Cruz",
-      role: "school",
-      schoolId: "sch-9",
-      isActive: true,
-    },
-    {
-      id: "user-brgy",
-      email: "barangay@stamagdalena.gov.ph",
-      passwordHash: demoPassword,
-      firstName: "Arnel",
-      lastName: "Ramirez",
-      role: "barangay",
-      barangayId: "brg-9",
-      isActive: true,
-    },
-  ])
+    })),
+  )
+  .onConflictDoUpdate({
+    target: users.id,
+    set: { isActive: true, updatedAt: now },
+  })
   .returning();
 
+const userByRole = (role: Role): string => `user-${role}`;
+
 /* -------------------------------------------------------------------------- */
-/*  Children                                                                   */
+/*  4. System settings (non-secret)                                            */
 /* -------------------------------------------------------------------------- */
+
+await db
+  .insert(systemSettings)
+  .values([
+    { id: "set-system-name", key: "system_name", value: "Child Mapping Information System", description: "Display name of the system" },
+    { id: "set-child-code-prefix", key: "child_code_prefix", value: "CM", description: "Prefix for generated child codes" },
+    { id: "set-default-school-year", key: "default_school_year", value: SCHOOL_YEAR, description: "Default school year for education records" },
+    { id: "set-maintenance-mode", key: "maintenance_mode", value: "false", description: "When true, non-admin sign-ins are blocked" },
+  ])
+  .onConflictDoNothing();
+
+/* -------------------------------------------------------------------------- */
+/*  5. Transactional demo data (cleared + regenerated deterministically)       */
+/* -------------------------------------------------------------------------- */
+
+// Children first clear dependents (order matters for FKs).
+await db.delete(auditLogs);
+await db.delete(notifications);
+await db.delete(reportExports);
+await db.delete(reports);
+await db.delete(interventionFollowups);
+await db.delete(interventions);
+await db.delete(childMonitoring);
+await db.delete(qrVerifications);
+await db.delete(childDuplicateCandidates);
+await db.delete(childValidations);
+await db.delete(childDisabilities);
+await db.delete(childEccd);
+await db.delete(childEducation);
+await db.delete(childAddresses);
+await db.delete(sessions);
+await db.delete(children);
 
 type SeedChild = {
   code: string;
@@ -223,22 +333,17 @@ type SeedChild = {
   suffix: string | null;
   birthDate: string;
   sex: "male" | "female";
-  barangayId: string;
-  schoolId: string | null;
-  educationalStatus: string;
+  barangayIdx: number;
+  recordStatus: string;
+  educationStatus: string;
   gradeLevel: string | null;
   eccdStatus: string;
-  disabilityStatus: string;
-  validationStatus: string;
-  createdBy: string;
+  hasDisability: boolean;
+  createdBy: Role;
   createdDaysAgo: number;
-  verified: boolean;
-  note?: string;
 };
 
-const rng = mulberry32(20260920);
 const usedNames = new Set<string>();
-
 function makeName(): { first: string; last: string } {
   while (true) {
     const first = pick(FIRST_NAMES);
@@ -253,101 +358,76 @@ function makeName(): { first: string; last: string } {
 
 const seedChildren: SeedChild[] = [];
 
-// A single helper adds one fictional child with sensible defaults.
-function addChild(overrides: Partial<SeedChild> & { index: number }): void {
+for (let i = 1; i <= 60; i += 1) {
   const { first, last } = makeName();
   const age = rand(3, 17);
-  const sex = rng() < 0.5 ? "male" : "female";
-  const barangayId = `brg-${rand(1, 14)}`;
-  const schoolMatch = schoolRows.find((s) => s.barangayId === barangayId);
-  const validationRoll = rng();
-  const validationStatus =
-    validationRoll < 0.12
-      ? "draft"
-      : validationRoll < 0.3
-        ? "submitted"
-        : validationRoll < 0.45
-          ? "pending_validation"
-          : validationRoll < 0.52
-            ? "needs_correction"
-            : "verified";
+  const brgyIdx = rand(1, 14) - 1;
+  const roll = rng();
+  const recordStatus =
+    roll < 0.12 ? "draft" : roll < 0.3 ? "pending_validation" : roll < 0.38 ? "needs_correction" : "verified";
 
-  const educationalStatus = age >= 6 && age <= 12
-    ? (rng() < 0.12 ? "out_of_school" : "enrolled")
-    : age >= 13
-      ? (rng() < 0.18 ? "out_of_school" : rng() < 0.1 ? "als_learner" : "enrolled")
-      : rng() < 0.3 ? "enrolled" : "not_yet_enrolled";
-
-  const schoolId =
-    educationalStatus === "enrolled" ? (schoolMatch ? schoolMatch.id : "sch-9") : null;
+  const educationStatus =
+    age >= 6 && age <= 12
+      ? rng() < 0.12 ? "out_of_school" : "enrolled"
+      : age >= 13
+        ? rng() < 0.18 ? "out_of_school" : rng() < 0.1 ? "graduated" : "enrolled"
+        : rng() < 0.3 ? "enrolled" : "not_yet_in_school";
 
   seedChildren.push({
-    code: `CM-2026-${String(overrides.index).padStart(6, "0")}`,
+    code: `CM-${now.getFullYear()}-${String(i).padStart(6, "0")}`,
     firstName: first,
-    middleName: rng() < 0.9 ? pick(LAST_NAMES) : null,
+    middleName: rng() < 0.9 ? pick(MIDDLE_NAMES) : null,
     lastName: last,
     suffix: rng() < 0.04 ? "Jr." : null,
     birthDate: birthForAge(age),
-    sex,
-    barangayId,
-    schoolId,
-    educationalStatus,
-    gradeLevel: educationalStatus === "enrolled" ? pick(GRADE_LEVELS) : null,
-    eccdStatus: age <= 5 ? (rng() < 0.55 ? "participating" : "not_participating") : "unknown",
-    disabilityStatus: rng() < 0.08 ? "with_disability" : rng() < 0.05 ? "suspected" : "none",
-    validationStatus,
-    createdBy: pick(["user-lgu", "user-school", "user-brgy"]),
+    sex: rng() < 0.5 ? "male" : "female",
+    barangayIdx: brgyIdx,
+    recordStatus,
+    educationStatus,
+    gradeLevel: educationStatus === "enrolled" ? pick(GRADE_LEVELS) : null,
+    eccdStatus: age <= 5 ? (rng() < 0.55 ? "participating" : "not_participating") : rng() < 0.1 ? "participating" : "unknown",
+    hasDisability: rng() < 0.08,
+    createdBy: pick(["barangay", "lgu"] as const),
     createdDaysAgo: rand(1, 120),
-    verified: validationStatus === "verified",
-    ...overrides,
   });
 }
 
-for (let i = 1; i <= 60; i += 1) addChild({ index: i });
-
-// Two clearly paired potential duplicates inside the same barangay.
+// One pending duplicate pair (human review required — NOT auto-marked).
+const dupPairIdx = 14; // San Antonio (Kaburihan)
 seedChildren.push({
-  code: "CM-2026-000061",
-  firstName: "Maria",
-  middleName: null,
-  lastName: "Santos",
-  suffix: null,
-  birthDate: "2018-03-14",
-  sex: "female",
-  barangayId: "brg-8",
-  schoolId: "sch-6",
-  educationalStatus: "enrolled",
-  gradeLevel: "Grade 2",
-  eccdStatus: "unknown",
-  disabilityStatus: "none",
-  validationStatus: "pending_validation",
-  createdBy: "user-brgy",
-  createdDaysAgo: 30,
-  verified: false,
+  code: `CM-${now.getFullYear()}-000061`,
+  firstName: "Maria", middleName: null, lastName: "Santos", suffix: null,
+  birthDate: "2018-03-14", sex: "female", barangayIdx: dupPairIdx,
+  recordStatus: "pending_validation", educationStatus: "enrolled",
+  gradeLevel: "Grade 2", eccdStatus: "unknown", hasDisability: false,
+  createdBy: "barangay", createdDaysAgo: 30,
 });
 seedChildren.push({
-  code: "CM-2026-000062",
-  firstName: "Maria",
-  middleName: null,
-  lastName: "Santos",
-  suffix: null,
-  birthDate: "2018-03-14",
-  sex: "female",
-  barangayId: "brg-8",
-  schoolId: "sch-6",
-  educationalStatus: "enrolled",
-  gradeLevel: "Grade 2",
-  eccdStatus: "unknown",
-  disabilityStatus: "none",
-  validationStatus: "verified",
-  createdBy: "user-brgy",
-  createdDaysAgo: 20,
-  verified: true,
+  code: `CM-${now.getFullYear()}-000062`,
+  firstName: "Maria", middleName: null, lastName: "Santos", suffix: null,
+  birthDate: "2018-03-14", sex: "female", barangayIdx: dupPairIdx,
+  recordStatus: "verified", educationStatus: "enrolled",
+  gradeLevel: "Grade 2", eccdStatus: "unknown", hasDisability: false,
+  createdBy: "barangay", createdDaysAgo: 20,
 });
 
-await db.insert(children).values(
-  seedChildren.map((c) => ({
-    id: `ch-${c.code.slice(-6)}`,
+let dupAId = "";
+let dupBId = "";
+
+for (const c of seedChildren) {
+  const id = crypto.randomUUID();
+  if (c.code.endsWith("000061")) dupAId = id;
+  if (c.code.endsWith("000062")) dupBId = id;
+
+  const creatorId = userByRole(c.createdBy);
+  const brgyId = barangayRows[c.barangayIdx]?.id ?? barangayRows[0].id;
+  const schoolForBrgy = schoolRows.find((s) => s.barangayId === brgyId) ?? schoolRows[0];
+
+  const submitted = c.recordStatus !== "draft";
+  const verified = c.recordStatus === "verified";
+
+  await db.insert(children).values({
+    id,
     childCode: c.code,
     firstName: c.firstName,
     middleName: c.middleName,
@@ -355,249 +435,331 @@ await db.insert(children).values(
     suffix: c.suffix,
     birthDate: c.birthDate,
     sex: c.sex,
-    barangayId: c.barangayId,
-    addressDetails: `Purok ${rand(1, 7)}, ${c.firstName}'s household`,
-    guardianName: `${pick(LAST_NAMES)} Family`,
-    guardianContact: `09${String(rand(100000000, 999999999))}`,
-    educationalStatus: c.educationalStatus,
-    schoolId: c.schoolId,
-    gradeLevel: c.gradeLevel,
-    schoolYear: c.educationalStatus === "enrolled" ? SCHOOL_YEAR : null,
-    eccdStatus: c.eccdStatus,
-    eccdCenter: c.eccdStatus === "participating" ? pick(["Barangay Child Dev. Center", "Child Dev. Center (Brgy.)"]) : null,
-    eccdNonParticipationReason:
-      c.eccdStatus === "not_participating" ? pick(["No center nearby", "Scheduling conflict", "Family opted to defer"]) : null,
-    disabilityStatus: c.disabilityStatus,
-    disabilityType: c.disabilityStatus === "with_disability" ? "learning" : c.disabilityStatus === "suspected" ? "other" : null,
-    disabilitySupportRequired:
-      c.disabilityStatus === "with_disability" ? pick(["Needs SPED assessment", "Needs learning materials support"]) : null,
-    disabilitySupportProvided: null,
-    disabilityReferral: c.disabilityStatus === "with_disability" ? pick(["School-based SPED", "Barangay social worker"]) : null,
-    validationStatus: c.validationStatus,
-    duplicateStatus: c.code === "CM-2026-000061" || c.code === "CM-2026-000062" ? "potential" : "none",
-    notes: c.note ?? null,
-    createdBy: c.createdBy,
-    submittedAt: c.validationStatus === "draft" ? null : isoDaysAgo(c.createdDaysAgo - 2),
-    verifiedBy: c.verified ? pick(["user-lgu", "user-admin"]) : null,
-    verifiedAt: c.verified ? isoDaysAgo(c.createdDaysAgo - 5) : null,
-    validationNotes: c.verified ? "All details verified with household survey." : null,
+    civilStatus: "single",
+    birthPlace: `Barangay ${c.barangayIdx + 1}, Sta. Magdalena, Sorsogon`,
+    barangayId: brgyId,
+    status: "active",
+    recordStatus: c.recordStatus,
+    createdBy: creatorId,
+    updatedBy: creatorId,
     createdAt: isoDaysAgo(c.createdDaysAgo),
-    updatedAt: isoDaysAgo(c.createdDaysAgo),
-  })),
-);
+    updatedAt: isoDaysAgo(c.createdDaysAgo - 2 > 0 ? c.createdDaysAgo - 2 : 0),
+  });
 
-/* -------------------------------------------------------------------------- */
-/*  Validation history                                                         */
-/* -------------------------------------------------------------------------- */
+  await db.insert(childAddresses).values({
+    id: crypto.randomUUID(),
+    childId: id,
+    barangayId: brgyId,
+    householdAddress: `Purok ${rand(1, 7)}, ${pick(LAST_NAMES)} Street`,
+    sitio: rng() < 0.5 ? `Sitio ${pick(["Maligaya", "Bagong Silang", "Masagana", "Kalayaan"])}` : null,
+    isCurrent: true,
+  });
 
-const allChildren = await db.select().from(children);
+  await db.insert(childEducation).values({
+    id: crypto.randomUUID(),
+    childId: id,
+    schoolId: c.educationStatus === "enrolled" ? schoolForBrgy.id : null,
+    educationStatus: c.educationStatus,
+    gradeLevel: c.gradeLevel,
+    schoolYear: c.educationStatus === "enrolled" ? SCHOOL_YEAR : null,
+    enrollmentStatus: c.educationStatus === "enrolled" ? "regular" : null,
+    isCurrent: true,
+  });
 
-for (const child of allChildren) {
-  const events: { action: string; at: Date; notes: string | null }[] = [
-    {
-      action: "created",
-      at: new Date(child.createdAt),
-      notes: null,
-    },
-  ];
-  if (child.submittedAt) {
-    events.push({ action: "submitted", at: new Date(child.submittedAt), notes: "Record submitted for validation." });
-  }
-  if (child.validationStatus === "needs_correction") {
-    events.push({ action: "returned", at: isoDaysAgo(6), notes: "Birth date and school year need confirmation." });
-    events.push({ action: "resubmitted", at: isoDaysAgo(3), notes: "Corrections applied." });
-  }
-  if (child.verifiedAt) {
-    events.push({ action: "verified", at: new Date(child.verifiedAt), notes: child.validationNotes ?? "Record verified." });
-  }
-  await db.insert(validationHistory).values(
-    events.map((e, i) => ({
+  await db.insert(childEccd).values({
+    id: crypto.randomUUID(),
+    childId: id,
+    participationStatus: c.eccdStatus,
+    programName: c.eccdStatus === "participating" ? "Barangay Child Development Center" : null,
+    provider: c.eccdStatus === "participating" ? "Barangay LGU" : null,
+    remarks: c.eccdStatus === "not_participating" ? pick(["No center nearby", "Family opted to defer", "Scheduling conflict"]) : null,
+  });
+
+  if (c.hasDisability) {
+    await db.insert(childDisabilities).values({
       id: crypto.randomUUID(),
-      childId: child.id,
-      action: e.action,
-      notes: e.notes,
-      performedBy: e.action === "created" ? child.createdBy : child.verifiedBy ?? "user-lgu",
-      createdAt: new Date(e.at.getTime() - i * 3600_000),
-    })),
-  );
+      childId: id,
+      hasDisability: true,
+      disabilityType: pick(["learning", "speech", "physical", "visual"]),
+      description: "Identified during household survey (seed data — fictional).",
+      supportNeeded: pick(["SPED assessment", "Learning materials", "Therapy sessions"]),
+      assistanceStatus: pick(["assessment", "referred", "ongoing"]),
+      verified: rng() < 0.4,
+    });
+  }
+
+  if (submitted) {
+    await db.insert(childValidations).values({
+      id: crypto.randomUUID(),
+      childId: id,
+      submittedBy: creatorId,
+      status: verified ? "approved" : c.recordStatus === "needs_correction" ? "needs_correction" : "pending",
+      remarks: verified ? "All details verified with household survey." : null,
+      submittedAt: isoDaysAgo(Math.max(c.createdDaysAgo - 2, 1)),
+      reviewedBy: verified ? userByRole("lgu") : null,
+      reviewedAt: verified ? isoDaysAgo(Math.max(c.createdDaysAgo - 5, 1)) : null,
+    });
+  }
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Duplicate candidate pair                                                   */
+/*  6. Duplicate candidates — pending AND reviewed states                      */
 /* -------------------------------------------------------------------------- */
 
-const dupA = allChildren.find((c) => c.childCode === "CM-2026-000061")!;
-const dupB = allChildren.find((c) => c.childCode === "CM-2026-000062")!;
-
-await db.insert(duplicateCandidates).values({
+await db.insert(childDuplicateCandidates).values({
   id: crypto.randomUUID(),
-  childId: dupA.id,
-  candidateId: dupB.id,
-  matchReasons: JSON.stringify(["name", "birth_date", "barangay"]),
-  status: "potential",
-  createdAt: isoDaysAgo(18),
+  childId: dupAId,
+  possibleChildId: dupBId,
+  matchScore: 90,
+  matchReason: JSON.stringify(["name", "birth_date", "barangay"]),
+  status: "pending",
+}).onConflictDoNothing();
+
+// A reviewed "not duplicate" pair between two other seeded children.
+const childIds = await db.select({ id: children.id, code: children.childCode }).from(children);
+const idOf = (code: string) => childIds.find((c) => c.code === code)?.id;
+const codeA = `CM-${now.getFullYear()}-000004`;
+const codeB = `CM-${now.getFullYear()}-000010`;
+if (idOf(codeA) && idOf(codeB)) {
+  await db.insert(childDuplicateCandidates).values({
+    id: crypto.randomUUID(),
+    childId: idOf(codeA)!,
+    possibleChildId: idOf(codeB)!,
+    matchScore: 60,
+    matchReason: JSON.stringify(["name", "barangay"]),
+    status: "not_duplicate",
+    reviewedBy: userByRole("lgu"),
+    reviewNotes: "Confirmed different children after household verification.",
+    reviewedAt: isoDaysAgo(35),
+  }).onConflictDoNothing();
+}
+
+/* -------------------------------------------------------------------------- */
+/*  7. Monitoring, interventions, follow-ups                                   */
+/* -------------------------------------------------------------------------- */
+
+// Out-of-school children via the education side table.
+const osyIds = await db
+  .select({ id: childEducation.childId })
+  .from(childEducation)
+  .where(eq(childEducation.educationStatus, "out_of_school"))
+  .limit(5);
+
+for (const { id } of osyIds) {
+  await db.insert(childMonitoring).values({
+    id: crypto.randomUUID(),
+    childId: id,
+    monitoringType: "out_of_school_youth",
+    status: pick(["open", "in_progress"] as const),
+    observedAt: isoDaysAgo(rand(3, 30)),
+    recordedBy: userByRole("barangay"),
+    remarks: "Household visit scheduled to discuss re-enrollment options.",
+  });
+}
+
+const eccdNonIds = await db
+  .select({ id: childEccd.childId })
+  .from(childEccd)
+  .where(eq(childEccd.participationStatus, "not_participating"))
+  .limit(4);
+
+for (const { id } of eccdNonIds) {
+  await db.insert(childMonitoring).values({
+    id: crypto.randomUUID(),
+    childId: id,
+    monitoringType: "eccd",
+    status: "open",
+    observedAt: isoDaysAgo(rand(3, 20)),
+    recordedBy: userByRole("barangay"),
+    remarks: "Encourage enrolment at the nearest child development center.",
+  });
+}
+
+const disabilityIds = await db
+  .select({ id: childDisabilities.childId })
+  .from(childDisabilities)
+  .limit(3);
+
+for (const { id } of disabilityIds) {
+  await db.insert(childMonitoring).values({
+    id: crypto.randomUUID(),
+    childId: id,
+    monitoringType: "disability",
+    status: "in_progress",
+    observedAt: isoDaysAgo(rand(2, 15)),
+    recordedBy: userByRole("lgu"),
+    remarks: "Awaiting SPED assessment results.",
+  });
+}
+
+// Interventions for OSY/disability children + follow-ups.
+const interventionTargets = await db
+  .select({ id: children.id })
+  .from(children)
+  .where(eq(children.recordStatus, "verified"))
+  .limit(6);
+
+for (let i = 0; i < interventionTargets.length; i += 1) {
+  const child = interventionTargets[i];
+  const interventionId = crypto.randomUUID();
+  const status = i % 3 === 0 ? "completed" : i % 3 === 1 ? "ongoing" : "planned";
+
+  await db.insert(interventions).values({
+    id: interventionId,
+    childId: child.id,
+    interventionType: pick(["Educational assistance", "Re-enrollment counseling", "SPED referral", "ECCD enrollment drive"]),
+    description: "Coordinated with barangay officials and school (seed data — fictional).",
+    status,
+    priority: pick(["low", "medium", "high"] as const),
+    startDate: isoDaysAgo(rand(20, 60)).toISOString().slice(0, 10),
+    targetDate: new Date(Date.now() + rand(10, 60) * 86400_000).toISOString().slice(0, 10),
+    completedDate: status === "completed" ? isoDaysAgo(rand(1, 10)).toISOString().slice(0, 10) : null,
+    assignedTo: userByRole(i % 2 === 0 ? "barangay" : "lgu"),
+    createdBy: userByRole("lgu"),
+    createdAt: isoDaysAgo(rand(20, 60)),
+  });
+
+  // Follow-ups for the ongoing/planned interventions.
+  if (status !== "completed") {
+    await db.insert(interventionFollowups).values({
+      id: crypto.randomUUID(),
+      interventionId,
+      followUpDate: new Date(Date.now() + rand(3, 30) * 86400_000).toISOString().slice(0, 10),
+      status: "scheduled",
+      notes: "Coordinate with household and school for progress check.",
+      recordedBy: userByRole("barangay"),
+    });
+  } else {
+    await db.insert(interventionFollowups).values({
+      id: crypto.randomUUID(),
+      interventionId,
+      followUpDate: isoDaysAgo(rand(5, 20)).toISOString().slice(0, 10),
+      status: "done",
+      notes: "Completed — learner confirmed enrolled.",
+      recordedBy: userByRole("lgu"),
+    });
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  8. QR verification events (safe opaque tokens — no personal data)          */
+/* -------------------------------------------------------------------------- */
+
+const verifiedChildren = await db
+  .select({ id: children.id })
+  .from(children)
+  .where(eq(children.recordStatus, "verified"))
+  .limit(14);
+
+for (const child of verifiedChildren) {
+  await db.insert(qrVerifications).values({
+    id: crypto.randomUUID(),
+    childId: child.id,
+    verificationToken: randomToken(24),
+    verifiedBy: userByRole("lgu"),
+    verificationType: "generate",
+    result: "valid",
+    verifiedAt: isoDaysAgo(rand(1, 10)),
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/*  9. Reports + export metadata                                               */
+/* -------------------------------------------------------------------------- */
+
+const [report1] = await db
+  .insert(reports)
+  .values({
+    id: crypto.randomUUID(),
+    name: "Municipal summary (seed)",
+    reportType: "municipal_summary",
+    generatedBy: userByRole("lgu"),
+    scope: "municipality",
+    filtersJson: "{}",
+    createdAt: isoDaysAgo(2),
+  })
+  .returning();
+
+await db.insert(reportExports).values({
+  id: crypto.randomUUID(),
+  reportId: report1.id,
+  format: "XLSX",
+  fileReference: `exports/municipal-summary-${now.toISOString().slice(0, 10)}.xlsx`,
+  generatedBy: userByRole("lgu"),
+  createdAt: isoDaysAgo(2),
 });
 
 /* -------------------------------------------------------------------------- */
-/*  QR tokens (verified records)                                               */
-/* -------------------------------------------------------------------------- */
-
-const verifiedChildren = allChildren.filter((c) => c.validationStatus === "verified");
-for (let i = 0; i < Math.min(verifiedChildren.length, 14); i += 1) {
-  const child = verifiedChildren[i];
-  await db.insert(qrTokens).values({
-    id: crypto.randomUUID(),
-    childId: child.id,
-    token: randomToken(),
-    isActive: true,
-    createdBy: "user-lgu",
-    createdAt: isoDaysAgo(4),
-  });
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Monitoring follow-ups                                                      */
-/* -------------------------------------------------------------------------- */
-
-const osyChildren = allChildren.filter((c) => c.educationalStatus === "out_of_school");
-for (const child of osyChildren.slice(0, 5)) {
-  await db.insert(monitoringFollowups).values({
-    id: crypto.randomUUID(),
-    childId: child.id,
-    category: "osy",
-    status: rng() < 0.5 ? "open" : "in_progress",
-    notes: "Household visit scheduled to discuss re-enrollment options.",
-    followupDate: "2026-10-15",
-    assignedTo: "user-school",
-    createdBy: child.createdBy,
-    createdAt: isoDaysAgo(7),
-    updatedAt: isoDaysAgo(7),
-  });
-}
-
-const eccdNonP = allChildren.filter((c) => c.eccdStatus === "not_participating");
-for (const child of eccdNonP.slice(0, 4)) {
-  await db.insert(monitoringFollowups).values({
-    id: crypto.randomUUID(),
-    childId: child.id,
-    category: "eccd",
-    status: "open",
-    notes: "Encourage enrolment at the nearest child development center.",
-    followupDate: "2026-11-01",
-    assignedTo: "user-brgy",
-    createdBy: child.createdBy,
-    createdAt: isoDaysAgo(6),
-    updatedAt: isoDaysAgo(6),
-  });
-}
-
-const disabilityChildren = allChildren.filter(
-  (c) => c.disabilityStatus === "with_disability" || c.disabilityStatus === "suspected",
-);
-for (const child of disabilityChildren.slice(0, 3)) {
-  await db.insert(monitoringFollowups).values({
-    id: crypto.randomUUID(),
-    childId: child.id,
-    category: "disability",
-    status: "follow_up",
-    notes: "Awaiting SPED assessment results.",
-    followupDate: "2026-12-05",
-    assignedTo: "user-lgu",
-    createdBy: child.createdBy,
-    createdAt: isoDaysAgo(5),
-    updatedAt: isoDaysAgo(5),
-  });
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Notifications                                                              */
+/*  10. Notifications + audit entries                                          */
 /* -------------------------------------------------------------------------- */
 
 await db.insert(notifications).values([
   {
     id: crypto.randomUUID(),
-    userId: "user-admin",
+    userId: userByRole("admin"),
     type: "validation",
     title: "Records awaiting validation",
-    body: "5 child records are pending validation from the latest survey batch.",
+    message: "Several child records are pending validation from the latest survey batch.",
     link: "/validation",
     createdAt: isoDaysAgo(1),
   },
   {
     id: crypto.randomUUID(),
-    userId: "user-admin",
+    userId: userByRole("admin"),
     type: "duplicate",
-    title: "Potential duplicate detected",
-    body: "Two records for 'Maria Santos' in the same barangay were flagged.",
+    title: "Duplicate review required",
+    message: "A potential duplicate pair is awaiting human review.",
     link: "/validation/duplicates",
     createdAt: isoDaysAgo(2),
   },
   {
     id: crypto.randomUUID(),
-    userId: "user-lgu",
+    userId: userByRole("lgu"),
     type: "report",
-    title: "Municipal consolidated report ready",
-    body: "The July consolidated report has been generated.",
+    title: "Municipal summary ready",
+    message: "The municipal summary report has been generated.",
     link: "/reports",
     createdAt: isoDaysAgo(1),
   },
   {
     id: crypto.randomUUID(),
-    userId: "user-school",
-    type: "validation",
-    title: "Record returned for correction",
-    body: "One of your submitted records needs a corrected birth date.",
-    link: "/children",
-    createdAt: isoDaysAgo(3),
-  },
-  {
-    id: crypto.randomUUID(),
-    userId: "user-brgy",
-    type: "monitoring",
-    title: "ECCD follow-up due",
-    body: "You have 3 open ECCD non-participation follow-ups this month.",
-    link: "/monitoring/eccd",
+    userId: userByRole("barangay"),
+    type: "followup",
+    title: "Follow-up due",
+    message: "You have open monitoring follow-ups this month.",
+    link: "/monitoring",
     createdAt: isoDaysAgo(1),
   },
 ]);
 
-/* -------------------------------------------------------------------------- */
-/*  Audit entries                                                              */
-/* -------------------------------------------------------------------------- */
-
 await db.insert(auditLogs).values([
   {
     id: crypto.randomUUID(),
-    userId: "user-admin",
-    userRole: "admin",
-    action: "seed.run",
-    entity: "system",
-    result: "success",
-    metadata: JSON.stringify({ records: allChildren.length }),
-    ip: "127.0.0.1",
+    userId: userByRole("admin"),
+    action: "SEED_RUN",
+    entityType: "system",
+    newValuesJson: JSON.stringify({ note: "seed executed" }),
+    ipAddress: "127.0.0.1",
+    userAgent: "seed-script",
     createdAt: now,
   },
   {
     id: crypto.randomUUID(),
-    userId: "user-lgu",
-    userRole: "lgu",
-    action: "child.verify",
-    entity: "child",
-    entityId: "ch-000001",
-    result: "success",
-    ip: "127.0.0.1",
+    userId: userByRole("lgu"),
+    action: "APPROVE_VALIDATION",
+    entityType: "child",
+    entityId: childIds[0]?.id ?? null,
+    ipAddress: "127.0.0.1",
+    userAgent: "seed-script",
     createdAt: isoDaysAgo(2),
   },
 ]);
 
-console.log("Seed complete.");
-console.log(`  barangays: ${barangayRows.length}`);
-console.log(`  schools:   ${schoolRows.length}`);
-console.log(`  users:     ${userRows.length}`);
-console.log(`  children:  ${allChildren.length}`);
-console.log("");
-console.log("Demo accounts (all share password 'Admin123!'):");
-console.log("  admin     -> admin@stamagdalena.gov.ph");
-console.log("  LGU       -> lgu@stamagdalena.gov.ph");
-console.log("  school    -> school@stamagdalena.gov.ph");
-console.log("  barangay  -> barangay@stamagdalena.gov.ph");
+console.log("Seed complete (idempotent upsert + deterministic demo data).");
+console.log(`  municipality: ${muni.name}`);
+console.log(`  barangays:    ${barangayRows.length}`);
+console.log(`  schools:      ${schoolRows.length}`);
+console.log(`  roles:        3 (Barangay User, LGU User, System Administrator — NO school role)`);
+console.log(`  permissions:  ${permissionRows.length}`);
+console.log(`  users:        ${userRows.length} (from DEFAULT_* env vars)`);
+console.log(`  children:     ${seedChildren.length}`);

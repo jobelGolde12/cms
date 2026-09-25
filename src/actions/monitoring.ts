@@ -3,123 +3,119 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { children, monitoringFollowups } from "@/db/schema";
+import { childMonitoring, children } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { followupFormSchema } from "@/lib/schemas";
+import { monitoringFormSchema } from "@/lib/schemas";
 import { canAccessChild } from "@/lib/scope";
-import type { FollowupStatus } from "@/lib/constants";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
-/** Create or update a monitoring follow-up on a child record. */
-export async function saveFollowup(
+/** Create or update a monitoring record for a child. */
+export async function saveMonitoring(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await getAuthorizedUser("monitoring.manage");
-  const { ip } = await sessionMetadata();
+  const user = await getAuthorizedUser("monitoring.update");
+  const { ip, userAgent } = await sessionMetadata();
   if (!user) return fail("You do not have permission to manage monitoring.");
 
-  const parsed = followupFormSchema.safeParse(Object.fromEntries(formData.entries()));
+  const parsed = monitoringFormSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
-  const { childId, category, status, notes, followupDate } = parsed.data;
+  const { childId, monitoringType, status, observedAt, remarks } = parsed.data;
 
   const childRows = await db.select().from(children).where(eq(children.id, childId)).limit(1);
   const child = childRows[0];
   if (!child) return fail("Child record not found.");
   if (!canAccessChild(user, child)) return fail("This record is outside your scope.");
 
-  const followupId = String(formData.get("id") ?? "");
-  const resolvedAt = status === "resolved" ? new Date() : null;
+  const recordId = String(formData.get("id") ?? "");
 
-  if (followupId) {
+  if (recordId) {
     await db
-      .update(monitoringFollowups)
+      .update(childMonitoring)
       .set({
-        category,
+        monitoringType,
         status,
-        notes: notes || null,
-        followupDate: followupDate || null,
-        resolvedAt,
+        observedAt: new Date(`${observedAt}T00:00:00Z`),
+        remarks: remarks || null,
         updatedAt: new Date(),
       })
-      .where(eq(monitoringFollowups.id, followupId));
+      .where(eq(childMonitoring.id, recordId));
 
     await logAudit({
       userId: user.id,
-      userRole: user.role,
-      action: "monitoring.update",
-      entity: "monitoring_followup",
-      entityId: followupId,
-      result: "success",
-      metadata: { childId, status },
-      ip,
+      action: "UPDATE_MONITORING",
+      entityType: "child_monitoring",
+      entityId: recordId,
+      newValues: { childId, monitoringType, status },
+      ipAddress: ip,
+      userAgent,
     });
   } else {
     const newId = crypto.randomUUID();
-    await db.insert(monitoringFollowups).values({
+    await db.insert(childMonitoring).values({
       id: newId,
       childId,
-      category,
+      monitoringType,
       status,
-      notes: notes || null,
-      followupDate: followupDate || null,
-      assignedTo: user.id,
-      resolvedAt,
-      createdBy: user.id,
+      observedAt: new Date(`${observedAt}T00:00:00Z`),
+      recordedBy: user.id,
+      remarks: remarks || null,
     });
 
     await logAudit({
       userId: user.id,
-      userRole: user.role,
-      action: "monitoring.create",
-      entity: "monitoring_followup",
+      action: "CREATE_MONITORING",
+      entityType: "child_monitoring",
       entityId: newId,
-      result: "success",
-      metadata: { childId, category, status },
-      ip,
+      newValues: { childId, monitoringType, status },
+      ipAddress: ip,
+      userAgent,
     });
   }
 
   revalidatePath("/monitoring");
   revalidatePath(`/children/${childId}`);
-  return ok("Follow-up saved.");
+  return ok("Monitoring record saved.");
 }
 
-/** Quickly move a follow-up between statuses (open/in_progress/follow_up/resolved). */
-export async function updateFollowupStatus(
+/** Quickly move a monitoring record between statuses. */
+export async function updateMonitoringStatus(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await getAuthorizedUser("monitoring.manage");
-  const { ip } = await sessionMetadata();
+  const user = await getAuthorizedUser("monitoring.update");
+  const { ip, userAgent } = await sessionMetadata();
   if (!user) return fail("You do not have permission.");
 
-  const followupId = String(formData.get("id") ?? "");
+  const recordId = String(formData.get("id") ?? "");
   const rawStatus = String(formData.get("status") ?? "");
-  const rows = await db.select().from(monitoringFollowups).where(eq(monitoringFollowups.id, followupId)).limit(1);
-  const row = rows[0];
-  if (!row) return fail("Follow-up not found.");
+  if (!["open", "in_progress", "resolved", "closed"].includes(rawStatus)) {
+    return fail("Invalid status.");
+  }
 
-  const status = rawStatus as FollowupStatus;
+  const rows = await db
+    .select()
+    .from(childMonitoring)
+    .where(eq(childMonitoring.id, recordId))
+    .limit(1);
+  const record = rows[0];
+  if (!record) return fail("Monitoring record not found.");
+
   await db
-    .update(monitoringFollowups)
-    .set({
-      status,
-      resolvedAt: status === "resolved" ? new Date() : null,
-      updatedAt: new Date(),
-    })
-    .where(eq(monitoringFollowups.id, row.id));
+    .update(childMonitoring)
+    .set({ status: rawStatus, updatedAt: new Date() })
+    .where(eq(childMonitoring.id, record.id));
 
   await logAudit({
     userId: user.id,
-    userRole: user.role,
-    action: "monitoring.status",
-    entity: "monitoring_followup",
-    entityId: row.id,
-    result: "success",
-    metadata: { status },
-    ip,
+    action: "UPDATE_MONITORING",
+    entityType: "child_monitoring",
+    entityId: record.id,
+    oldValues: { status: record.status },
+    newValues: { status: rawStatus },
+    ipAddress: ip,
+    userAgent,
   });
 
   revalidatePath("/monitoring");

@@ -1,5 +1,10 @@
 import type { Role } from "./constants";
 
+/**
+ * Development/initial accounts resolved from server-only environment
+ * variables (see .env.example). Credentials are NEVER hard-coded here and
+ * NEVER exposed to the client — this module is imported by server code only.
+ */
 export type DefaultCredential = {
   id: string;
   email: string;
@@ -7,7 +12,6 @@ export type DefaultCredential = {
   firstName: string;
   lastName: string;
   role: Role;
-  schoolId: string | null;
   barangayId: string | null;
 };
 
@@ -28,21 +32,18 @@ function optionalEnv(name: string): string | null {
   return value && value.trim().length > 0 ? value.trim() : null;
 }
 
-function buildCredential(
-  id: string,
-  role: string,
-  envPrefix: string
-): DefaultCredential {
+function buildCredential(id: string, envPrefix: string): DefaultCredential {
   const email = requireEnv(`${envPrefix}_EMAIL`);
   const passwordHash = requireEnv(`${envPrefix}_PASSWORD_HASH`);
   const firstName = requireEnv(`${envPrefix}_FIRST_NAME`);
   const lastName = requireEnv(`${envPrefix}_LAST_NAME`);
   const roleValue = requireEnv(`${envPrefix}_ROLE`);
 
-  if (!["admin", "lgu", "school", "barangay"].includes(roleValue)) {
+  const allowed: Role[] = ["admin", "lgu", "barangay"];
+  if (!allowed.includes(roleValue as Role)) {
     throw new Error(
       `Invalid role for default credential ${envPrefix}: ${roleValue}. ` +
-        `Expected one of admin, lgu, school, barangay.`
+        `Expected one of: ${allowed.join(", ")}. There is NO school role.`
     );
   }
 
@@ -53,21 +54,18 @@ function buildCredential(
     firstName,
     lastName,
     role: roleValue as Role,
-    schoolId: optionalEnv(`${envPrefix}_SCHOOL_ID`),
     barangayId: optionalEnv(`${envPrefix}_BARANGAY_ID`),
   };
 }
 
 /**
- * Development-only accounts resolved without reading the users table.
- * Credentials are configured through server-only environment variables.
- * Never expose these variables through NEXT_PUBLIC_*.
+ * Development-only accounts. The seed script also inserts these rows into the
+ * users table (upsert by email) so barangay scoping works out of the box.
  */
 export const DEFAULT_CREDENTIALS: readonly DefaultCredential[] = [
-  buildCredential("default-admin", "admin", "DEFAULT_ADMIN"),
-  buildCredential("default-lgu", "lgu", "DEFAULT_LGU"),
-  buildCredential("default-school", "school", "DEFAULT_SCHOOL"),
-  buildCredential("default-barangay", "barangay", "DEFAULT_BARANGAY"),
+  buildCredential("default-admin", "DEFAULT_ADMIN"),
+  buildCredential("default-lgu", "DEFAULT_LGU"),
+  buildCredential("default-barangay", "DEFAULT_BARANGAY"),
 ];
 
 export function findDefaultCredential(email: string): DefaultCredential | undefined {

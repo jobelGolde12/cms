@@ -1,12 +1,16 @@
 "use server";
 
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
+  childAddresses,
+  childDisabilities,
+  childDuplicateCandidates,
+  childEducation,
+  childEccd,
+  childValidations,
   children,
-  duplicateCandidates,
-  validationHistory,
   type NewChild,
 } from "@/db/schema";
 import {
@@ -16,102 +20,98 @@ import {
 import { logAudit, notify } from "@/lib/audit";
 import { nextChildCode } from "@/lib/child-code";
 import { canAccessChild, canEditChild } from "@/lib/scope";
-import { childFormSchema, type ChildFormValues } from "@/lib/schemas";
-import { detectDuplicates } from "@/lib/duplicates";
-import { canTransition, isEditable } from "@/lib/workflow";
-import type { ValidationStatus } from "@/lib/constants";
-import { fullName } from "@/lib/utils";
+import { childFormSchema, validationReviewSchema, type ChildFormValues } from "@/lib/schemas";
+import { refreshDuplicateCandidates } from "@/lib/duplicates";
 import { deactivateChildTokens } from "@/lib/qr";
-import { notifyValidators, fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
+import type { RecordStatus } from "@/lib/constants";
+import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
-const scrub = (value: string | undefined): string | null => (value && value.trim() ? value.trim() : null);
-
-type FormValues = ChildFormValues;
+const scrub = (value: string | undefined | null | ""): string | null =>
+  value && String(value).trim() ? String(value).trim() : null;
 
 function parseChildForm(formData: FormData) {
   const entries = Object.fromEntries(formData.entries());
+  const withCheckbox = {
+    ...entries,
+    hasDisability: formData.get("hasDisability") ? "on" : "",
+  };
   return {
     intent: entries.intent === "submit" ? ("submit" as const) : ("draft" as const),
-    parsed: childFormSchema.safeParse(entries),
+    parsed: childFormSchema.safeParse(withCheckbox),
   };
 }
 
-function toInsert(v: FormValues): Omit<NewChild, "id" | "childCode" | "createdBy"> {
-  return {
-    firstName: v.firstName,
-    middleName: scrub(v.middleName),
-    lastName: v.lastName,
-    suffix: scrub(v.suffix),
-    birthDate: v.birthDate,
-    sex: v.sex,
-    barangayId: v.barangayId,
-    addressDetails: scrub(v.addressDetails),
-    guardianName: scrub(v.guardianName),
-    guardianContact: scrub(v.guardianContact),
-    educationalStatus: v.educationalStatus,
-    schoolId: v.schoolId || null,
-    gradeLevel: scrub(v.gradeLevel),
-    schoolYear: scrub(v.schoolYear),
-    eccdStatus: v.eccdStatus,
-    eccdCenter: scrub(v.eccdCenter),
-    eccdNonParticipationReason: scrub(v.eccdNonParticipationReason),
-    disabilityStatus: v.disabilityStatus,
-    disabilityType: scrub(v.disabilityType),
-    disabilitySupportRequired: scrub(v.disabilitySupportRequired),
-    disabilitySupportProvided: scrub(v.disabilitySupportProvided),
-    disabilityReferral: scrub(v.disabilityReferral),
-    notes: scrub(v.notes),
-  };
-}
-
-async function registerDuplicates(
+/** Insert the normalized side-table rows for a child inside a transaction. */
+async function writeChildDetails(
   childId: string,
-  input: { firstName: string; lastName: string; middleName?: string; birthDate: string; barangayId: string },
-) {
-  const matches = await detectDuplicates({ ...input, excludeChildId: childId });
-  await db
-    .delete(duplicateCandidates)
-    .where(
-      and(
-        or(eq(duplicateCandidates.childId, childId), eq(duplicateCandidates.candidateId, childId)),
-        or(eq(duplicateCandidates.status, "potential"), eq(duplicateCandidates.status, "dismissed")),
-      ),
-    );
-  if (matches.length > 0) {
-    for (const m of matches) {
-      await db
-        .insert(duplicateCandidates)
-        .values({
-          id: crypto.randomUUID(),
-          childId,
-          candidateId: m.candidateId,
-          matchReasons: JSON.stringify(m.reasons),
-          status: "potential",
-        })
-        .onConflictDoNothing();
-    }
-    await db.update(children).set({ duplicateStatus: "potential" }).where(eq(children.id, childId));
-  } else {
-    const row = await db.select({ duplicateStatus: children.duplicateStatus }).from(children).where(eq(children.id, childId)).limit(1);
-    if (row[0]?.duplicateStatus !== "confirmed") {
-      await db.update(children).set({ duplicateStatus: "none" }).where(eq(children.id, childId));
-    }
-  }
+  v: ChildFormValues,
+  updatedBy: string,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.insert(childAddresses).values({
+      id: crypto.randomUUID(),
+      childId,
+      barangayId: v.barangayId,
+      householdAddress: v.householdAddress,
+      sitio: scrub(v.sitio),
+      isCurrent: true,
+    });
+
+    await tx.insert(childEducation).values({
+      id: crypto.randomUUID(),
+      childId,
+      schoolId: scrub(v.schoolId),
+      educationStatus: v.educationStatus,
+      gradeLevel: scrub(v.gradeLevel),
+      schoolYear: scrub(v.schoolYear),
+      enrollmentStatus: scrub(v.enrollmentStatus),
+      isCurrent: true,
+    });
+
+    await tx.insert(childEccd).values({
+      id: crypto.randomUUID(),
+      childId,
+      participationStatus: v.eccdStatus,
+      programName: scrub(v.eccdProgramName),
+      provider: scrub(v.eccdProvider),
+      remarks: scrub(v.eccdRemarks),
+    });
+
+    await tx.insert(childDisabilities).values({
+      id: crypto.randomUUID(),
+      childId,
+      hasDisability: v.hasDisability,
+      disabilityType: v.hasDisability ? scrub(v.disabilityType) : null,
+      description: v.hasDisability ? scrub(v.disabilityDescription) : null,
+      supportNeeded: v.hasDisability ? scrub(v.disabilitySupportNeeded) : null,
+      assistanceStatus: v.hasDisability ? scrub(v.assistanceStatus) : null,
+      verified: false,
+    });
+
+    await tx.insert(childValidations).values({
+      id: crypto.randomUUID(),
+      childId,
+      submittedBy: updatedBy,
+      status: "pending",
+      remarks: "Record created",
+      submittedAt: new Date(),
+    });
+  });
 }
 
 /** Create a new child record. `intent=draft` saves; `intent=submit` queues for validation. */
 export async function createChild(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getAuthorizedUser("children.create");
-  const { ip } = await sessionMetadata();
+  const { ip, userAgent } = await sessionMetadata();
   if (!user) return fail("You do not have permission to create records.");
 
   const form = parseChildForm(formData);
   if (!form.parsed.success) {
     return fail("Please fix the highlighted fields.", zodFieldErrors(form.parsed.error.issues));
   }
-  const values = toInsert(form.parsed.data);
+  const v = form.parsed.data;
 
-  const targetStatus = form.intent === "submit" ? "pending_validation" : "draft";
+  const targetStatus: RecordStatus = form.intent === "submit" ? "pending_validation" : "draft";
   const childId = crypto.randomUUID();
 
   // Sequential code generation with a single retry on (rare) collision.
@@ -120,57 +120,117 @@ export async function createChild(_prev: ActionState, formData: FormData): Promi
   for (let attempt = 0; attempt < 2 && !inserted; attempt++) {
     if (attempt > 0) code = await nextChildCode();
     try {
-      await db.insert(children).values({
-        id: childId,
-        childCode: code,
-        ...values,
-        validationStatus: targetStatus,
-        duplicateStatus: "none",
-        createdBy: user.id,
-        submittedAt: form.intent === "submit" ? new Date() : null,
+      await db.transaction(async (tx) => {
+        const childValues: NewChild = {
+          id: childId,
+          childCode: code,
+          firstName: v.firstName,
+          middleName: scrub(v.middleName),
+          lastName: v.lastName,
+          suffix: scrub(v.suffix),
+          birthDate: v.birthDate,
+          sex: v.sex,
+          civilStatus: scrub(v.civilStatus),
+          birthPlace: scrub(v.birthPlace),
+          barangayId: v.barangayId,
+          status: "active",
+          recordStatus: targetStatus,
+          createdBy: user.id,
+          updatedBy: user.id,
+        };
+        await tx.insert(children).values(childValues);
+
+        // Current validation record (history table, not a boolean).
+        if (form.intent === "submit") {
+          await tx.insert(childValidations).values({
+            id: crypto.randomUUID(),
+            childId,
+            submittedBy: user.id,
+            status: "pending",
+            remarks: "Submitted for validation",
+            submittedAt: new Date(),
+          });
+        }
+
+        await tx.insert(childAddresses).values({
+          id: crypto.randomUUID(),
+          childId,
+          barangayId: v.barangayId,
+          householdAddress: v.householdAddress,
+          sitio: scrub(v.sitio),
+          isCurrent: true,
+        });
+
+        await tx.insert(childEducation).values({
+          id: crypto.randomUUID(),
+          childId,
+          schoolId: scrub(v.schoolId),
+          educationStatus: v.educationStatus,
+          gradeLevel: scrub(v.gradeLevel),
+          schoolYear: scrub(v.schoolYear),
+          enrollmentStatus: scrub(v.enrollmentStatus),
+          isCurrent: true,
+        });
+
+        await tx.insert(childEccd).values({
+          id: crypto.randomUUID(),
+          childId,
+          participationStatus: v.eccdStatus,
+          programName: scrub(v.eccdProgramName),
+          provider: scrub(v.eccdProvider),
+          remarks: scrub(v.eccdRemarks),
+        });
+
+        await tx.insert(childDisabilities).values({
+          id: crypto.randomUUID(),
+          childId,
+          hasDisability: v.hasDisability,
+          disabilityType: v.hasDisability ? scrub(v.disabilityType) : null,
+          description: v.hasDisability ? scrub(v.disabilityDescription) : null,
+          supportNeeded: v.hasDisability ? scrub(v.disabilitySupportNeeded) : null,
+          assistanceStatus: v.hasDisability ? scrub(v.assistanceStatus) : null,
+          verified: false,
+        });
       });
       inserted = true;
-    } catch {
+    } catch (error) {
+      console.error("[createChild] insert failed", error);
       inserted = false;
     }
   }
   if (!inserted) return fail("Could not create the record. Please try again.");
 
-  await db.insert(validationHistory).values({
-    id: crypto.randomUUID(),
-    childId,
-    action: "created",
-    notes: form.intent === "submit" ? "Created and submitted for validation" : "Created as draft",
-    performedBy: user.id,
-  });
-
-  await registerDuplicates(childId, {
-    firstName: values.firstName,
-    lastName: values.lastName,
-    middleName: values.middleName ?? undefined,
-    birthDate: values.birthDate,
-    barangayId: values.barangayId,
+  // Duplicate candidates are proposals only — human review decides.
+  await refreshDuplicateCandidates(childId, {
+    firstName: v.firstName,
+    lastName: v.lastName,
+    middleName: v.middleName || null,
+    birthDate: v.birthDate,
+    barangayId: v.barangayId,
   });
 
   await logAudit({
-    userId: user.id, userRole: user.role,
-    action: "child.create", entity: "child", entityId: childId, result: "success",
-    metadata: { code, submitted: form.intent === "submit" }, ip,
+    userId: user.id,
+    action: form.intent === "submit" ? "SUBMIT_VALIDATION" : "CREATE_CHILD",
+    entityType: "child",
+    entityId: childId,
+    newValues: { childCode: code, recordStatus: targetStatus },
+    ipAddress: ip,
+    userAgent,
   });
 
-  if (form.intent === "submit") {
-    const name = fullName(values);
-    await notifyValidators(`${name} (${code}) was submitted for validation.`, `/children/${childId}`);
-  }
-
   revalidatePath("/children");
-  return ok(form.intent === "submit" ? "Record submitted for validation." : "Draft saved.", `/children/${childId}`);
+  revalidatePath("/validation");
+  return ok(
+    form.intent === "submit" ? "Record submitted for validation." : "Draft saved.",
+    `/children/${childId}`,
+  );
 }
 
 /** Update an existing child record (draft/needs_correction are editable). */
 export async function updateChild(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getAuthorizedUser("children.update");
-  const { ip } = await sessionMetadata();
+  const { ip, userAgent } = await sessionMetadata();
   if (!user) return fail("You do not have permission to edit records.");
 
   const childId = String(formData.get("childId") ?? "");
@@ -185,210 +245,320 @@ export async function updateChild(_prev: ActionState, formData: FormData): Promi
   if (!form.parsed.success) {
     return fail("Please fix the highlighted fields.", zodFieldErrors(form.parsed.error.issues));
   }
-  const values = toInsert(form.parsed.data);
+  const v = form.parsed.data;
 
-  const isResubmit = child.validationStatus === "needs_correction" && form.intent === "submit";
-  const targetStatus = isResubmit ? "pending_validation"
-    : child.validationStatus === "draft" && form.intent === "submit" ? "pending_validation"
-    : child.validationStatus;
+  const isResubmit = child.recordStatus === "needs_correction" && form.intent === "submit";
+  const targetStatus: RecordStatus = isResubmit
+    ? "pending_validation"
+    : child.recordStatus === "draft" && form.intent === "submit"
+      ? "pending_validation"
+      : child.recordStatus;
 
-  await db
-    .update(children)
-    .set({
-      ...values,
-      validationStatus: targetStatus,
-      submittedAt: targetStatus === "pending_validation" ? (child.submittedAt ?? new Date()) : child.submittedAt,
-      updatedAt: new Date(),
-    })
-    .where(eq(children.id, childId));
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(children)
+        .set({
+          firstName: v.firstName,
+          middleName: scrub(v.middleName),
+          lastName: v.lastName,
+          suffix: scrub(v.suffix),
+          birthDate: v.birthDate,
+          sex: v.sex,
+          civilStatus: scrub(v.civilStatus),
+          birthPlace: scrub(v.birthPlace),
+          barangayId: v.barangayId,
+          recordStatus: targetStatus,
+          updatedBy: user.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(children.id, childId));
 
-  await db.insert(validationHistory).values({
-    id: crypto.randomUUID(),
-    childId,
-    action: isResubmit ? "resubmitted" : "updated",
-    notes: isResubmit ? "Updated and resubmitted for validation" : "Record updated",
-    performedBy: user.id,
-  });
+      // Address history: mark old current address as historical, add the new one.
+      await tx
+        .update(childAddresses)
+        .set({ isCurrent: false, updatedAt: new Date() })
+        .where(and(eq(childAddresses.childId, childId), eq(childAddresses.isCurrent, true)));
 
-  await registerDuplicates(childId, {
-    firstName: values.firstName,
-    lastName: values.lastName,
-    middleName: values.middleName ?? undefined,
-    birthDate: values.birthDate,
-    barangayId: values.barangayId,
-  });
+      await tx.insert(childAddresses).values({
+        id: crypto.randomUUID(),
+        childId,
+        barangayId: v.barangayId,
+        householdAddress: v.householdAddress,
+        sitio: scrub(v.sitio),
+        isCurrent: true,
+      });
 
-  await logAudit({
-    userId: user.id, userRole: user.role,
-    action: "child.update", entity: "child", entityId: childId, result: "success",
-    metadata: { resubmitted: isResubmit }, ip,
-  });
+      // Education: supersede current record.
+      await tx
+        .update(childEducation)
+        .set({ isCurrent: false, updatedAt: new Date() })
+        .where(and(eq(childEducation.childId, childId), eq(childEducation.isCurrent, true)));
 
-  if (isResubmit) {
-    const name = fullName(values);
-    await notifyValidators(`${name} (${child.childCode}) was resubmitted for validation.`, `/children/${childId}`);
+      await tx.insert(childEducation).values({
+        id: crypto.randomUUID(),
+        childId,
+        schoolId: scrub(v.schoolId),
+        educationStatus: v.educationStatus,
+        gradeLevel: scrub(v.gradeLevel),
+        schoolYear: scrub(v.schoolYear),
+        enrollmentStatus: scrub(v.enrollmentStatus),
+        isCurrent: true,
+      });
+
+      // ECCD: append new observation.
+      await tx.insert(childEccd).values({
+        id: crypto.randomUUID(),
+        childId,
+        participationStatus: v.eccdStatus,
+        programName: scrub(v.eccdProgramName),
+        provider: scrub(v.eccdProvider),
+        remarks: scrub(v.eccdRemarks),
+      });
+
+      // Disability: append new observation (sensitive; handled server-side only).
+      await tx.insert(childDisabilities).values({
+        id: crypto.randomUUID(),
+        childId,
+        hasDisability: v.hasDisability,
+        disabilityType: v.hasDisability ? scrub(v.disabilityType) : null,
+        description: v.hasDisability ? scrub(v.disabilityDescription) : null,
+        supportNeeded: v.hasDisability ? scrub(v.disabilitySupportNeeded) : null,
+        assistanceStatus: v.hasDisability ? scrub(v.assistanceStatus) : null,
+        verified: false,
+      });
+
+      if (isResubmit) {
+        await tx.insert(childValidations).values({
+          id: crypto.randomUUID(),
+          childId,
+          submittedBy: user.id,
+          status: "pending",
+          remarks: "Resubmitted after corrections",
+          submittedAt: new Date(),
+        });
+      }
+    });
+  } catch (error) {
+    console.error("[updateChild] update failed", error);
+    return fail("Could not update the record. Please try again.");
   }
 
-  const toPath = isResubmit ? "/validation" : `/children/${childId}`;
-  revalidatePath("/children");
-  revalidatePath(`/children/${childId}`);
-  return ok("Record updated.", toPath);
-}
+  // Edit invalidates previously issued QR tokens (data changed).
+  if (isResubmit || child.recordStatus === "verified") {
+    await deactivateChildTokens(childId, user.id);
+  }
 
-/** Submit a draft / needs-correction record for validation. */
-export async function submitChild(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await getAuthorizedUser("children.update");
-  const { ip } = await sessionMetadata();
-  if (!user) return fail("You do not have permission.");
-
-  const childId = String(formData.get("childId") ?? "");
-  const rows = await db.select().from(children).where(eq(children.id, childId)).limit(1);
-  const child = rows[0];
-  if (!child) return fail("Record not found.");
-  if (!canEditChild(user, child)) return fail("You cannot modify this record.");
-  if (!isEditable(child.validationStatus as ValidationStatus)) return fail("This record cannot be submitted in its current state.");
-
-  await db
-    .update(children)
-    .set({ validationStatus: "pending_validation", submittedAt: child.submittedAt ?? new Date(), updatedAt: new Date() })
-    .where(eq(children.id, child.id));
-
-  await db.insert(validationHistory).values({
-    id: crypto.randomUUID(),
-    childId: child.id,
-    action: "submitted",
-    notes: "Submitted for validation",
-    performedBy: user.id,
+  await refreshDuplicateCandidates(childId, {
+    firstName: v.firstName,
+    lastName: v.lastName,
+    middleName: v.middleName || null,
+    birthDate: v.birthDate,
+    barangayId: v.barangayId,
   });
-
-  const name = fullName(child);
-  await notifyValidators(`${name} (${child.childCode}) was submitted for validation.`, `/children/${child.id}`);
 
   await logAudit({
-    userId: user.id, userRole: user.role,
-    action: "child.submit", entity: "child", entityId: child.id, result: "success", ip,
+    userId: user.id,
+    action: "UPDATE_CHILD",
+    entityType: "child",
+    entityId: childId,
+    oldValues: { recordStatus: child.recordStatus },
+    newValues: { recordStatus: targetStatus },
+    ipAddress: ip,
+    userAgent,
   });
 
   revalidatePath("/children");
-  return ok("Submitted for validation.", "/validation");
+  revalidatePath(`/children/${childId}`);
+  return ok("Record updated.", isResubmit ? "/validation" : `/children/${childId}`);
 }
 
-/** Validator decision: `decision=verified` or `decision=returned`, with notes. */
-export async function validateChild(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await getAuthorizedUser("children.validate");
-  const { ip } = await sessionMetadata();
+/** Validator decision on a queued record. Writes validation history. */
+export async function reviewValidation(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getAuthorizedUser("validation.review");
+  const { ip, userAgent } = await sessionMetadata();
   if (!user) return fail("You do not have permission to validate records.");
 
-  const childId = String(formData.get("childId") ?? "");
-  const decision = String(formData.get("decision") ?? "") as "verified" | "returned";
-  const notes = scrub(String(formData.get("notes") ?? ""));
+  const parsed = validationReviewSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return fail("Invalid review.", zodFieldErrors(parsed.error.issues));
+  const { childId, decision, remarks } = parsed.data;
 
   const rows = await db.select().from(children).where(eq(children.id, childId)).limit(1);
   const child = rows[0];
   if (!child) return fail("Record not found.");
   if (!canAccessChild(user, child)) return fail("This record is outside your scope.");
-
-  const target = decision === "verified" ? "verified" : "needs_correction";
-  if (target === "verified" && !canTransition(child.validationStatus as ValidationStatus, "verified")) {
-    return fail("This record cannot be verified in its current state.");
-  }
-  if (target === "needs_correction" && child.validationStatus === "verified") {
-    return fail("Re-opening a verified record requires an administrator.");
+  if (child.recordStatus !== "pending_validation") {
+    return fail("This record is not in the validation queue.");
   }
 
-  await db
-    .update(children)
-    .set({
-      validationStatus: target,
-      ...(target === "verified"
-        ? { verifiedBy: user.id, verifiedAt: new Date(), validationNotes: notes }
-        : { validationNotes: notes }),
-      updatedAt: new Date(),
-    })
-    .where(eq(children.id, child.id));
+  const validationRows = await db
+    .select()
+    .from(childValidations)
+    .where(and(eq(childValidations.childId, childId), eq(childValidations.status, "pending")))
+    .limit(1);
+  const validation = validationRows[0];
+  if (!validation) return fail("No pending validation found for this record.");
 
-  await db.insert(validationHistory).values({
-    id: crypto.randomUUID(),
-    childId: child.id,
-    action: target === "verified" ? "verified" : "returned",
-    notes: notes || (target === "verified" ? "Record verified" : "Returned for correction"),
-    performedBy: user.id,
-  });
+  const nextRecordStatus: RecordStatus =
+    decision === "approved" ? "verified" : decision === "needs_correction" ? "needs_correction" : "rejected";
 
-  await notify({
-    userId: child.createdBy,
-    type: target === "verified" ? "verified" : "correction",
-    title: target === "verified" ? "Record verified" : "Record needs correction",
-    body: `${fullName(child)} (${child.childCode}) was ${target === "verified" ? "verified" : "returned for correction"}${notes ? `: ${notes}` : ""}.`,
-    link: `/children/${child.id}`,
-  });
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(childValidations)
+        .set({
+          status: decision,
+          reviewedBy: user.id,
+          remarks: remarks || null,
+          reviewedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(childValidations.id, validation.id));
+
+      await tx
+        .update(children)
+        .set({
+          recordStatus: nextRecordStatus,
+          updatedBy: user.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(children.id, childId));
+    });
+  } catch (error) {
+    console.error("[reviewValidation] failed", error);
+    return fail("Could not record the review. Please try again.");
+  }
 
   await logAudit({
-    userId: user.id, userRole: user.role,
-    action: `child.${target === "verified" ? "verify" : "return"}`, entity: "child", entityId: child.id, result: "success",
-    metadata: { notes }, ip,
+    userId: user.id,
+    action: decision === "approved" ? "APPROVE_VALIDATION" : decision === "rejected" ? "REJECT_VALIDATION" : "RETURN_VALIDATION",
+    entityType: "child",
+    entityId: childId,
+    oldValues: { recordStatus: child.recordStatus },
+    newValues: { recordStatus: nextRecordStatus },
+    ipAddress: ip,
+    userAgent,
+  });
+
+  // Notify the collector (no sensitive data in the message body).
+  await notify({
+    userId: child.createdBy,
+    type: decision === "approved" ? "approved" : "correction",
+    title: decision === "approved" ? "Record approved" : `Record ${decision.replace(/_/g, " ")}`,
+    message: `Record ${child.childCode} was ${decision === "approved" ? "approved" : decision.replace(/_/g, " ")}${remarks ? `: ${remarks}` : ""}.`,
+    link: `/children/${childId}`,
   });
 
   revalidatePath("/validation");
-  revalidatePath(`/children/${child.id}`);
-  return ok(target === "verified" ? "Record verified." : "Returned for correction.");
+  revalidatePath(`/children/${childId}`);
+  return ok(decision === "approved" ? "Record approved." : `Record marked ${decision.replace(/_/g, " ")}.`);
+}
+
+/** FormData-only wrapper for plain <form action={…}> usage. */
+export async function reviewValidationForm(formData: FormData): Promise<void> {
+  await reviewValidation({ ok: false, error: "" }, formData);
 }
 
 /** Admin only: re-open a verified record back into the validation queue. */
 export async function reopenChild(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await getAuthorizedUser("children.validate");
-  const { ip } = await sessionMetadata();
+  const user = await getAuthorizedUser("validation.review");
+  const { ip, userAgent } = await sessionMetadata();
   if (!user || user.role !== "admin") return fail("Only administrators can re-open verified records.");
 
   const childId = String(formData.get("childId") ?? "");
   const rows = await db.select().from(children).where(eq(children.id, childId)).limit(1);
   const child = rows[0];
   if (!child) return fail("Record not found.");
-  if (child.validationStatus !== "verified") return fail("Only verified records can be re-opened.");
+  if (child.recordStatus !== "verified") return fail("Only verified records can be re-opened.");
 
-  await db
-    .update(children)
-    .set({ validationStatus: "pending_validation", updatedAt: new Date() })
-    .where(eq(children.id, child.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(children)
+      .set({ recordStatus: "pending_validation", updatedBy: user.id, updatedAt: new Date() })
+      .where(eq(children.id, childId));
 
-  await db.insert(validationHistory).values({
-    id: crypto.randomUUID(), childId: child.id, action: "updated",
-    notes: "Re-opened for re-validation", performedBy: user.id,
+    await tx.insert(childValidations).values({
+      id: crypto.randomUUID(),
+      childId,
+      submittedBy: user.id,
+      status: "pending",
+      remarks: "Re-opened for re-validation",
+      submittedAt: new Date(),
+    });
   });
 
   await logAudit({
-    userId: user.id, userRole: user.role,
-    action: "child.reopen", entity: "child", entityId: child.id, result: "success", ip,
+    userId: user.id,
+    action: "REOPEN_VALIDATION",
+    entityType: "child",
+    entityId: childId,
+    oldValues: { recordStatus: "verified" },
+    newValues: { recordStatus: "pending_validation" },
+    ipAddress: ip,
+    userAgent,
   });
 
   revalidatePath("/children");
+  revalidatePath("/validation");
   return ok("Record re-opened for validation.", "/validation");
 }
 
-/** Delete a draft/needs-correction record (admin/LGU only). */
-export async function deleteChildRecord(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await getAuthorizedUser("children.update");
-  const { ip } = await sessionMetadata();
-  if (!user || (user.role !== "admin" && user.role !== "lgu")) return fail("You cannot delete records.");
+/**
+ * Archive (soft delete) a record. Historical records are never physically
+ * deleted — `status` flips to archived and QR tokens are revoked.
+ */
+export async function archiveChild(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getAuthorizedUser("children.delete");
+  const { ip, userAgent } = await sessionMetadata();
+  if (!user) return fail("You do not have permission to archive records.");
 
   const childId = String(formData.get("childId") ?? "");
   const rows = await db.select().from(children).where(eq(children.id, childId)).limit(1);
   const child = rows[0];
   if (!child) return fail("Record not found.");
   if (!canAccessChild(user, child)) return fail("This record is outside your scope.");
-  if (isEditable(child.validationStatus as ValidationStatus) === false && child.validationStatus !== "draft") {
-    return fail("Only draft records can be deleted.");
-  }
 
-  await deactivateChildTokens(child.id);
-  await db.delete(children).where(eq(children.id, child.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(children)
+      .set({ status: "archived", updatedBy: user.id, updatedAt: new Date() })
+      .where(eq(children.id, childId));
+  });
+
+  await deactivateChildTokens(childId, user.id);
 
   await logAudit({
-    userId: user.id, userRole: user.role,
-    action: "child.delete", entity: "child", entityId: child.id, result: "success",
-    metadata: { code: child.childCode }, ip,
+    userId: user.id,
+    action: "ARCHIVE_CHILD",
+    entityType: "child",
+    entityId: childId,
+    oldValues: { status: child.status },
+    newValues: { status: "archived" },
+    ipAddress: ip,
+    userAgent,
   });
 
   revalidatePath("/children");
-  return ok("Record deleted.");
+  revalidatePath(`/children/${childId}`);
+  return ok("Record archived. It is retained for history but hidden from active lists.");
+}
+
+/** Convenience for UI: current user context check used by client forms. */
+export async function canCurrentUserCreateChildren(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return Boolean(user && user.role);
+}
+
+// Re-export for form components needing the duplicate pair count for a child.
+export async function pendingDuplicateCount(childId: string): Promise<number> {
+  const rows = await db
+    .select({ id: childDuplicateCandidates.id })
+    .from(childDuplicateCandidates)
+    .where(
+      and(
+        eq(childDuplicateCandidates.childId, childId),
+        eq(childDuplicateCandidates.status, "pending"),
+      ),
+    );
+  return rows.length;
 }

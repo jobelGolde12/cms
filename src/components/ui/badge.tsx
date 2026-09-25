@@ -8,9 +8,10 @@ import {
   SendHorizonal,
   ShieldCheck,
   TriangleAlert,
+  Archive,
 } from "lucide-react";
-import type { ValidationStatus } from "@/lib/constants";
-import { VALIDATION_LABELS } from "@/lib/constants";
+import type { RecordStatus } from "@/lib/constants";
+import { RECORD_STATUS_LABELS } from "@/lib/constants";
 
 type Tone = "verified" | "pending" | "error" | "info" | "neutral";
 
@@ -55,21 +56,23 @@ export function Badge({
   );
 }
 
-const validationTone: Record<ValidationStatus, Tone> = {
+const recordTone: Record<RecordStatus, Tone> = {
   draft: "neutral",
-  submitted: "info",
   pending_validation: "pending",
   needs_correction: "error",
-  resubmitted: "info",
   verified: "verified",
+  marked_duplicate: "error",
 };
 
-export function ValidationStatusBadge({ status }: { status: ValidationStatus }) {
+export function RecordStatusBadge({ status }: { status: RecordStatus }) {
+  const tone = recordTone[status] ?? "neutral";
+  const Icon = status === "verified" ? ShieldCheck : status === "draft" ? FileWarning : undefined;
   return (
-    <Badge tone={validationTone[status] ?? "neutral"}>
-      {VALIDATION_LABELS[status] ?? status}
+    <Badge tone={tone}>
+      {Icon ? <Icon aria-hidden="true" className="h-3.5 w-3.5" /> : null}
+      {RECORD_STATUS_LABELS[status] ?? status}
     </Badge>
   );
 }
 
-export { SendHorizonal, ShieldCheck };
+export { SendHorizonal, ShieldCheck, Archive };

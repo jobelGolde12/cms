@@ -28,6 +28,7 @@ export const config = {
     "/duplicates/:path*",
     "/monitoring/:path*",
     "/reports/:path*",
+    "/qr/:path*",
     "/activity-logs/:path*",
     "/users/:path*",
     "/notifications/:path*",

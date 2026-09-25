@@ -1,103 +1,117 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { children, duplicateCandidates } from "@/db/schema";
+import { childDuplicateCandidates, children } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
 import { logAudit, notify } from "@/lib/audit";
 import { duplicateReviewSchema } from "@/lib/schemas";
 import { canAccessChild } from "@/lib/scope";
-import { fullName } from "@/lib/utils";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
 /**
- * Resolve the given duplicate candidate pair based on a validator decision.
+ * Human review of a duplicate candidate. Detection never marks a child as a
+ * duplicate by itself — only an authorized reviewer decision here does.
  *
- * - confirmed: both records flagged as confirmed duplicates (awaiting manual merge)
- * - dismissed: wrong match; both records cleared back to "no duplicates"
- * - resolved: pair closed; records marked resolved
+ * - confirmed_duplicate: the newer record is marked `marked_duplicate`
+ * - not_duplicate: candidate cleared; both records keep their status
+ * - dismissed: review closed without prejudice
  */
 export async function reviewDuplicate(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const user = await getAuthorizedUser("duplicates.review");
-  const { ip } = await sessionMetadata();
+  const { ip, userAgent } = await sessionMetadata();
   if (!user) return fail("You do not have permission to review duplicates.");
 
   const parsed = duplicateReviewSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return fail("Invalid review.", zodFieldErrors(parsed.error.issues));
   const { id, decision, notes } = parsed.data;
 
-  const rows = await db.select().from(duplicateCandidates).where(eq(duplicateCandidates.id, id)).limit(1);
-  const pair = rows[0];
-  if (!pair) return fail("Duplicate pair not found.");
+  const rows = await db
+    .select()
+    .from(childDuplicateCandidates)
+    .where(eq(childDuplicateCandidates.id, id))
+    .limit(1);
+  const candidate = rows[0];
+  if (!candidate) return fail("Duplicate candidate not found.");
 
   await db
-    .update(duplicateCandidates)
+    .update(childDuplicateCandidates)
     .set({
       status: decision,
       reviewedBy: user.id,
-      reviewedAt: new Date(),
       reviewNotes: notes || null,
+      updatedAt: new Date(),
     })
-    .where(eq(duplicateCandidates.id, pair.id));
+    .where(eq(childDuplicateCandidates.id, candidate.id));
 
-  const targetChildStatus = decision === "confirmed" ? "confirmed" : "resolved";
-  const pairIds = [pair.childId, pair.candidateId];
+  if (decision === "confirmed_duplicate") {
+    // Mark the newer record (the candidate that triggered detection) as duplicate.
+    const childRows = await db
+      .select({ createdAt: children.createdAt })
+      .from(children)
+      .where(eq(children.id, candidate.childId))
+      .limit(1);
+    const possibleRows = await db
+      .select({ createdAt: children.createdAt })
+      .from(children)
+      .where(eq(children.id, candidate.possibleChildId))
+      .limit(1);
 
-  if (decision === "dismissed") {
-    // Only clear a record's duplicate flag if it has no other active candidate.
-    for (const childId of pairIds) {
-      const other = await db
-        .select({ id: duplicateCandidates.id })
-        .from(duplicateCandidates)
-        .where(
-          and(
-            inArray(duplicateCandidates.childId, [childId]),
-            eq(duplicateCandidates.status, "potential"),
-          ),
-        )
-        .limit(1);
-      if (other.length === 0) {
-        await db.update(children).set({ duplicateStatus: "none" }).where(eq(children.id, childId));
-      }
-    }
-  } else {
+    const newerId =
+      (childRows[0]?.createdAt ?? 0) >= (possibleRows[0]?.createdAt ?? 0)
+        ? candidate.childId
+        : candidate.possibleChildId;
+
     await db
       .update(children)
-      .set({ duplicateStatus: targetChildStatus })
-      .where(inArray(children.id, pairIds));
+      .set({ recordStatus: "marked_duplicate", updatedBy: user.id, updatedAt: new Date() })
+      .where(eq(children.id, newerId));
+
+    await logAudit({
+      userId: user.id,
+      action: "MARK_DUPLICATE",
+      entityType: "child_duplicate_candidate",
+      entityId: candidate.id,
+      newValues: { markedChildId: newerId, notes },
+      ipAddress: ip,
+      userAgent,
+    });
+  } else {
+    await logAudit({
+      userId: user.id,
+      action: decision === "not_duplicate" ? "DUPLICATE_NOT_DUPLICATE" : "DUPLICATE_DISMISSED",
+      entityType: "child_duplicate_candidate",
+      entityId: candidate.id,
+      newValues: { decision, notes },
+      ipAddress: ip,
+      userAgent,
+    });
   }
 
-  await logAudit({
-    userId: user.id,
-    userRole: user.role,
-    action: `duplicate.${decision}`,
-    entity: "duplicate_candidate",
-    entityId: pair.id,
-    result: "success",
-    metadata: { childId: pair.childId, candidateId: pair.candidateId, notes },
-    ip,
-  });
-
-  // Inform the collector who flagged the record.
-  for (const childId of pairIds) {
-    const childRows = await db.select().from(children).where(eq(children.id, childId)).limit(1);
+  // Inform both record creators (no sensitive details in the message).
+  for (const childId of [candidate.childId, candidate.possibleChildId]) {
+    const childRows = await db
+      .select({ createdBy: children.createdBy, childCode: children.childCode })
+      .from(children)
+      .where(eq(children.id, childId))
+      .limit(1);
     const child = childRows[0];
     if (child) {
       await notify({
         userId: child.createdBy,
         type: "duplicate",
-        title: `Duplicate ${decision}`,
-        body: `${fullName(child)} (${child.childCode}) — duplicate review marked as ${decision}.`,
-        link: `/children/${child.id}`,
+        title: `Duplicate review: ${decision.replace(/_/g, " ")}`,
+        message: `Record ${child.childCode} was reviewed (${decision.replace(/_/g, " ")}).`,
+        link: `/children/${childId}`,
       });
     }
   }
 
   revalidatePath("/duplicates");
   revalidatePath("/children");
-  return ok(`Marked as ${decision}.`);
+  return ok(`Marked as ${decision.replace(/_/g, " ")}.`);
 }

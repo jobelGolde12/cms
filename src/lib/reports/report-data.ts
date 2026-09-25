@@ -1,26 +1,20 @@
 import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { barangays, children, monitoringFollowups, schools } from "@/db/schema";
+import {
+  barangays,
+  childEducation,
+  childEccd,
+  childDisabilities,
+  childMonitoring,
+  interventions,
+  children,
+  schools,
+} from "@/db/schema";
 import type { SessionUser } from "../auth";
 import { childScope } from "../scope";
 import { ageFromBirthDate, fullName } from "../utils";
-
-export type ReportType =
-  | "school"
-  | "barangay"
-  | "municipal"
-  | "summary"
-  | "planning"
-  | "monitoring";
-
-export const REPORT_TYPES: Record<ReportType, string> = {
-  school: "School Report",
-  barangay: "Barangay Report",
-  municipal: "Municipal Consolidated Report",
-  summary: "Child Mapping Summary",
-  planning: "Educational Planning Report",
-  monitoring: "Monitoring Report",
-};
+import type { ReportType } from "@/lib/constants";
+import { REPORT_TYPE_LABELS } from "@/lib/constants";
 
 export type ReportParams = {
   barangayId?: string;
@@ -35,6 +29,7 @@ export type BuiltReport = {
   filters: string;
   generatedAt: Date;
   generatedBy: string;
+  scope: string;
   columns: string[];
   rows: ReportRow[];
   summary: { label: string; value: number }[];
@@ -45,14 +40,13 @@ const sumWhen = (cond: SQL) => sql<number>`sum(case when ${cond} then 1 else 0 e
 const childName = (r: { firstName: string; lastName: string; sex: string }) =>
   `${fullName({ firstName: r.firstName, lastName: r.lastName })} (${r.sex === "male" ? "M" : "F"})`;
 
-function statusLabel(s: string | null): string {
+function recordStatusLabel(s: string | null): string {
   const map: Record<string, string> = {
     draft: "Draft",
-    submitted: "Submitted",
     pending_validation: "Pending Validation",
     needs_correction: "Needs Correction",
-    resubmitted: "Resubmitted",
     verified: "Verified",
+    marked_duplicate: "Marked Duplicate",
   };
   return map[s ?? ""] ?? s ?? "";
 }
@@ -73,24 +67,21 @@ export async function buildReport(
     .filter(Boolean)
     .join(" · ");
 
-  const generatedBy = `${user.firstName} ${user.lastName} (${user.role})`;
-
   const base = {
     type,
-    title: REPORT_TYPES[type],
+    title: REPORT_TYPE_LABELS[type],
     filters: filters || "Municipality-wide (Sta. Magdalena)",
     generatedAt,
-    generatedBy,
+    generatedBy: `${user.firstName} ${user.lastName} (${user.role})`,
+    scope: params.barangayId ? "barangay" : params.schoolId ? "school" : "municipality",
   };
 
   switch (type) {
-    case "school":
-    case "barangay":
-    case "municipal": {
+    case "child_registry":
+    case "educational_status": {
       const where = withScope(
         and(
           params.barangayId ? eq(children.barangayId, params.barangayId) : sql`1 = 1`,
-          params.schoolId ? eq(children.schoolId, params.schoolId) : sql`1 = 1`,
         ),
       );
 
@@ -102,15 +93,19 @@ export async function buildReport(
           sex: children.sex,
           birthDate: children.birthDate,
           barangay: barangays.name,
+          recordStatus: children.recordStatus,
+          educationStatus: childEducation.educationStatus,
+          grade: childEducation.gradeLevel,
+          schoolYear: childEducation.schoolYear,
           school: schools.name,
-          grade: children.gradeLevel,
-          schoolYear: children.schoolYear,
-          education: children.educationalStatus,
-          status: children.validationStatus,
         })
         .from(children)
-        .leftJoin(barangays, eq(barangays.id, children.barangayId))
-        .leftJoin(schools, eq(schools.id, children.schoolId))
+        .innerJoin(barangays, eq(barangays.id, children.barangayId))
+        .leftJoin(
+          childEducation,
+          and(eq(childEducation.childId, children.id), eq(childEducation.isCurrent, true)),
+        )
+        .leftJoin(schools, eq(schools.id, childEducation.schoolId))
         .where(where)
         .orderBy(asc(children.lastName), asc(children.firstName));
 
@@ -120,12 +115,12 @@ export async function buildReport(
         Sex: r.sex === "male" ? "Male" : "Female",
         Age: ageFromBirthDate(r.birthDate) ?? "",
         "Birth Date": r.birthDate,
-        Barangay: r.barangay ?? "—",
+        Barangay: r.barangay,
+        "Education Status": r.educationStatus ?? "—",
         School: r.school ?? "—",
         "Grade / Level": r.grade ?? "—",
         "School Year": r.schoolYear ?? "—",
-        "Educational Status": r.education,
-        "Validation Status": statusLabel(r.status),
+        "Record Status": recordStatusLabel(r.recordStatus),
       }));
 
       return {
@@ -137,86 +132,141 @@ export async function buildReport(
           "Age",
           "Birth Date",
           "Barangay",
+          "Education Status",
           "School",
           "Grade / Level",
           "School Year",
-          "Educational Status",
-          "Validation Status",
+          "Record Status",
         ],
         rows: data,
         summary: summarize(data),
       };
     }
 
-    case "summary":
-    case "planning": {
+    case "out_of_school_youth":
+    case "eccd":
+    case "disability":
+    case "intervention": {
+      // Row-per-child listing for the targeted monitoring reports.
+      let conditions: SQL[] = [withScope() ?? sql`1 = 1`];
+
+      if (type === "out_of_school_youth") {
+        conditions.push(sql`exists (
+          select 1 from ${childEducation}
+          where ${childEducation.childId} = ${children.id}
+            and ${childEducation.isCurrent} = 1
+            and ${childEducation.educationStatus} = 'out_of_school')`);
+      } else if (type === "eccd") {
+        conditions.push(sql`exists (
+          select 1 from ${childEccd}
+          where ${childEccd.childId} = ${children.id}
+            and ${childEccd.participationStatus} = 'not_participating')`);
+      } else if (type === "disability") {
+        conditions.push(sql`exists (
+          select 1 from ${childDisabilities}
+          where ${childDisabilities.childId} = ${children.id}
+            and ${childDisabilities.hasDisability} = 1)`);
+      } else {
+        conditions.push(sql`exists (
+          select 1 from ${interventions}
+          where ${interventions.childId} = ${children.id})`);
+      }
+
+      const rows = await db
+        .select({
+          code: children.childCode,
+          firstName: children.firstName,
+          lastName: children.lastName,
+          sex: children.sex,
+          birthDate: children.birthDate,
+          barangay: barangays.name,
+          recordStatus: children.recordStatus,
+        })
+        .from(children)
+        .innerJoin(barangays, eq(barangays.id, children.barangayId))
+        .where(and(...conditions))
+        .orderBy(asc(children.lastName));
+
+      const data = rows.map((r) => ({
+        "Child Code": r.code,
+        "Full Name": `${r.lastName}, ${r.firstName}`,
+        Sex: r.sex === "male" ? "Male" : "Female",
+        Age: ageFromBirthDate(r.birthDate) ?? "",
+        Barangay: r.barangay,
+        "Record Status": recordStatusLabel(r.recordStatus),
+      }));
+
+      return {
+        ...base,
+        columns: ["Child Code", "Full Name", "Sex", "Age", "Barangay", "Record Status"],
+        rows: data,
+        summary: [{ label: "Total children", value: data.length }],
+      };
+    }
+
+    case "barangay_summary":
+    case "municipal_summary": {
       const byBarangay = await db
         .select({
           barangay: barangays.name,
           total: count(),
-          enrolled: sumWhen(eq(children.educationalStatus, "enrolled")),
-          osy: sumWhen(eq(children.educationalStatus, "out_of_school")),
-          als: sumWhen(eq(children.educationalStatus, "als_learner")),
-          notEnrolled: sumWhen(eq(children.educationalStatus, "not_yet_enrolled")),
-          eccdNonPart: sumWhen(eq(children.eccdStatus, "not_participating")),
-          disability: sumWhen(sql`${children.disabilityStatus} != 'none'`),
-          verified: sumWhen(eq(children.validationStatus, "verified")),
+          enrolled: sumWhen(sql`exists (
+            select 1 from ${childEducation}
+            where ${childEducation.childId} = ${children.id}
+              and ${childEducation.isCurrent} = 1
+              and ${childEducation.educationStatus} = 'enrolled')`),
+          osy: sumWhen(sql`exists (
+            select 1 from ${childEducation}
+            where ${childEducation.childId} = ${children.id}
+              and ${childEducation.isCurrent} = 1
+              and ${childEducation.educationStatus} = 'out_of_school')`),
+          notInSchool: sumWhen(sql`exists (
+            select 1 from ${childEducation}
+            where ${childEducation.childId} = ${children.id}
+              and ${childEducation.isCurrent} = 1
+              and ${childEducation.educationStatus} = 'not_yet_in_school')`),
+          eccdNonPart: sumWhen(sql`exists (
+            select 1 from ${childEccd}
+            where ${childEccd.childId} = ${children.id}
+              and ${childEccd.participationStatus} = 'not_participating')`),
+          withDisability: sumWhen(sql`exists (
+            select 1 from ${childDisabilities}
+            where ${childDisabilities.childId} = ${children.id}
+              and ${childDisabilities.hasDisability} = 1)`),
+          verified: sumWhen(eq(children.recordStatus, "verified")),
         })
         .from(children)
-        .leftJoin(barangays, eq(barangays.id, children.barangayId))
+        .innerJoin(barangays, eq(barangays.id, children.barangayId))
         .where(withScope(sql`1 = 1`))
         .groupBy(children.barangayId)
         .orderBy(asc(barangays.name));
 
-      const columns =
-        type === "planning"
-          ? [
-              "Barangay",
-              "Total",
-              "Enrolled",
-              "Out-of-School",
-              "ALS",
-              "Not Yet Enrolled",
-              "ECCD Non-Participation",
-              "With Disability",
-            ]
-          : [
-              "Barangay",
-              "Total",
-              "Enrolled",
-              "Out-of-School",
-              "ALS",
-              "Not Yet Enrolled",
-              "ECCD Non-Participation",
-              "With Disability",
-              "Verified",
-            ];
+      const columns = [
+        "Barangay",
+        "Total",
+        "Enrolled",
+        "Out-of-School",
+        "Not Yet in School",
+        "ECCD Non-Participation",
+        "With Disability",
+        "Verified",
+      ];
 
       const rows = byBarangay.map((r) => ({
-        Barangay: r.barangay ?? "—",
+        Barangay: r.barangay,
         Total: r.total,
         Enrolled: r.enrolled,
         "Out-of-School": r.osy,
-        ALS: r.als,
-        "Not Yet Enrolled": r.notEnrolled,
+        "Not Yet in School": r.notInSchool,
         "ECCD Non-Participation": r.eccdNonPart,
-        "With Disability": r.disability,
-        ...(type === "summary" ? { Verified: r.verified } : {}),
+        "With Disability": r.withDisability,
+        Verified: r.verified,
       }));
 
-      const totals: Record<string, number> = {
-        Total: rows.reduce((a, r) => a + Number(r.Total), 0),
-        Enrolled: rows.reduce((a, r) => a + Number(r.Enrolled), 0),
-        "Out-of-School": rows.reduce((a, r) => a + Number(r["Out-of-School"]), 0),
-        ALS: rows.reduce((a, r) => a + Number(r.ALS), 0),
-        "Not Yet Enrolled": rows.reduce((a, r) => a + Number(r["Not Yet Enrolled"]), 0),
-        "ECCD Non-Participation": rows.reduce(
-          (a, r) => a + Number(r["ECCD Non-Participation"]),
-          0,
-        ),
-        "With Disability": rows.reduce((a, r) => a + Number(r["With Disability"]), 0),
-      };
-      if (type === "summary") totals["Verified"] = rows.reduce((a, r) => a + Number(r.Verified), 0);
+      const totals: Record<string, number> = {};
+      for (const col of columns.slice(1)) {
+        totals[col] = rows.reduce((a, r) => a + Number(r[col] ?? 0), 0);
+      }
 
       return {
         ...base,
@@ -226,7 +276,8 @@ export async function buildReport(
       };
     }
 
-    case "monitoring": {
+    default: {
+      // Monitoring-style fallback: monitoring records joined to children.
       const rows = await db
         .select({
           code: children.childCode,
@@ -234,26 +285,26 @@ export async function buildReport(
           lastName: children.lastName,
           sex: children.sex,
           barangay: barangays.name,
-          category: monitoringFollowups.category,
-          status: monitoringFollowups.status,
-          followupDate: monitoringFollowups.followupDate,
-          notes: monitoringFollowups.notes,
+          category: childMonitoring.monitoringType,
+          status: childMonitoring.status,
+          observedAt: childMonitoring.observedAt,
+          remarks: childMonitoring.remarks,
         })
-        .from(monitoringFollowups)
-        .innerJoin(children, eq(children.id, monitoringFollowups.childId))
-        .leftJoin(barangays, eq(barangays.id, children.barangayId))
+        .from(childMonitoring)
+        .innerJoin(children, eq(children.id, childMonitoring.childId))
+        .innerJoin(barangays, eq(barangays.id, children.barangayId))
         .where(withScope(sql`1 = 1`))
-        .orderBy(desc(monitoringFollowups.createdAt))
+        .orderBy(desc(childMonitoring.observedAt))
         .limit(500);
 
       const data = rows.map((r) => ({
         "Child Code": r.code,
         "Full Name": childName(r),
-        Barangay: r.barangay ?? "—",
+        Barangay: r.barangay,
         Category: r.category,
         Status: r.status,
-        "Follow-up Date": r.followupDate ?? "—",
-        Notes: r.notes ?? "—",
+        Observed: r.observedAt.toISOString().slice(0, 10),
+        Remarks: r.remarks ?? "—",
       }));
 
       const counts = data.reduce<Record<string, number>>((acc, r) => {
@@ -263,21 +314,32 @@ export async function buildReport(
 
       return {
         ...base,
-        columns: ["Child Code", "Full Name", "Barangay", "Category", "Status", "Follow-up Date", "Notes"],
+        columns: ["Child Code", "Full Name", "Barangay", "Category", "Status", "Observed", "Remarks"],
         rows: data,
-        summary: Object.entries(counts).map(([label, value]) => ({ label: `Follow-ups · ${label}`, value })),
+        summary: Object.entries(counts).map(([label, value]) => ({
+          label: `Monitoring · ${label}`,
+          value,
+        })),
       };
     }
   }
 }
 
 async function barangayName(id: string): Promise<string> {
-  const rows = await db.select({ name: barangays.name }).from(barangays).where(eq(barangays.id, id)).limit(1);
+  const rows = await db
+    .select({ name: barangays.name })
+    .from(barangays)
+    .where(eq(barangays.id, id))
+    .limit(1);
   return rows[0]?.name ?? id;
 }
 
 async function schoolName(id: string): Promise<string> {
-  const rows = await db.select({ name: schools.name }).from(schools).where(eq(schools.id, id)).limit(1);
+  const rows = await db
+    .select({ name: schools.name })
+    .from(schools)
+    .where(eq(schools.id, id))
+    .limit(1);
   return rows[0]?.name ?? id;
 }
 
@@ -287,10 +349,10 @@ function summarize(data: ReportRow[]): { label: string; value: number }[] {
     a[String(r.Sex)] = (a[String(r.Sex)] ?? 0) + 1;
     return a;
   }, {});
-  const verified = data.filter((r) => String(r["Validation Status"]) === "Verified").length;
+  const verified = data.filter((r) => String(r["Record Status"]) === "Verified").length;
   return [
     { label: "Total children", value: total },
-    ...Object.entries(sex).map(([label, value]) => ({ label: label as string, value })),
+    ...Object.entries(sex).map(([label, value]) => ({ label, value })),
     { label: "Verified", value: verified },
   ];
 }

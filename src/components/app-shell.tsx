@@ -7,33 +7,46 @@ import {
   Activity,
   Bell,
   Settings,
-  Menu,
   LogOut,
   BarChart3,
   ClipboardCheck,
   UsersRound,
+  QrCode,
+  ScanSearch,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { hasPermission, type Permission } from "@/lib/permissions";
+import { ROLE_LABELS, type Role } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 import { NavItemClient } from "./nav-item-client";
 
-const navLinks = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Child Registry", href: "/children", icon: ClipboardCheck },
-  { label: "Validation", href: "/validation", icon: ShieldCheck },
-  { label: "Monitoring", href: "/monitoring", icon: BarChart3 },
-  { label: "Reports", href: "/reports", icon: FileText },
-  { label: "QR Studio", href: "/qr", icon: ShieldCheck },
-  { label: "Users", href: "/users", icon: Users },
-  { label: "Activity Logs", href: "/activity-logs", icon: Activity },
-  { label: "Notifications", href: "/notifications", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
+type NavLink = {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  permission: Permission;
+};
+
+const navLinks: NavLink[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "children.view" },
+  { label: "Child Registry", href: "/children", icon: ClipboardCheck, permission: "children.view" },
+  { label: "Validation", href: "/validation", icon: ShieldCheck, permission: "validation.view" },
+  { label: "Duplicate Review", href: "/duplicates", icon: ScanSearch, permission: "duplicates.view" },
+  { label: "Monitoring", href: "/monitoring", icon: BarChart3, permission: "monitoring.view" },
+  { label: "Reports", href: "/reports", icon: FileText, permission: "reports.view" },
+  { label: "QR Studio", href: "/qr", icon: QrCode, permission: "qr.verify" },
+  { label: "Users", href: "/users", icon: Users, permission: "users.view" },
+  { label: "Activity Logs", href: "/activity-logs", icon: Activity, permission: "audit_logs.view" },
+  { label: "Notifications", href: "/notifications", icon: Bell, permission: "children.view" },
+  { label: "Settings", href: "/settings", icon: Settings, permission: "children.view" },
 ];
 
 export default async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) return <div className="min-h-screen bg-brand-50" />;
+
+  const visibleLinks = navLinks.filter((link) => hasPermission(user.role, link.permission));
 
   return (
     <div className="min-h-screen bg-brand-50 flex">
@@ -48,26 +61,26 @@ export default async function AppShell({ children }: { children: React.ReactNode
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-          {navLinks.map((link) => (
+          {visibleLinks.map((link) => (
             <NavItemClient key={link.href} link={link} />
           ))}
         </nav>
         <div className="px-4 py-4 border-t border-brand-800 text-xs text-brand-400">
           <div className="font-medium text-brand-200">{user.firstName} {user.lastName}</div>
-          <div className="mt-0.5">{user.role}</div>
+          <div className="mt-0.5">{ROLE_LABELS[user.role]}</div>
         </div>
       </aside>
       <div className="lg:pl-64 flex-1 min-h-screen">
         <header className="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur border-b border-brand-200 px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <MobileNavToggle links={navLinks} />
+            <MobileNavToggle links={visibleLinks} />
             <h2 className="text-base font-bold text-brand-900 truncate min-w-0">Child Mapping System</h2>
           </div>
           <div className="flex items-center gap-3 text-sm text-brand-600">
             <span className="hidden sm:inline">{user.email}</span>
-            <a href="/login?action=logout" className="text-brand-500 hover:text-brand-800 flex items-center gap-1.5 text-xs font-medium">
+            <Link href="/logout" className="text-brand-500 hover:text-brand-800 flex items-center gap-1.5 text-xs font-medium">
               <LogOut className="h-3.5 w-3.5" /> Sign out
-            </a>
+            </Link>
           </div>
         </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
@@ -75,5 +88,3 @@ export default async function AppShell({ children }: { children: React.ReactNode
     </div>
   );
 }
-
-
