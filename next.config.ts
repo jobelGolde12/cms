@@ -1,27 +1,43 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable Turbopack (Next 15+ default, enforce for speed)
-  turbopack: true,
+  // Turbopack is enabled by default in Next.js 16; keep it for speed.
+  turbopack: {},
 
   // Disable source maps in production to save memory/CPU
   productionBrowserSourceMaps: false,
 
   // Strip all console logs in production
   compiler: {
-    removeConsole: {
-      production: true,
-    },
+    removeConsole: true,
   },
 
-  // Ignore TypeScript errors that block watch/dev server (set true only if they cause hangs)
+  // Do not ignore TypeScript errors in production builds
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
-  // ESLint should not block the dev/build process
-  eslint: {
-    ignoreDuringBuilds: true,
+  // Security headers applied to all routes
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "geolocation=(), microphone=(), camera=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+          },
+        ],
+      },
+    ];
   },
 
   // Optimize heavy imports (tree-shakeable libs)
@@ -32,7 +48,6 @@ const nextConfig: NextConfig = {
       "recharts",
       "lodash",
       "moment",
-      "@mui/material",
     ],
   },
 
@@ -53,12 +68,12 @@ const nextConfig: NextConfig = {
         "**/yarn.lock",
         "**/uploads",
         "**/logs",
-        "**/public/images", // if you store large images in repo
+        "**/public/images",
       ],
     };
 
     // Ensure symlinks (pnpm/monorepo) are resolved correctly
-    config.resolve.symlinks = true;
+    config.resolve!.symlinks = true;
 
     return config;
   },

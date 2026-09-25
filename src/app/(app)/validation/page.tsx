@@ -1,42 +1,75 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { validationQueue } from "@/lib/queries";
-import { Badge } from "@/components/ui/badge";
+import { reviewValidationForm } from "@/actions/children";
+import { hasPermission } from "@/lib/permissions";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/states";
+import { ShieldCheck } from "lucide-react";
 
 export default async function ValidationPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const queue = await validationQueue(user);
+  const canReview = hasPermission(user.role, "validation.review");
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">Validation Queue</h1>
-      <div className="rounded-xl border border-brand-200 bg-white shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-brand-100/60 text-xs font-semibold uppercase text-brand-600 tracking-wide">
-            <tr>
-              <th className="px-4 py-3 text-left">Child Code</th>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Barangay</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Submitted</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-brand-100">
-            {queue.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-500">No records pending validation.</td></tr>
-            ) : queue.map((item) => (
-              <tr key={item.id} className="hover:bg-brand-50">
-                <td className="px-4 py-3 font-mono text-xs text-brand-700">{item.childCode}</td>
-                <td className="px-4 py-3 font-medium text-brand-900">{item.firstName} {item.lastName}</td>
-                <td className="px-4 py-3 text-brand-600">{item.barangayName}</td>
-                <td className="px-4 py-3"><Badge>Pending</Badge></td>
-                <td className="px-4 py-3 text-xs text-brand-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-PH") : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div>
+        <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">Validation Queue</h1>
+        <p className="mt-1 text-sm text-brand-500">
+          Records submitted for review. Approving marks the record verified; returns require the collector to correct and resubmit.
+        </p>
       </div>
+
+      {queue.length === 0 ? (
+        <div className="rounded-xl border border-brand-200 bg-white shadow-sm">
+          <EmptyState
+            icon={<ShieldCheck className="h-10 w-10" />}
+            title="No records pending validation"
+            description="Submitted child records will appear here for review."
+          />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {queue.map((item) => (
+            <div key={item.id} className="rounded-xl border border-brand-200 bg-white shadow-sm p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="font-mono text-xs text-brand-500">{item.childCode}</div>
+                  <a href={`/children/${item.id}`} className="font-semibold text-brand-900 hover:text-action-700">
+                    {item.lastName}, {item.firstName}
+                  </a>
+                  <div className="text-xs text-brand-500 mt-0.5">
+                    {item.barangayName} · born {item.birthDate}
+                    {item.submitterFirst ? ` · submitted by ${item.submitterFirst} ${item.submitterLast}` : ""}
+                    {item.submittedAt ? ` · ${new Date(item.submittedAt).toLocaleDateString("en-PH")}` : ""}
+                  </div>
+                </div>
+                {canReview ? (
+                  <div className="flex flex-wrap gap-2">
+                    <form action={reviewValidationForm}>
+                      <input type="hidden" name="childId" value={item.id} />
+                      <input type="hidden" name="decision" value="approved" />
+                      <Button type="submit" size="sm">Approve</Button>
+                    </form>
+                    <form action={reviewValidationForm}>
+                      <input type="hidden" name="childId" value={item.id} />
+                      <input type="hidden" name="decision" value="needs_correction" />
+                      <Button type="submit" variant="outline" size="sm">Needs correction</Button>
+                    </form>
+                    <form action={reviewValidationForm}>
+                      <input type="hidden" name="childId" value={item.id} />
+                      <input type="hidden" name="decision" value="rejected" />
+                      <Button type="submit" variant="danger" size="sm">Reject</Button>
+                    </form>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

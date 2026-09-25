@@ -18,7 +18,7 @@ export async function markNotificationsRead(
 
   await db
     .update(notifications)
-    .set({ isRead: true })
+    .set({ isRead: true, readAt: new Date() })
     .where(and(eq(notifications.userId, user.id), inArray(notifications.id, ids)));
 
   revalidatePath("/notifications");
@@ -32,7 +32,7 @@ export async function markAllNotificationsRead(): Promise<ActionState> {
 
   await db
     .update(notifications)
-    .set({ isRead: true })
+    .set({ isRead: true, readAt: new Date() })
     .where(eq(notifications.userId, user.id));
 
   revalidatePath("/notifications");

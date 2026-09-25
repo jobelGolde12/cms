@@ -3,32 +3,35 @@ import { auditLogs, notifications } from "@/db/schema";
 
 type AuditInput = {
   userId?: string | null;
-  userRole?: string | null;
   action: string;
-  entity: string;
+  entityType: string;
   entityId?: string | null;
-  result?: "success" | "denied" | "error";
-  metadata?: Record<string, unknown> | null;
-  ip?: string | null;
+  oldValues?: Record<string, unknown> | null;
+  newValues?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
 };
 
 /**
  * Append an audit record. Audit logging must never break the primary
- * operation, so failures are logged, not thrown. Users cannot edit or
- * delete these records through the application.
+ * operation, so failures are logged, not thrown. There is no application
+ * path that edits or deletes these rows (append-only by design).
+ *
+ * Keep `oldValues`/`newValues` minimal — never include password hashes or
+ * other secrets.
  */
 export async function logAudit(input: AuditInput): Promise<void> {
   try {
     await db.insert(auditLogs).values({
       id: crypto.randomUUID(),
       userId: input.userId ?? null,
-      userRole: input.userRole ?? null,
       action: input.action,
-      entity: input.entity,
+      entityType: input.entityType,
       entityId: input.entityId ?? null,
-      result: input.result ?? "success",
-      metadata: input.metadata ? JSON.stringify(input.metadata) : null,
-      ip: input.ip ?? null,
+      oldValuesJson: input.oldValues ? JSON.stringify(input.oldValues) : null,
+      newValuesJson: input.newValues ? JSON.stringify(input.newValues) : null,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
     });
   } catch (error) {
     console.error("[audit] failed to write audit log", error);
@@ -39,11 +42,14 @@ type NotifyInput = {
   userId: string;
   type: string;
   title: string;
-  body?: string | null;
+  message?: string | null;
   link?: string | null;
 };
 
-/** Create an in-app notification for a user. Never throws to the caller. */
+/**
+ * Create an in-app notification for a user. Never throws to the caller.
+ * Keep `message` free of unnecessary sensitive child information.
+ */
 export async function notify(input: NotifyInput): Promise<void> {
   try {
     await db.insert(notifications).values({
@@ -51,7 +57,7 @@ export async function notify(input: NotifyInput): Promise<void> {
       userId: input.userId,
       type: input.type,
       title: input.title,
-      body: input.body ?? null,
+      message: input.message ?? null,
       link: input.link ?? null,
     });
   } catch (error) {

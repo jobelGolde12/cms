@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
-import { sessions, users } from "@/db/schema";
+import { roles, sessions, users } from "@/db/schema";
 import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
@@ -34,10 +34,24 @@ export type SessionUser = {
   email: string;
   firstName: string;
   lastName: string;
+  roleId: string;
   role: Role;
-  schoolId: string | null;
   barangayId: string | null;
 };
+
+/** Resolve the human-readable role name (e.g. "LGU User") from the DB id. */
+export function roleNameFromId(roleId: string): Role | null {
+  switch (roleId) {
+    case "role-admin":
+      return "admin";
+    case "role-lgu":
+      return "lgu";
+    case "role-barangay":
+      return "barangay";
+    default:
+      return null;
+  }
+}
 
 /**
  * Returns the authenticated user for the current request (deduped per render),
@@ -55,26 +69,31 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
       email: users.email,
       firstName: users.firstName,
       lastName: users.lastName,
-      role: users.role,
-      schoolId: users.schoolId,
+      roleId: users.roleId,
       barangayId: users.barangayId,
       isActive: users.isActive,
+      roleName: roles.name,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
+    .innerJoin(roles, eq(roles.id, users.roleId))
     .where(and(eq(sessions.tokenHash, tokenHash), gt(sessions.expiresAt, new Date())))
     .limit(1);
 
   const row = rows[0];
   if (!row || !row.isActive) return null;
 
+  // Map the DB role name onto the application role key.
+  const role = roleNameFromId(row.roleId);
+  if (!role) return null; // unknown role ⇒ no access
+
   return {
     id: row.id,
     email: row.email,
     firstName: row.firstName,
     lastName: row.lastName,
-    role: row.role as Role,
-    schoolId: row.schoolId,
+    roleId: row.roleId,
+    role,
     barangayId: row.barangayId,
   };
 });
@@ -144,6 +163,6 @@ export async function countOtherActiveAdmins(excludeUserId: string): Promise<num
   const rows = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.role, "admin"), eq(users.isActive, true)));
+    .where(and(eq(users.roleId, "role-admin"), eq(users.isActive, true)));
   return rows.filter((r) => r.id !== excludeUserId).length;
 }

@@ -6,8 +6,8 @@ import type { SessionUser } from "./auth";
  * Row-level scoping for child records.
  *
  * - admin / lgu  → entire municipality
- * - school       → children of the user's school, or school-less records they created
- * - barangay     → children of the user's barangay
+ * - barangay     → children of the user's barangay (or ones they created,
+ *                  covering records logged before a barangay was assigned)
  *
  * Used by every read *and* every write path so that authorization cannot be
  * bypassed by calling the API directly.
@@ -17,11 +17,6 @@ export function childScope(user: SessionUser): SQL | undefined {
     case "admin":
     case "lgu":
       return undefined; // municipality-wide
-    case "school":
-      if (user.schoolId) {
-        return or(eq(children.schoolId, user.schoolId), eq(children.createdBy, user.id));
-      }
-      return eq(children.createdBy, user.id);
     case "barangay":
       if (user.barangayId) {
         return or(
@@ -36,17 +31,17 @@ export function childScope(user: SessionUser): SQL | undefined {
   }
 }
 
+export type ChildScopeRef = {
+  barangayId: string;
+  createdBy: string;
+};
+
 /** Can this user read this child record? Used before detail views/writes. */
-export function canAccessChild(
-  user: SessionUser,
-  child: { schoolId: string | null; barangayId: string; createdBy: string },
-): boolean {
+export function canAccessChild(user: SessionUser, child: ChildScopeRef): boolean {
   switch (user.role) {
     case "admin":
     case "lgu":
       return true;
-    case "school":
-      return child.schoolId === user.schoolId || child.createdBy === user.id;
     case "barangay":
       return child.barangayId === user.barangayId || child.createdBy === user.id;
     default:
@@ -57,10 +52,10 @@ export function canAccessChild(
 /** Can this user modify (edit/submit) this child record? */
 export function canEditChild(
   user: SessionUser,
-  child: { schoolId: string | null; barangayId: string; createdBy: string; validationStatus: string },
+  child: ChildScopeRef & { recordStatus: string },
 ): boolean {
   if (!canAccessChild(user, child)) return false;
-  // Verified records are locked; re-opening requires admin/lgu action.
-  if (child.validationStatus === "verified" && user.role !== "admin") return false;
+  // Verified records are locked; re-opening requires admin action.
+  if (child.recordStatus === "verified" && user.role !== "admin") return false;
   return true;
 }

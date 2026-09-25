@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { headers } from "next/headers";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { roles, users } from "@/db/schema";
 import { notify } from "@/lib/audit";
 
 export type ActionState =
@@ -44,9 +44,16 @@ export async function sessionMetadata(): Promise<{ ip: string | null; userAgent:
   }
 }
 
+/** Role ids used by seeds and actions (stable, deterministic). */
+export const ROLE_IDS = {
+  barangay: "role-barangay",
+  lgu: "role-lgu",
+  admin: "role-admin",
+} as const;
+
 /**
- * Notify every active user who can validate records (admin/lgu) about a
- * submission awaiting validation. Best-effort — failures never throw.
+ * Notify every active user holding the given permission-bearing roles
+ * (validators = admin + lgu). Best-effort — failures never throw.
  */
 export async function notifyValidators(
   message: string,
@@ -57,15 +64,22 @@ export async function notifyValidators(
     const rows = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.role, "admin"));
-    const lgus = await db.select({ id: users.id }).from(users).where(eq(users.role, "lgu"));
+      .where(or(eq(users.roleId, ROLE_IDS.admin), eq(users.roleId, ROLE_IDS.lgu)));
 
     await Promise.all(
-      [...rows, ...lgus].map((u) =>
-        notify({ userId: u.id, type: "validation", title, body: message, link }),
-      ),
+      rows.map((u) => notify({ userId: u.id, type: "validation", title, message, link })),
     );
   } catch (error) {
     console.error("[notifyValidators]", error);
+  }
+}
+
+/** Best-effort lookup of the acting user's role label for audit metadata. */
+export async function roleLabelFor(roleId: string): Promise<string> {
+  try {
+    const rows = await db.select({ name: roles.name }).from(roles).where(eq(roles.id, roleId)).limit(1);
+    return rows[0]?.name ?? roleId;
+  } catch {
+    return roleId;
   }
 }

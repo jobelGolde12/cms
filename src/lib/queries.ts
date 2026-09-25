@@ -1,25 +1,32 @@
-import { and, asc, count, desc, eq, inArray, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/db";
 import {
+  auditLogs,
   barangays,
+  childAddresses,
+  childDisabilities,
+  childDuplicateCandidates,
+  childEducation,
+  childEccd,
+  childMonitoring,
+  childValidations,
   children,
-  duplicateCandidates,
-  monitoringFollowups,
+  interventions,
+  interventionFollowups,
   notifications,
-  qrTokens,
+  qrVerifications,
   schools,
   users,
-  validationHistory,
 } from "@/db/schema";
 import {
-  type DisabilityStatus,
+  type EducationStatus,
   type EccdStatus,
-  EDUCATIONAL_STATUSES,
-  type EducationalStatus,
-  type MonitoringCategory,
+  EDUCATION_STATUSES,
+  type MonitoringType,
   type Sex,
-  type ValidationStatus,
+  type RecordStatus,
+  type ChildStatus,
 } from "./constants";
 import type { SessionUser } from "./auth";
 import { childScope } from "./scope";
@@ -27,12 +34,35 @@ import { ageFromBirthDate } from "./utils";
 
 export const PAGE_SIZE = 10;
 
-const PENDING_SQL: SQL[] = ["pending_validation", "submitted", "resubmitted"].map((s) =>
-  eq(children.validationStatus, s),
-);
+const pendingRecordStatuses: RecordStatus[] = ["pending_validation"];
 
-const candidateChild = alias(children, "candidate");
-const verifiedUser = alias(users, "verified_user");
+const possibleChild = alias(children, "possible_child");
+const reviewerUser = alias(users, "reviewer_user");
+
+/* -------------------------------------------------------------------------- */
+/*  Reference data                                                            */
+/* -------------------------------------------------------------------------- */
+
+export async function listBarangays() {
+  return db
+    .select({ id: barangays.id, name: barangays.name })
+    .from(barangays)
+    .where(eq(barangays.isActive, true))
+    .orderBy(asc(barangays.name));
+}
+
+export async function listSchools() {
+  return db
+    .select({
+      id: schools.id,
+      name: schools.name,
+      schoolType: schools.schoolType,
+      barangayId: schools.barangayId,
+    })
+    .from(schools)
+    .where(eq(schools.isActive, true))
+    .orderBy(asc(schools.name));
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Registry                                                                  */
@@ -41,12 +71,9 @@ const verifiedUser = alias(users, "verified_user");
 export type ChildQuery = {
   q?: string;
   barangay?: string;
-  school?: string;
-  status?: string;
-  education?: string;
+  status?: string; // record_status filter
+  active?: string; // child status filter
   sex?: string;
-  eccd?: string;
-  disability?: string;
   ageMin?: number;
   ageMax?: number;
   sort?: "name" | "recent" | "oldest";
@@ -60,6 +87,9 @@ function childFilters(user: SessionUser, q: ChildQuery): SQL | undefined {
   const scope = childScope(user);
   if (scope) conditions.push(scope);
 
+  // Never show records marked as duplicates in the main registry.
+  conditions.push(sql`${children.recordStatus} != 'marked_duplicate'`);
+
   if (q.q) {
     const needle = `%${q.q}%`;
     conditions.push(
@@ -67,14 +97,9 @@ function childFilters(user: SessionUser, q: ChildQuery): SQL | undefined {
     );
   }
   if (q.barangay) conditions.push(eq(children.barangayId, q.barangay));
-  if (q.school) conditions.push(eq(children.schoolId, q.school));
-  if (q.status) conditions.push(eq(children.validationStatus, q.status as ValidationStatus));
-  if (q.education)
-    conditions.push(eq(children.educationalStatus, q.education as EducationalStatus));
+  if (q.status) conditions.push(eq(children.recordStatus, q.status as RecordStatus));
+  if (q.active) conditions.push(eq(children.status, q.active as ChildStatus));
   if (q.sex) conditions.push(eq(children.sex, q.sex as Sex));
-  if (q.eccd) conditions.push(eq(children.eccdStatus, q.eccd as EccdStatus));
-  if (q.disability)
-    conditions.push(eq(children.disabilityStatus, q.disability as DisabilityStatus));
   if (q.ageMin != null)
     conditions.push(sql`${children.birthDate} <= ${`${year - q.ageMin}-12-31`}`);
   if (q.ageMax != null)
@@ -92,11 +117,8 @@ export type ChildRow = {
   birthDate: string;
   age: number | null;
   barangayName: string;
-  schoolName: string | null;
-  educationalStatus: string;
-  validationStatus: string;
-  eccdStatus: string;
-  disabilityStatus: string;
+  recordStatus: string;
+  status: string;
   createdAt: Date;
 };
 
@@ -127,16 +149,12 @@ export async function listChildren(
       sex: children.sex,
       birthDate: children.birthDate,
       barangayName: barangays.name,
-      schoolName: schools.name,
-      educationalStatus: children.educationalStatus,
-      validationStatus: children.validationStatus,
-      eccdStatus: children.eccdStatus,
-      disabilityStatus: children.disabilityStatus,
+      recordStatus: children.recordStatus,
+      status: children.status,
       createdAt: children.createdAt,
     })
     .from(children)
-    .leftJoin(barangays, eq(barangays.id, children.barangayId))
-    .leftJoin(schools, eq(schools.id, children.schoolId))
+    .innerJoin(barangays, eq(barangays.id, children.barangayId))
     .where(where)
     .orderBy(...orderBy)
     .limit(pageSize)
@@ -146,7 +164,6 @@ export async function listChildren(
     rows: rows.map((r) => ({
       ...r,
       age: ageFromBirthDate(r.birthDate),
-      barangayName: r.barangayName ?? "—",
     })),
     total,
     page,
@@ -158,7 +175,7 @@ export async function listChildren(
 /*  Single child (profile)                                                    */
 /* -------------------------------------------------------------------------- */
 
-export type ChildProfileRow = {
+export type ChildProfile = {
   id: string;
   childCode: string;
   firstName: string;
@@ -167,42 +184,21 @@ export type ChildProfileRow = {
   suffix: string | null;
   birthDate: string;
   sex: string;
+  civilStatus: string | null;
+  birthPlace: string | null;
   barangayId: string;
   barangayName: string;
-  addressDetails: string | null;
-  guardianName: string | null;
-  guardianContact: string | null;
-  educationalStatus: string;
-  schoolId: string | null;
-  schoolName: string | null;
-  gradeLevel: string | null;
-  schoolYear: string | null;
-  eccdStatus: string;
-  eccdCenter: string | null;
-  eccdNonParticipationReason: string | null;
-  disabilityStatus: string;
-  disabilityType: string | null;
-  disabilitySupportRequired: string | null;
-  disabilitySupportProvided: string | null;
-  disabilityReferral: string | null;
-  validationStatus: string;
-  duplicateStatus: string;
-  notes: string | null;
+  status: string;
+  recordStatus: string;
   createdBy: string;
-  createdByName: string;
-  createdByLast: string;
-  submittedAt: Date | null;
-  verifiedBy: string | null;
-  verifiedByName: string | null;
-  verifiedByLast: string | null;
-  verifiedAt: Date | null;
-  validationNotes: string | null;
+  createdByName: string | null;
+  updatedByName: string | null;
   createdAt: Date;
   updatedAt: Date;
-  creatorRole: string | null;
 };
 
-export async function getChildRow(childId: string): Promise<ChildProfileRow | null> {
+export async function getChildProfile(childId: string): Promise<ChildProfile | null> {
+  const updater = alias(users, "updater");
   const rows = await db
     .select({
       id: children.id,
@@ -213,139 +209,178 @@ export async function getChildRow(childId: string): Promise<ChildProfileRow | nu
       suffix: children.suffix,
       birthDate: children.birthDate,
       sex: children.sex,
+      civilStatus: children.civilStatus,
+      birthPlace: children.birthPlace,
       barangayId: children.barangayId,
       barangayName: barangays.name,
-      addressDetails: children.addressDetails,
-      guardianName: children.guardianName,
-      guardianContact: children.guardianContact,
-      educationalStatus: children.educationalStatus,
-      schoolId: children.schoolId,
-      schoolName: schools.name,
-      gradeLevel: children.gradeLevel,
-      schoolYear: children.schoolYear,
-      eccdStatus: children.eccdStatus,
-      eccdCenter: children.eccdCenter,
-      eccdNonParticipationReason: children.eccdNonParticipationReason,
-      disabilityStatus: children.disabilityStatus,
-      disabilityType: children.disabilityType,
-      disabilitySupportRequired: children.disabilitySupportRequired,
-      disabilitySupportProvided: children.disabilitySupportProvided,
-      disabilityReferral: children.disabilityReferral,
-      validationStatus: children.validationStatus,
-      duplicateStatus: children.duplicateStatus,
-      notes: children.notes,
+      status: children.status,
+      recordStatus: children.recordStatus,
       createdBy: children.createdBy,
       createdByName: users.firstName,
-      createdByLast: users.lastName,
-      submittedAt: children.submittedAt,
-      verifiedBy: children.verifiedBy,
-      verifiedByName: verifiedUser.firstName,
-      verifiedByLast: verifiedUser.lastName,
-      verifiedAt: children.verifiedAt,
-      validationNotes: children.validationNotes,
+      creatorLast: users.lastName,
+      updatedByName: updater.firstName,
+      updaterLast: updater.lastName,
       createdAt: children.createdAt,
       updatedAt: children.updatedAt,
-      creatorRole: users.role,
     })
     .from(children)
-    .leftJoin(barangays, eq(barangays.id, children.barangayId))
-    .leftJoin(schools, eq(schools.id, children.schoolId))
+    .innerJoin(barangays, eq(barangays.id, children.barangayId))
     .leftJoin(users, eq(users.id, children.createdBy))
-    .leftJoin(verifiedUser, eq(verifiedUser.id, children.verifiedBy))
+    .leftJoin(updater, eq(updater.id, children.updatedBy))
     .where(eq(children.id, childId))
     .limit(1);
 
-  return (rows[0] ?? null) as ChildProfileRow | null;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    ...row,
+    createdByName: row.createdByName ? `${row.createdByName} ${row.creatorLast}` : null,
+    updatedByName: row.updatedByName ? `${row.updatedByName} ${row.updaterLast}` : null,
+  } as ChildProfile;
 }
 
-export type ChildHistoryEvent = {
-  id: string;
-  action: string;
-  notes: string | null;
-  performedBy: string;
-  performer: string | null;
-  performerLast: string | null;
-  createdAt: Date;
-};
-
-export async function getChildHistory(childId: string): Promise<ChildHistoryEvent[]> {
-  return db
+export async function getCurrentAddress(childId: string) {
+  const rows = await db
     .select({
-      id: validationHistory.id,
-      action: validationHistory.action,
-      notes: validationHistory.notes,
-      performedBy: validationHistory.performedBy,
-      performer: users.firstName,
-      performerLast: users.lastName,
-      createdAt: validationHistory.createdAt,
+      id: childAddresses.id,
+      householdAddress: childAddresses.householdAddress,
+      sitio: childAddresses.sitio,
+      isCurrent: childAddresses.isCurrent,
+      barangayName: barangays.name,
     })
-    .from(validationHistory)
-    .leftJoin(users, eq(users.id, validationHistory.performedBy))
-    .where(eq(validationHistory.childId, childId))
-    .orderBy(desc(validationHistory.createdAt));
+    .from(childAddresses)
+    .innerJoin(barangays, eq(barangays.id, childAddresses.barangayId))
+    .where(eq(childAddresses.childId, childId))
+    .orderBy(desc(childAddresses.isCurrent), desc(childAddresses.createdAt));
+  return rows;
 }
 
-export type ChildDuplicateRow = {
-  id: string;
-  childId: string;
-  candidateId: string;
-  matchReasons: string;
-  status: string;
-  reviewNotes: string | null;
-  reviewedAt: Date | null;
-  candidateCode: string;
-  candidateFirst: string;
-  candidateLast: string;
-  candidateBirth: string;
-  candidateBarangay: string | null;
-};
-
-export async function getChildDuplicates(childId: string): Promise<ChildDuplicateRow[]> {
+export async function getEducationHistory(childId: string) {
   return db
     .select({
-      id: duplicateCandidates.id,
-      childId: duplicateCandidates.childId,
-      candidateId: duplicateCandidates.candidateId,
-      matchReasons: duplicateCandidates.matchReasons,
-      status: duplicateCandidates.status,
-      reviewNotes: duplicateCandidates.reviewNotes,
-      reviewedAt: duplicateCandidates.reviewedAt,
-      candidateCode: candidateChild.childCode,
-      candidateFirst: candidateChild.firstName,
-      candidateLast: candidateChild.lastName,
-      candidateBirth: candidateChild.birthDate,
-      candidateBarangay: barangays.name,
+      id: childEducation.id,
+      educationStatus: childEducation.educationStatus,
+      gradeLevel: childEducation.gradeLevel,
+      schoolYear: childEducation.schoolYear,
+      enrollmentStatus: childEducation.enrollmentStatus,
+      isCurrent: childEducation.isCurrent,
+      schoolId: childEducation.schoolId,
+      schoolName: schools.name,
     })
-    .from(duplicateCandidates)
-    .innerJoin(candidateChild, eq(candidateChild.id, duplicateCandidates.candidateId))
-    .leftJoin(barangays, eq(barangays.id, candidateChild.barangayId))
-    .where(eq(duplicateCandidates.childId, childId))
-    .orderBy(desc(duplicateCandidates.createdAt));
+    .from(childEducation)
+    .leftJoin(schools, eq(schools.id, childEducation.schoolId))
+    .where(eq(childEducation.childId, childId))
+    .orderBy(desc(childEducation.isCurrent), desc(childEducation.createdAt));
 }
 
-export type QrTokenRow = {
-  token: string;
-  isActive: boolean;
-  scanCount: number;
-  lastScannedAt: Date | null;
-  expiresAt: Date | null;
-  createdAt: Date;
-};
+export async function getEccdHistory(childId: string) {
+  return db
+    .select()
+    .from(childEccd)
+    .where(eq(childEccd.childId, childId))
+    .orderBy(desc(childEccd.createdAt));
+}
 
-export async function getChildQrTokens(childId: string): Promise<QrTokenRow[]> {
+/** Sensitive — callers must check `children.view`/scope before use. */
+export async function getDisabilityRecords(childId: string) {
+  return db
+    .select()
+    .from(childDisabilities)
+    .where(eq(childDisabilities.childId, childId))
+    .orderBy(desc(childDisabilities.createdAt));
+}
+
+export async function getValidationHistory(childId: string) {
+  const submitter = alias(users, "submitter");
   return db
     .select({
-      token: qrTokens.token,
-      isActive: qrTokens.isActive,
-      scanCount: qrTokens.scanCount,
-      lastScannedAt: qrTokens.lastScannedAt,
-      expiresAt: qrTokens.expiresAt,
-      createdAt: qrTokens.createdAt,
+      id: childValidations.id,
+      status: childValidations.status,
+      remarks: childValidations.remarks,
+      submittedAt: childValidations.submittedAt,
+      reviewedAt: childValidations.reviewedAt,
+      submitterFirst: submitter.firstName,
+      submitterLast: submitter.lastName,
+      reviewerFirst: users.firstName,
+      reviewerLast: users.lastName,
     })
-    .from(qrTokens)
-    .where(eq(qrTokens.childId, childId))
-    .orderBy(desc(qrTokens.createdAt))
-    .limit(5);
+    .from(childValidations)
+    .innerJoin(submitter, eq(submitter.id, childValidations.submittedBy))
+    .leftJoin(users, eq(users.id, childValidations.reviewedBy))
+    .where(eq(childValidations.childId, childId))
+    .orderBy(desc(childValidations.submittedAt));
+}
+
+export async function getChildDuplicates(childId: string) {
+  return db
+    .select({
+      id: childDuplicateCandidates.id,
+      possibleChildId: childDuplicateCandidates.possibleChildId,
+      status: childDuplicateCandidates.status,
+      matchScore: childDuplicateCandidates.matchScore,
+      matchReason: childDuplicateCandidates.matchReason,
+      reviewNotes: childDuplicateCandidates.reviewNotes,
+      possibleCode: possibleChild.childCode,
+      possibleFirst: possibleChild.firstName,
+      possibleLast: possibleChild.lastName,
+      possibleBirth: possibleChild.birthDate,
+    })
+    .from(childDuplicateCandidates)
+    .innerJoin(possibleChild, eq(possibleChild.id, childDuplicateCandidates.possibleChildId))
+    .where(eq(childDuplicateCandidates.childId, childId))
+    .orderBy(desc(childDuplicateCandidates.createdAt));
+}
+
+export async function getMonitoringRecords(childId: string) {
+  return db
+    .select({
+      id: childMonitoring.id,
+      monitoringType: childMonitoring.monitoringType,
+      status: childMonitoring.status,
+      observedAt: childMonitoring.observedAt,
+      remarks: childMonitoring.remarks,
+      recorderFirst: users.firstName,
+      recorderLast: users.lastName,
+    })
+    .from(childMonitoring)
+    .leftJoin(users, eq(users.id, childMonitoring.recordedBy))
+    .where(eq(childMonitoring.childId, childId))
+    .orderBy(desc(childMonitoring.observedAt));
+}
+
+export async function getInterventionsForChild(childId: string) {
+  return db
+    .select({
+      id: interventions.id,
+      interventionType: interventions.interventionType,
+      description: interventions.description,
+      status: interventions.status,
+      priority: interventions.priority,
+      startDate: interventions.startDate,
+      targetDate: interventions.targetDate,
+      completedDate: interventions.completedDate,
+      assigneeFirst: users.firstName,
+      assigneeLast: users.lastName,
+    })
+    .from(interventions)
+    .leftJoin(users, eq(users.id, interventions.assignedTo))
+    .where(eq(interventions.childId, childId))
+    .orderBy(desc(interventions.createdAt));
+}
+
+export async function getQrEvents(childId: string) {
+  return db
+    .select({
+      id: qrVerifications.id,
+      verificationToken: qrVerifications.verificationToken,
+      verificationType: qrVerifications.verificationType,
+      result: qrVerifications.result,
+      verifiedAt: qrVerifications.verifiedAt,
+    })
+    .from(qrVerifications)
+    .where(eq(qrVerifications.childId, childId))
+    .orderBy(desc(qrVerifications.verifiedAt))
+    .limit(10);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -354,123 +389,134 @@ export async function getChildQrTokens(childId: string): Promise<QrTokenRow[]> {
 
 export type DashboardStats = {
   total: number;
+  verified: number;
+  pendingValidation: number;
   enrolled: number;
   osy: number;
-  pendingValidation: number;
   eccdNonParticipation: number;
-  interventions: number;
+  withDisability: number;
+  openInterventions: number;
 };
 
 export async function dashboardStats(user: SessionUser): Promise<DashboardStats> {
   const scope = childScope(user);
-  const countAll = async (extra?: SQL) => {
-    const w = (extra ? (scope ? (and(scope, extra) as SQL) : extra) : scope) ?? sql`1 = 1`;
-    const row = await db.select({ n: count() }).from(children).where(w);
-    return row[0]?.n ?? 0;
+  const scopeSql = scope ?? sql`1 = 1`;
+
+  const countWith = async (extra: SQL): Promise<number> => {
+    const rows = await db
+      .select({ n: count() })
+      .from(children)
+      .where(and(scopeSql, extra));
+    return rows[0]?.n ?? 0;
   };
 
-  const [total, enrolled, osy, pendingValidation, eccdNonParticipation, interventions] =
+  const [total, verified, pendingValidation, enrolled, osy, eccdNon, disability, openInterventions] =
     await Promise.all([
-      countAll(),
-      countAll(eq(children.educationalStatus, "enrolled")),
-      countAll(eq(children.educationalStatus, "out_of_school")),
-      countAll(or(...PENDING_SQL)),
-      countAll(eq(children.eccdStatus, "not_participating")),
-      countAll(
-        or(
-          eq(children.disabilityStatus, "with_disability"),
-          eq(children.disabilityStatus, "suspected"),
-        ),
-      ),
+      countWith(sql`${children.recordStatus} != 'marked_duplicate' AND ${children.status} = 'active'`),
+      countWith(eq(children.recordStatus, "verified")),
+      countWith(eq(children.recordStatus, "pending_validation")),
+      countWith(sql`
+        exists (
+          select 1 from ${childEducation}
+          where ${childEducation.childId} = ${children.id}
+            and ${childEducation.isCurrent} = 1
+            and ${childEducation.educationStatus} = 'enrolled'
+        )`),
+      countWith(sql`
+        exists (
+          select 1 from ${childEducation}
+          where ${childEducation.childId} = ${children.id}
+            and ${childEducation.isCurrent} = 1
+            and ${childEducation.educationStatus} = 'out_of_school'
+        )`),
+      countWith(sql`
+        exists (
+          select 1 from ${childEccd}
+          where ${childEccd.childId} = ${children.id}
+            and ${childEccd.participationStatus} = 'not_participating'
+        )`),
+      countWith(sql`
+        exists (
+          select 1 from ${childDisabilities}
+          where ${childDisabilities.childId} = ${children.id}
+            and ${childDisabilities.hasDisability} = 1
+        )`),
+      countWith(sql`
+        exists (
+          select 1 from ${interventions}
+          where ${interventions.childId} = ${children.id}
+            and ${interventions.status} in ('planned', 'ongoing')
+        )`),
     ]);
 
-  return { total, enrolled, osy, pendingValidation, eccdNonParticipation, interventions };
+  return {
+    total,
+    verified,
+    pendingValidation,
+    enrolled,
+    osy,
+    eccdNonParticipation: eccdNon,
+    withDisability: disability,
+    openInterventions,
+  };
 }
 
 export type DashboardCharts = {
   byBarangay: { name: string; value: number }[];
   byEducation: { name: string; value: number }[];
-  byValidation: { name: string; value: number }[];
-  activity: { month: string; created: number; verified: number }[];
+  byRecordStatus: { name: string; value: number }[];
 };
 
 const EDU_LABELS: Record<string, string> = {
-  not_yet_enrolled: "Not Yet Enrolled",
   enrolled: "Enrolled",
   out_of_school: "Out-of-School",
-  als_learner: "ALS Learner",
+  not_yet_in_school: "Not Yet in School",
+  graduated: "Graduated",
+  unknown: "Unknown",
 };
 
-const VAL_LABELS: Record<string, string> = {
+const RECORD_LABELS: Record<string, string> = {
   draft: "Draft",
-  submitted: "Submitted",
   pending_validation: "Pending Validation",
   needs_correction: "Needs Correction",
-  resubmitted: "Resubmitted",
   verified: "Verified",
+  marked_duplicate: "Marked Duplicate",
 };
 
 export async function dashboardCharts(user: SessionUser): Promise<DashboardCharts> {
   const scope = childScope(user);
-  const scoped = (extra: SQL): SQL => (scope ? (and(scope, extra) as SQL) : extra);
+  const scopeSql = scope ?? sql`1 = 1`;
 
   const byBarangayRows = await db
     .select({ name: barangays.name, value: count() })
     .from(children)
-    .leftJoin(barangays, eq(barangays.id, children.barangayId))
-    .where(scope ?? sql`1 = 1`)
+    .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .where(scopeSql)
     .groupBy(children.barangayId)
     .orderBy(desc(count()));
 
-  const byEducationRows = await db
-    .select({ key: children.educationalStatus, value: count() })
-    .from(children)
-    .where(scoped(sql`1 = 1`))
-    .groupBy(children.educationalStatus)
+  const eduRows = await db
+    .select({ key: childEducation.educationStatus, value: count() })
+    .from(childEducation)
+    .innerJoin(children, eq(children.id, childEducation.childId))
+    .where(and(scopeSql, eq(childEducation.isCurrent, true)))
+    .groupBy(childEducation.educationStatus)
     .orderBy(desc(count()));
 
-  const byValidationRows = await db
-    .select({ key: children.validationStatus, value: count() })
+  const recordRows = await db
+    .select({ key: children.recordStatus, value: count() })
     .from(children)
-    .where(scoped(sql`1 = 1`))
-    .groupBy(children.validationStatus)
+    .where(scopeSql)
+    .groupBy(children.recordStatus)
     .orderBy(desc(count()));
-
-  const activity: DashboardCharts["activity"] = [];
-  const now = new Date();
-  for (let m = 5; m >= 0; m -= 1) {
-    const start = new Date(Date.UTC(now.getFullYear(), now.getUTCMonth() - m, 1));
-    const end = new Date(Date.UTC(now.getFullYear(), now.getUTCMonth() - m + 1, 1));
-    const [created, verified] = await Promise.all([
-      db
-        .select({ n: count() })
-        .from(children)
-        .where(
-          scoped(
-            and(sql`${children.createdAt} >= ${start}`, sql`${children.createdAt} < ${end}`) as SQL,
-          ),
-        ),
-      db
-        .select({ n: count() })
-        .from(children)
-        .where(
-          scoped(
-            and(sql`${children.verifiedAt} >= ${start}`, sql`${children.verifiedAt} < ${end}`) as SQL,
-          ),
-        ),
-    ]);
-    activity.push({
-      month: start.toLocaleDateString("en-PH", { month: "short", timeZone: "UTC" }),
-      created: created[0]?.n ?? 0,
-      verified: verified[0]?.n ?? 0,
-    });
-  }
 
   return {
-    byBarangay: byBarangayRows.map((r) => ({ name: r.name ?? "—", value: r.value })),
-    byEducation: byEducationRows.map((r) => ({ name: EDU_LABELS[r.key] ?? r.key, value: r.value })),
-    byValidation: byValidationRows.map((r) => ({ name: VAL_LABELS[r.key] ?? r.key, value: r.value })),
-    activity,
+    byBarangay: byBarangayRows.map((r) => ({ name: r.name, value: r.value })),
+    byEducation: eduRows.map((r) => ({ name: EDU_LABELS[r.key] ?? r.key, value: r.value })),
+    byRecordStatus: recordRows.map((r) => ({
+      name: RECORD_LABELS[r.key] ?? r.key,
+      value: r.value,
+    })),
   };
 }
 
@@ -485,14 +531,16 @@ export type QueueItem = {
   lastName: string;
   birthDate: string;
   barangayName: string;
-  schoolName: string | null;
-  createdByName: string;
-  createdAt: Date | null;
+  submittedAt: Date | null;
+  submitterFirst: string | null;
+  submitterLast: string | null;
 };
 
 export async function validationQueue(user: SessionUser): Promise<QueueItem[]> {
   const scope = childScope(user);
-  const where = scope ? and(scope, or(...PENDING_SQL)) : or(...PENDING_SQL);
+  const where = scope
+    ? and(scope, inArray(children.recordStatus, pendingRecordStatuses))
+    : inArray(children.recordStatus, pendingRecordStatuses);
 
   return db
     .select({
@@ -502,22 +550,27 @@ export async function validationQueue(user: SessionUser): Promise<QueueItem[]> {
       lastName: children.lastName,
       birthDate: children.birthDate,
       barangayName: barangays.name,
-      schoolName: schools.name,
-      createdByName: users.firstName,
-      createdAt: children.submittedAt,
+      submittedAt: childValidations.submittedAt,
+      submitterFirst: users.firstName,
+      submitterLast: users.lastName,
     })
     .from(children)
-    .leftJoin(barangays, eq(barangays.id, children.barangayId))
-    .leftJoin(schools, eq(schools.id, children.schoolId))
-    .leftJoin(users, eq(users.id, children.createdBy))
+    .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .leftJoin(
+      childValidations,
+      and(
+        eq(childValidations.childId, children.id),
+        eq(childValidations.status, "pending"),
+      ),
+    )
+    .leftJoin(users, eq(users.id, childValidations.submittedBy))
     .where(where)
-    .orderBy(asc(children.submittedAt))
+    .orderBy(asc(childValidations.submittedAt))
     .limit(100)
     .then((rows) =>
       rows.map((r) => ({
         ...r,
         barangayName: r.barangayName ?? "—",
-        createdByName: r.createdByName ?? "—",
       })),
     );
 }
@@ -529,7 +582,8 @@ export async function validationQueue(user: SessionUser): Promise<QueueItem[]> {
 export type DuplicateItem = {
   id: string;
   childId: string;
-  candidateId: string;
+  possibleChildId: string;
+  matchScore: number | null;
   matchReasons: string[];
   status: string;
   reviewNotes: string | null;
@@ -537,46 +591,44 @@ export type DuplicateItem = {
   childFirst: string;
   childLast: string;
   childBirth: string;
-  candidateCode: string;
-  candidateFirst: string;
-  candidateLast: string;
-  candidateBirth: string;
-  candidateBarangay: string | null;
+  possibleCode: string;
+  possibleFirst: string;
+  possibleLast: string;
+  possibleBirth: string;
 };
 
 export async function listDuplicates(status?: string): Promise<DuplicateItem[]> {
-  const where = status && status !== "all" ? eq(duplicateCandidates.status, status) : undefined;
+  const where = status && status !== "all" ? eq(childDuplicateCandidates.status, status) : undefined;
 
   const rows = await db
     .select({
-      id: duplicateCandidates.id,
-      childId: duplicateCandidates.childId,
-      candidateId: duplicateCandidates.candidateId,
-      matchReasons: duplicateCandidates.matchReasons,
-      status: duplicateCandidates.status,
-      reviewNotes: duplicateCandidates.reviewNotes,
+      id: childDuplicateCandidates.id,
+      childId: childDuplicateCandidates.childId,
+      possibleChildId: childDuplicateCandidates.possibleChildId,
+      matchScore: childDuplicateCandidates.matchScore,
+      matchReason: childDuplicateCandidates.matchReason,
+      status: childDuplicateCandidates.status,
+      reviewNotes: childDuplicateCandidates.reviewNotes,
       childCode: children.childCode,
       childFirst: children.firstName,
       childLast: children.lastName,
       childBirth: children.birthDate,
-      candidateCode: candidateChild.childCode,
-      candidateFirst: candidateChild.firstName,
-      candidateLast: candidateChild.lastName,
-      candidateBirth: candidateChild.birthDate,
-      candidateBarangay: barangays.name,
+      possibleCode: possibleChild.childCode,
+      possibleFirst: possibleChild.firstName,
+      possibleLast: possibleChild.lastName,
+      possibleBirth: possibleChild.birthDate,
     })
-    .from(duplicateCandidates)
-    .innerJoin(children, eq(children.id, duplicateCandidates.childId))
-    .innerJoin(candidateChild, eq(candidateChild.id, duplicateCandidates.candidateId))
-    .leftJoin(barangays, eq(barangays.id, candidateChild.barangayId))
+    .from(childDuplicateCandidates)
+    .innerJoin(children, eq(children.id, childDuplicateCandidates.childId))
+    .innerJoin(possibleChild, eq(possibleChild.id, childDuplicateCandidates.possibleChildId))
     .where(where)
-    .orderBy(desc(duplicateCandidates.createdAt))
+    .orderBy(desc(childDuplicateCandidates.createdAt))
     .limit(100);
 
   return rows.map((r) => {
     let reasons: string[] = [];
     try {
-      reasons = JSON.parse(r.matchReasons) as string[];
+      reasons = r.matchReason ? (JSON.parse(r.matchReason) as string[]) : [];
     } catch {
       reasons = [];
     }
@@ -592,148 +644,208 @@ export type MonitoringOverview = {
   osy: number;
   eccd: number;
   disability: number;
-  educational: number;
-  intervention: number;
-  followupsOpen: number;
+  education: number;
+  general: number;
+  openRecords: number;
 };
 
 export async function monitoringOverview(user: SessionUser): Promise<MonitoringOverview> {
   const scope = childScope(user);
-  const countAll = async (extra?: SQL) => {
-    const w = (scope ? (and(scope, extra) as SQL) : extra) ?? sql`1 = 1`;
-    const row = await db.select({ n: count() }).from(children).where(w);
-    return row[0]?.n ?? 0;
+  const scopeSql = scope ?? sql`1 = 1`;
+
+  const typeCounts = await db
+    .select({ type: childMonitoring.monitoringType, value: count() })
+    .from(childMonitoring)
+    .innerJoin(children, eq(children.id, childMonitoring.childId))
+    .where(scopeSql)
+    .groupBy(childMonitoring.monitoringType);
+
+  const openRows = await db
+    .select({ value: count() })
+    .from(childMonitoring)
+    .innerJoin(children, eq(children.id, childMonitoring.childId))
+    .where(and(scopeSql, inArray(childMonitoring.status, ["open", "in_progress"])));
+
+  const get = (t: string) => typeCounts.find((r) => r.type === t)?.value ?? 0;
+
+  return {
+    osy: get("out_of_school_youth"),
+    eccd: get("eccd"),
+    disability: get("disability"),
+    education: get("education"),
+    general: get("general"),
+    openRecords: openRows[0]?.value ?? 0,
   };
-
-  const [osy, eccd, disability, educational, intervention, followupsOpen] = await Promise.all([
-    countAll(eq(children.educationalStatus, "out_of_school")),
-    countAll(eq(children.eccdStatus, "not_participating")),
-    countAll(
-      or(
-        eq(children.disabilityStatus, "with_disability"),
-        eq(children.disabilityStatus, "suspected"),
-      ),
-    ),
-    countAll(sql`1 = 1`),
-    countAll(sql`${children.disabilityStatus} != 'none'`),
-    (async () => {
-      const rows = await db
-        .select({ n: count() })
-        .from(monitoringFollowups)
-        .where(and(scope ?? sql`1 = 1`, eq(monitoringFollowups.status, "open")));
-      return rows[0]?.n ?? 0;
-    })(),
-  ]);
-
-  return { osy, eccd, disability, educational, intervention, followupsOpen };
 }
 
 export type MonitorRow = {
   id: string;
+  monitoringType: string;
+  status: string;
+  observedAt: Date;
+  remarks: string | null;
+  childId: string;
   childCode: string;
   firstName: string;
   lastName: string;
-  birthDate: string;
-  sex: string;
   barangayName: string;
-  schoolName: string | null;
-  educationalStatus: string;
-  eccdStatus: string;
-  disabilityStatus: string;
-  followupId: string | null;
-  followupStatus: string | null;
-  followupDate: string | null;
-  followupNotes: string | null;
 };
 
-/** Children in a monitoring category, joined with their *latest* follow-up. */
 export async function monitoringList(
   user: SessionUser,
-  category: MonitoringCategory,
+  type?: MonitoringType,
 ): Promise<MonitorRow[]> {
   const scope = childScope(user);
-  const where = scope ? and(scope, categoryCriteria(category)) : categoryCriteria(category);
+  const conditions: SQL[] = [scopeSql];
+  if (type) conditions.push(eq(childMonitoring.monitoringType, type));
 
-  const childrenRows = await db
+  return db
     .select({
-      id: children.id,
+      id: childMonitoring.id,
+      monitoringType: childMonitoring.monitoringType,
+      status: childMonitoring.status,
+      observedAt: childMonitoring.observedAt,
+      remarks: childMonitoring.remarks,
+      childId: children.id,
       childCode: children.childCode,
       firstName: children.firstName,
       lastName: children.lastName,
-      birthDate: children.birthDate,
-      sex: children.sex,
       barangayName: barangays.name,
-      schoolName: schools.name,
-      educationalStatus: children.educationalStatus,
-      eccdStatus: children.eccdStatus,
-      disabilityStatus: children.disabilityStatus,
     })
-    .from(children)
-    .leftJoin(barangays, eq(barangays.id, children.barangayId))
-    .leftJoin(schools, eq(schools.id, children.schoolId))
-    .where(where)
-    .orderBy(asc(children.lastName))
-    .limit(300);
+    .from(childMonitoring)
+    .innerJoin(children, eq(children.id, childMonitoring.childId))
+    .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .where(and(...conditions))
+    .orderBy(desc(childMonitoring.observedAt))
+    .limit(200);
+}
 
-  if (childrenRows.length === 0) return [];
+/* -------------------------------------------------------------------------- */
+/*  Interventions                                                             */
+/* -------------------------------------------------------------------------- */
 
-  const ids = childrenRows.map((c) => c.id);
-  const followups = await db
+export type InterventionRow = {
+  id: string;
+  interventionType: string;
+  description: string;
+  status: string;
+  priority: string | null;
+  startDate: string | null;
+  targetDate: string | null;
+  completedDate: string | null;
+  childId: string;
+  childCode: string;
+  firstName: string;
+  lastName: string;
+  barangayName: string;
+  followupCount: number;
+};
+
+export async function listInterventions(
+  user: SessionUser,
+  status?: string,
+): Promise<InterventionRow[]> {
+  const scope = childScope(user);
+  const conditions: SQL[] = [scopeSql];
+  if (status && status !== "all") conditions.push(eq(interventions.status, status));
+
+  const rows = await db
     .select({
-      id: monitoringFollowups.id,
-      childId: monitoringFollowups.childId,
-      status: monitoringFollowups.status,
-      followupDate: monitoringFollowups.followupDate,
-      notes: monitoringFollowups.notes,
-      createdAt: monitoringFollowups.createdAt,
+      id: interventions.id,
+      interventionType: interventions.interventionType,
+      description: interventions.description,
+      status: interventions.status,
+      priority: interventions.priority,
+      startDate: interventions.startDate,
+      targetDate: interventions.targetDate,
+      completedDate: interventions.completedDate,
+      childId: children.id,
+      childCode: children.childCode,
+      firstName: children.firstName,
+      lastName: children.lastName,
+      barangayName: barangays.name,
     })
-    .from(monitoringFollowups)
-    .where(and(inArray(monitoringFollowups.childId, ids), eq(monitoringFollowups.category, category)))
-    .orderBy(desc(monitoringFollowups.createdAt));
+    .from(interventions)
+    .innerJoin(children, eq(children.id, interventions.childId))
+    .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .where(and(...conditions))
+    .orderBy(desc(interventions.createdAt))
+    .limit(200);
 
-  const latest = new Map<string, (typeof followups)[number]>();
-  for (const f of followups) {
-    if (!latest.has(f.childId)) latest.set(f.childId, f);
-  }
+  if (rows.length === 0) return [];
 
-  return childrenRows.map((c) => {
-    const f = latest.get(c.id);
-    return {
-      ...c,
-      barangayName: c.barangayName ?? "—",
-      followupId: f?.id ?? null,
-      followupStatus: f?.status ?? null,
-      followupDate: f?.followupDate ?? null,
-      followupNotes: f?.notes ?? null,
-    };
-  });
+  const followupCounts = await db
+    .select({ interventionId: interventionFollowups.interventionId, n: count() })
+    .from(interventionFollowups)
+    .where(
+      inArray(
+        interventionFollowups.interventionId,
+        rows.map((r) => r.id),
+      ),
+    )
+    .groupBy(interventionFollowups.interventionId);
+
+  const countMap = new Map(followupCounts.map((f) => [f.interventionId, f.n]));
+  return rows.map((r) => ({ ...r, followupCount: countMap.get(r.id) ?? 0 }));
 }
 
-function categoryCriteria(category: MonitoringCategory): SQL {
-  switch (category) {
-    case "osy":
-      return eq(children.educationalStatus, "out_of_school") as SQL;
-    case "eccd":
-      return eq(children.eccdStatus, "not_participating") as SQL;
-    case "disability":
-      return or(
-        eq(children.disabilityStatus, "with_disability"),
-        eq(children.disabilityStatus, "suspected"),
-      ) as SQL;
-    case "educational":
-      return or(
-        ...EDUCATIONAL_STATUSES.map((s) => eq(children.educationalStatus, s)),
-      ) as SQL;
-    case "intervention":
-      return sql`${children.disabilityStatus} != 'none' OR ${children.disabilitySupportRequired} IS NOT NULL`;
-    default:
-      return sql`1 = 0`;
-  }
+export async function getFollowupsForIntervention(interventionId: string) {
+  return db
+    .select({
+      id: interventionFollowups.id,
+      followUpDate: interventionFollowups.followUpDate,
+      status: interventionFollowups.status,
+      notes: interventionFollowups.notes,
+      recorderFirst: users.firstName,
+      recorderLast: users.lastName,
+      createdAt: interventionFollowups.createdAt,
+    })
+    .from(interventionFollowups)
+    .leftJoin(users, eq(users.id, interventionFollowups.recordedBy))
+    .where(eq(interventionFollowups.interventionId, interventionId))
+    .orderBy(desc(interventionFollowups.followUpDate));
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Notifications / misc                                                      */
+/*  Users / audit / notifications                                             */
 /* -------------------------------------------------------------------------- */
+
+export async function listUsersWithRoles() {
+  return db
+    .select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      roleLabel: roles.name,
+      roleId: users.roleId,
+      barangayName: barangays.name,
+      isActive: users.isActive,
+      lastLoginAt: users.lastLoginAt,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .innerJoin(roles, eq(roles.id, users.roleId))
+    .leftJoin(barangays, eq(barangays.id, users.barangayId))
+    .orderBy(asc(users.createdAt));
+}
+
+export async function listAuditLogs(limit = 100) {
+  return db
+    .select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      entityType: auditLogs.entityType,
+      entityId: auditLogs.entityId,
+      userFirst: users.firstName,
+      userLast: users.lastName,
+      createdAt: auditLogs.createdAt,
+    })
+    .from(auditLogs)
+    .leftJoin(users, eq(users.id, auditLogs.userId))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit);
+}
 
 export async function unreadNotificationCount(userId: string): Promise<number> {
   const rows = await db
@@ -749,7 +861,7 @@ export async function recentNotifications(userId: string, limit = 12) {
       id: notifications.id,
       type: notifications.type,
       title: notifications.title,
-      body: notifications.body,
+      message: notifications.message,
       link: notifications.link,
       isRead: notifications.isRead,
       createdAt: notifications.createdAt,
