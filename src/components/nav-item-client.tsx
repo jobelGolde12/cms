@@ -1,5 +1,6 @@
 "use client";
 
+import { createElement } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,6 @@ export function NavItemClient({
 }) {
   const pathname = usePathname();
   const active = pathname === link.href || pathname.startsWith(link.href + "/");
-  const Icon = navIcon(link.icon);
   return (
     <Link
       href={link.href}
@@ -23,7 +23,7 @@ export function NavItemClient({
           : "text-brand-300 hover:text-white hover:bg-brand-800/60"
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      {createElement(navIcon(link.icon), { className: "h-4 w-4 shrink-0" })}
       <span className="truncate">{link.label}</span>
     </Link>
   );
