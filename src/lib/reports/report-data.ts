@@ -148,7 +148,7 @@ export async function buildReport(
     case "disability":
     case "intervention": {
       // Row-per-child listing for the targeted monitoring reports.
-      let conditions: SQL[] = [withScope() ?? sql`1 = 1`];
+      const conditions: SQL[] = [withScope() ?? sql`1 = 1`];
 
       if (type === "out_of_school_youth") {
         conditions.push(sql`exists (
