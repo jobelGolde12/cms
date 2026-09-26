@@ -1,92 +1,109 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { dashboardStats, dashboardCharts } from "@/lib/queries";
+import { hasPermission, type Permission } from "@/lib/permissions";
+import { recentNotifications, unreadNotificationCount } from "@/lib/queries";
+import { MUNICIPALITY } from "@/lib/constants";
+import { dashboardData } from "@/lib/dashboard-data";
+import {
+  BarangayDistribution,
+  EducationDistribution,
+  KpiGrid,
+  MonitoringBarangayTable,
+  MonitoringCasework,
+  OperationalBanner,
+  RecentActivity,
+  RecentNotifications,
+  RecordStatusCard,
+  SystemStatusCard,
+  ValidationQueueCard,
+} from "@/components/dashboard/primitives";
 
 export default async function AppDashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [stats, charts] = await Promise.all([
-    dashboardStats(user),
-    dashboardCharts(user),
+  const [data, notifications, unread] = await Promise.all([
+    dashboardData(user),
+    recentNotifications(user.id, 4),
+    unreadNotificationCount(user.id),
   ]);
 
-  const maxBarangay = Math.max(1, ...charts.byBarangay.map((b) => b.value));
+  const canReview = hasPermission(user.role, "validation.review" as Permission);
+  const canMonitor = hasPermission(user.role, "monitoring.view" as Permission);
 
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-sm text-brand-500">Child mapping overview for Sta. Magdalena, Sorsogon.</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Total Children" value={stats.total} />
-        <MetricCard label="Verified" value={stats.verified} />
-        <MetricCard label="Pending Validation" value={stats.pendingValidation} />
-        <MetricCard label="Out-of-School" value={stats.osy} />
-        <MetricCard label="Enrolled" value={stats.enrolled} />
-        <MetricCard label="ECCD Non-Participation" value={stats.eccdNonParticipation} />
-        <MetricCard label="With Disability" value={stats.withDisability} />
-        <MetricCard label="Open Interventions" value={stats.openInterventions} />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-brand-200 bg-white shadow-sm p-5">
-          <h3 className="text-sm font-bold text-brand-900 mb-4">Children by Barangay</h3>
-          {charts.byBarangay.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-brand-400 text-sm">No data yet.</div>
-          ) : (
-            <ul className="space-y-2 max-h-56 overflow-y-auto pr-1">
-              {charts.byBarangay.map((b) => (
-                <li key={b.name} className="flex items-center gap-3 text-xs">
-                  <span className="w-44 truncate text-brand-600">{b.name}</span>
-                  <div className="flex-1 h-2.5 rounded-full bg-brand-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-action-600"
-                      style={{ width: `${Math.round((b.value / maxBarangay) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="numeric font-semibold text-brand-900 w-8 text-right">{b.value}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="rounded-xl border border-brand-200 bg-white shadow-sm p-5">
-          <h3 className="text-sm font-bold text-brand-900 mb-4">Record Status</h3>
-          {charts.byRecordStatus.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-brand-400 text-sm">No data yet.</div>
-          ) : (
-            <ul className="space-y-3">
-              {charts.byRecordStatus.map((s) => (
-                <li key={s.name} className="flex items-center justify-between text-sm border-b border-brand-100 pb-2 last:border-0">
-                  <span className="text-brand-600">{s.name}</span>
-                  <span className="numeric font-bold text-brand-900">{s.value}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <h3 className="text-sm font-bold text-brand-900 mt-6 mb-4">Education Status</h3>
-          <ul className="space-y-2">
-            {charts.byEducation.map((e) => (
-              <li key={e.name} className="flex items-center justify-between text-sm">
-                <span className="text-brand-600">{e.name}</span>
-                <span className="numeric font-semibold text-brand-900">{e.value}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
+  const openMonitoringTotal = data.monitoringTypeCounts.reduce(
+    (sum, row) => sum + row.value,
+    0,
   );
-}
 
-function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-brand-200 bg-white shadow-sm p-5">
-      <div className="text-xs font-semibold uppercase tracking-wide text-brand-500">{label}</div>
-      <div className="mt-2 text-3xl font-extrabold text-brand-900 tracking-tight numeric">{value}</div>
+    <div className="space-y-5">
+      {/* ------------------------- Page header ------------------------- */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
+            Child Mapping Overview
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
+            Child Mapping &amp; Demographics Overview
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm text-brand-500">
+            Current child registration, validation, education status, and
+            intervention monitoring across {MUNICIPALITY.shortName}.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-600">
+            Current Cycle: {new Date().getFullYear()}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-600">
+            {new Date().toLocaleDateString("en-PH", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+      </div>
+
+      {/* ---------------------------- KPI grid ---------------------------- */}
+      <KpiGrid kpis={data.kpis} />
+
+      {/* ----------------------- Operational banner ----------------------- */}
+      <OperationalBanner
+        registered={data.system.totalRecords}
+        verified={data.validation.verified}
+        barangayCount={data.byBarangay.length}
+      />
+
+      {/* --------------------- Main two-column layout --------------------- */}
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
+        {/* ------------------------- Main column ------------------------- */}
+        <div className="space-y-5 xl:col-span-2">
+          <BarangayDistribution rows={data.byBarangay} />
+
+          {canMonitor ? (
+            <>
+              <MonitoringBarangayTable rows={data.monitoringByBarangay} />
+              <MonitoringCasework
+                counts={data.monitoringTypeCounts}
+                openTotal={openMonitoringTotal}
+              />
+            </>
+          ) : null}
+
+          <RecentActivity items={data.activity} />
+        </div>
+
+        {/* ------------------------- Right column ------------------------- */}
+        <div className="space-y-5">
+          <EducationDistribution rows={data.education} />
+          <ValidationQueueCard counts={data.validation} canReview={canReview} />
+          <RecordStatusCard rows={data.recordStatus} />
+          <RecentNotifications items={notifications} />
+          <SystemStatusCard status={data.system} notifications={unread} />
+        </div>
+      </div>
     </div>
   );
 }
