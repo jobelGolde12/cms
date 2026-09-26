@@ -38,6 +38,9 @@ export const PAGE_SIZE = 10;
 const pendingRecordStatuses: RecordStatus[] = ["pending_validation"];
 
 const possibleChild = alias(children, "possible_child");
+const possibleBarangay = alias(barangays, "possible_barangay");
+const possibleEdu = alias(childEducation, "possible_education");
+const possibleSchool = alias(schools, "possible_school");
 const reviewerUser = alias(users, "reviewer_user");
 
 /* -------------------------------------------------------------------------- */
@@ -623,6 +626,66 @@ export async function registryStats(user: SessionUser): Promise<RegistryStats> {
   };
 }
 
+export type ValidationStats = {
+  pendingReview: number;
+  returnedForCorrection: number;
+  verified: number;
+  duplicateFlags: number;
+  needsCorrection: number;
+  highConfidence: number;
+  moderate: number;
+  reviewBand: number;
+  totalActive: number;
+};
+
+/**
+ * Control-center counts for the Validation module. Duplicate bands use the
+ * detector's actual scoring (name 40 + middle 10 + birth_date 35 + barangay 15;
+ * a candidate needs ≥2 identifiers), so bands derive from real match scores.
+ */
+export async function validationStats(user: SessionUser): Promise<ValidationStats> {
+  const scope = childScope(user);
+  const scopeSql = scope ?? sql`1 = 1`;
+
+  const [pendingReview, returnedForCorrection, verified, dupRows] = await Promise.all([
+    countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'pending_validation'`),
+    countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'needs_correction'`),
+    countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'verified'`),
+    db
+      .select({ n: count() })
+      .from(childDuplicateCandidates)
+      .where(eq(childDuplicateCandidates.status, "pending"))
+      .then((rows) => rows[0]?.n ?? 0),
+  ]);
+
+  // Score bands across pending candidates (pair rows are not child-scoped).
+  const bandRows = await db
+    .select({ band:
+      sql`case
+        when ${childDuplicateCandidates.matchScore} >= 90 then 'high'
+        when ${childDuplicateCandidates.matchScore} >= 65 then 'moderate'
+        else 'review'
+      end`,
+      n: count() })
+    .from(childDuplicateCandidates)
+    .where(eq(childDuplicateCandidates.status, "pending"))
+    .groupBy(sql`1`);
+
+  const getBand = (k: string) => Number(bandRows.find((r) => String(r.band) === k)?.n ?? 0);
+
+  return {
+    pendingReview,
+    returnedForCorrection,
+    verified,
+    duplicateFlags: dupRows,
+    needsCorrection: returnedForCorrection,
+    highConfidence: getBand("high"),
+    moderate: getBand("moderate"),
+    reviewBand: getBand("review"),
+    totalActive: await countWith(scopeSql, sql`${children.status} = 'active'`),
+  };
+}
+
 function countWith(scopeSql: SQL, extra: SQL): Promise<number> {
   return db
     .select({ n: count() })
@@ -702,13 +765,28 @@ export type DuplicateItem = {
   childFirst: string;
   childLast: string;
   childBirth: string;
+  childSex: string | null;
+  childCreatedAt: Date | null;
+  childBarangayName: string | null;
+  childEduStatus: string | null;
+  childGrade: string | null;
+  childSchool: string | null;
   possibleCode: string;
   possibleFirst: string;
   possibleLast: string;
   possibleBirth: string;
+  possibleSex: string | null;
+  possibleCreatedAt: Date | null;
+  possibleBarangayName: string | null;
+  possibleEduStatus: string | null;
+  possibleGrade: string | null;
+  possibleSchool: string | null;
 };
 
-export async function listDuplicates(status?: string): Promise<DuplicateItem[]> {
+export async function listDuplicates(
+  status?: string,
+  opts: { q?: string; band?: "high" | "moderate" | "review" } = {},
+): Promise<DuplicateItem[]> {
   const where = status && status !== "all" ? eq(childDuplicateCandidates.status, status) : undefined;
 
   const rows = await db
@@ -724,14 +802,38 @@ export async function listDuplicates(status?: string): Promise<DuplicateItem[]> 
       childFirst: children.firstName,
       childLast: children.lastName,
       childBirth: children.birthDate,
+      childSex: children.sex,
+      childCreatedAt: children.createdAt,
+      childBarangayName: barangays.name,
+      childEduStatus: childEducation.educationStatus,
+      childGrade: childEducation.gradeLevel,
+      childSchool: schools.name,
       possibleCode: possibleChild.childCode,
       possibleFirst: possibleChild.firstName,
       possibleLast: possibleChild.lastName,
       possibleBirth: possibleChild.birthDate,
+      possibleSex: possibleChild.sex,
+      possibleCreatedAt: possibleChild.createdAt,
+      possibleBarangayName: possibleBarangay.name,
+      possibleEduStatus: possibleEdu.educationStatus,
+      possibleGrade: possibleEdu.gradeLevel,
+      possibleSchool: possibleSchool.name,
     })
     .from(childDuplicateCandidates)
     .innerJoin(children, eq(children.id, childDuplicateCandidates.childId))
     .innerJoin(possibleChild, eq(possibleChild.id, childDuplicateCandidates.possibleChildId))
+    .leftJoin(barangays, eq(barangays.id, children.barangayId))
+    .leftJoin(possibleBarangay, eq(possibleBarangay.id, possibleChild.barangayId))
+    .leftJoin(
+      childEducation,
+      and(eq(childEducation.childId, children.id), eq(childEducation.isCurrent, true)),
+    )
+    .leftJoin(
+      possibleEdu,
+      and(eq(possibleEdu.childId, possibleChild.id), eq(possibleEdu.isCurrent, true)),
+    )
+    .leftJoin(schools, eq(schools.id, childEducation.schoolId))
+    .leftJoin(possibleSchool, eq(possibleSchool.id, possibleEdu.schoolId))
     .where(where)
     .orderBy(desc(childDuplicateCandidates.createdAt))
     .limit(100);

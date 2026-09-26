@@ -1,75 +1,159 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { validationQueue } from "@/lib/queries";
+import { validationQueue, validationStats } from "@/lib/queries";
 import { reviewValidationForm } from "@/actions/children";
 import { hasPermission } from "@/lib/permissions";
+import { ageFromBirthDate, cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { ShieldCheck } from "lucide-react";
+import {
+  ValidationKpiGrid,
+  ValidationPageHeader,
+} from "@/components/validation/validation-ui";
 
-export default async function ValidationPage() {
+export default async function ValidationPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const queue = await validationQueue(user);
+
+  const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q.trim().toLowerCase() : "";
+
+  const [queue, stats] = await Promise.all([validationQueue(user), validationStats(user)]);
   const canReview = hasPermission(user.role, "validation.review");
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">Validation Queue</h1>
-        <p className="mt-1 text-sm text-brand-500">
-          Records submitted for review. Approving marks the record verified; returns require the collector to correct and resubmit.
-        </p>
-      </div>
+  const filtered = q
+    ? queue.filter(
+        (item) =>
+          `${item.firstName} ${item.lastName}`.toLowerCase().includes(q) ||
+          item.childCode.toLowerCase().includes(q) ||
+          item.barangayName.toLowerCase().includes(q),
+      )
+    : queue;
 
-      {queue.length === 0 ? (
-        <div className="rounded-xl border border-brand-200 bg-white shadow-sm">
+  return (
+    <div className="space-y-5">
+      <ValidationPageHeader stats={stats} />
+
+      <ValidationKpiGrid stats={stats} />
+
+      <section
+        aria-label="Validation queue"
+        className="rounded-lg border border-brand-200 bg-white shadow-xs"
+      >
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-100 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-brand-900">Pending Initial Review</h2>
+            <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
+              {filtered.length} record{filtered.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <form action="/validation" method="GET" className="w-full sm:w-64">
+            <label htmlFor="queue-search" className="sr-only">
+              Search the validation queue
+            </label>
+            <input
+              id="queue-search"
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Search name, ID, or barangay…"
+              className="h-8 w-full rounded-md border border-brand-200 bg-[#f8fafc] px-3 text-xs text-brand-800 placeholder:text-brand-400 focus:border-action-500 focus:bg-white focus:outline-none"
+            />
+          </form>
+        </header>
+
+        {filtered.length === 0 ? (
           <EmptyState
             icon={<ShieldCheck className="h-10 w-10" />}
-            title="No records pending validation"
-            description="Submitted child records will appear here for review."
+            title={q ? "No matching records" : "No records pending validation"}
+            description={
+              q
+                ? "Try a different name, mapping ID, or barangay."
+                : "Submitted child records will appear here for review."
+            }
           />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {queue.map((item) => (
-            <div key={item.id} className="rounded-xl border border-brand-200 bg-white shadow-sm p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="font-mono text-xs text-brand-500">{item.childCode}</div>
-                  <a href={`/children/${item.id}`} className="font-semibold text-brand-900 hover:text-action-700">
+        ) : (
+          <ul className="divide-y divide-brand-100">
+            {filtered.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-brand-50/60"
+              >
+                <div className="min-w-0">
+                  <div className="numeric text-[11px] font-semibold text-brand-500">
+                    {item.childCode}
+                  </div>
+                  <a
+                    href={`/children/${item.id}`}
+                    className="text-[14px] font-semibold text-brand-900 hover:text-action-700"
+                  >
                     {item.lastName}, {item.firstName}
                   </a>
-                  <div className="text-xs text-brand-500 mt-0.5">
-                    {item.barangayName} · born {item.birthDate}
-                    {item.submitterFirst ? ` · submitted by ${item.submitterFirst} ${item.submitterLast}` : ""}
-                    {item.submittedAt ? ` · ${new Date(item.submittedAt).toLocaleDateString("en-PH")}` : ""}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-brand-500">
+                    <span>{item.barangayName}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>DOB {formatDate(item.birthDate)}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>Age {ageFromBirthDate(item.birthDate) ?? "—"}</span>
+                    {item.submitterFirst ? (
+                      <>
+                        <span aria-hidden="true">•</span>
+                        <span>
+                          Submitted by {item.submitterFirst} {item.submitterLast}
+                          {item.submittedAt
+                            ? ` · ${new Date(item.submittedAt).toLocaleDateString("en-PH")}`
+                            : ""}
+                        </span>
+                      </>
+                    ) : null}
                   </div>
                 </div>
+
                 {canReview ? (
-                  <div className="flex flex-wrap gap-2">
-                    <form action={reviewValidationForm}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <form action={reviewValidationForm} className="flex items-center gap-1.5">
                       <input type="hidden" name="childId" value={item.id} />
-                      <input type="hidden" name="decision" value="approved" />
-                      <Button type="submit" size="sm">Approve</Button>
+                      <input
+                        type="hidden"
+                        name="remarks"
+                        value={`Approved from queue ${item.childCode}`}
+                      />
+                      <Button type="submit" size="sm">
+                        Approve
+                      </Button>
                     </form>
-                    <form action={reviewValidationForm}>
+                    <form action={reviewValidationForm} className="flex items-center gap-1.5">
                       <input type="hidden" name="childId" value={item.id} />
                       <input type="hidden" name="decision" value="needs_correction" />
-                      <Button type="submit" variant="outline" size="sm">Needs correction</Button>
+                      <input
+                        type="hidden"
+                        name="remarks"
+                        value="Returned from validation queue"
+                      />
+                      <Button type="submit" variant="outline" size="sm">
+                        Return for correction
+                      </Button>
                     </form>
-                    <form action={reviewValidationForm}>
+                    <form action={reviewValidationForm} className="flex items-center gap-1.5">
                       <input type="hidden" name="childId" value={item.id} />
                       <input type="hidden" name="decision" value="rejected" />
-                      <Button type="submit" variant="danger" size="sm">Reject</Button>
+                      <input type="hidden" name="remarks" value="Rejected from validation queue" />
+                      <Button type="submit" variant="danger" size="sm">
+                        Reject
+                      </Button>
                     </form>
                   </div>
                 ) : null}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
