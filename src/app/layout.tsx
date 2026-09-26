@@ -1,5 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { Fira_Sans, Fira_Code } from "next/font/google";
 import "./globals.css";
+
+const firaSans = Fira_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-fira-sans",
+  display: "swap",
+});
+
+const firaCode = Fira_Code({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-fira-code",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -17,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={`${firaSans.variable} ${firaCode.variable} h-full antialiased`}>
       <body className="min-h-full bg-brand-50 font-sans text-brand-950">
         {children}
       </body>

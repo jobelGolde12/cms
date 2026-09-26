@@ -20,7 +20,6 @@ export interface Feature {
 
 /**
  * Data-driven feature items derived from actual system capabilities.
- * Each item uses real features from the Child Mapping System.
  */
 export const features: Feature[] = [
   {
@@ -68,44 +67,44 @@ export const features: Feature[] = [
 ];
 
 /**
- * Individual feature card component with icon, title, badge, and description.
+ * Individual feature card component with refined design.
  */
 export function FeatureCard({ feature }: { feature: Feature }) {
   return (
-    <Card className="h-full hover:shadow-md transition-shadow duration-200">
-      <CardBody className="flex flex-col h-full p-6">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-action-50">
-          <feature.icon className="h-6 w-6 text-action-700" aria-hidden="true" />
+    <Card className="group h-full rounded-2xl border border-brand-200/70 bg-white/80 shadow-sm shadow-brand-100/20 hover:shadow-xl hover:shadow-brand-100/30 hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm">
+      <CardBody className="flex flex-col h-full p-7">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-900 to-brand-800 shadow-md shadow-brand-900/10 ring-1 ring-brand-100/60 group-hover:shadow-lg group-hover:shadow-brand-900/15 transition-shadow duration-300">
+          <feature.icon className="h-7 w-7 text-white" aria-hidden="true" />
         </div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-brand-900">{feature.title}</h3>
-          <Badge tone="neutral" className="text-xs">
+        <div className="flex items-center gap-2.5 mb-3">
+          <h3 className="text-xl font-extrabold text-brand-950 tracking-tight">{feature.title}</h3>
+          <Badge tone="neutral" className="text-[10px] uppercase tracking-wide px-2.5 py-0.5 font-semibold shadow-sm">
             {feature.badge}
           </Badge>
         </div>
-        <p className="text-sm text-brand-600 flex-1">{feature.description}</p>
+        <p className="text-[15px] leading-relaxed text-brand-600 flex-1">{feature.description}</p>
       </CardBody>
     </Card>
   );
 }
 
 /**
- * Features section with data-driven grid layout.
+ * Features section with refined cards.
  */
 export function WelcomeFeatures() {
   return (
-    <section className="py-16 md:py-24 bg-brand-50">
+    <section className="py-20 md:py-28 lg:py-36 bg-brand-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-brand-950 md:text-4xl">
+        <div className="mx-auto max-w-2xl text-center mb-20">
+          <h2 className="text-[2rem] font-extrabold tracking-tight text-brand-950 leading-tight md:text-[2.5rem] lg:text-[3rem]">
             System Capabilities
           </h2>
-          <p className="mt-4 text-lg text-brand-600">
+          <p className="mt-5 text-lg leading-relaxed text-brand-600 md:text-xl">
             Purpose-built features for municipal child mapping and DepEd compliance.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
             <FeatureCard key={feature.title} feature={feature} />
           ))}

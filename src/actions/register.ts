@@ -30,6 +30,13 @@ export async function registerUser(_prev: ActionState, formData: FormData): Prom
 
   const { firstName, lastName, email, roleId, barangayId, password, confirmPassword } = parsed.data;
 
+  // Server-side enforcement of privacy agreement (not just client-side checkbox)
+  const agreedRaw = raw.agreed;
+  const agreed = String(agreedRaw ?? "").toLowerCase() === "on" || String(agreedRaw ?? "") === "true";
+  if (!agreed) {
+    return fail("You must agree to the privacy and protection policy to register.");
+  }
+
   if (password !== confirmPassword) {
     return fail("Passwords do not match.");
   }
@@ -50,16 +57,26 @@ export async function registerUser(_prev: ActionState, formData: FormData): Prom
 
   const hash = await hashPassword(password);
 
-  await db.insert(users).values({
-    id: randomUUID(),
-    roleId,
-    barangayId: barangayId || null,
-    firstName,
-    lastName,
-    email,
-    passwordHash: hash,
-    isActive: true,
-  });
+  try {
+    await db.insert(users).values({
+      id: randomUUID(),
+      roleId,
+      barangayId: barangayId || null,
+      firstName,
+      lastName,
+      email,
+      passwordHash: hash,
+      isActive: true,
+    });
+  } catch (dbError: unknown) {
+    // Handle DB-level unique constraint violation (race condition on duplicate email)
+    const message = String(dbError ?? "");
+    if (message.includes("users_email_uq") || message.includes("UNIQUE constraint failed") || message.includes("unique")) {
+      return fail("This email is already registered.");
+    }
+    console.error("[register] unexpected DB error during user creation", dbError);
+    return fail("Something went wrong during registration. Please try again.");
+  }
 
   return ok("Registration complete. You may now sign in.");
 }

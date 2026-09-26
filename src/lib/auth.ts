@@ -124,10 +124,11 @@ export async function getAuthorizedUser(permission: Permission): Promise<Session
 /** Creates a DB-backed session and sets the secure cookie. */
 export async function createSession(
   userId: string,
-  meta: { ip?: string | null; userAgent?: string | null } = {},
+  meta: { ip?: string | null; userAgent?: string | null; ttlMs?: number } = {},
 ): Promise<void> {
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  const ttl = meta.ttlMs ?? SESSION_TTL_MS;
+  const expiresAt = new Date(Date.now() + ttl);
 
   await db.insert(sessions).values({
     id: crypto.randomUUID(),

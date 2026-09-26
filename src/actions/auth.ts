@@ -19,6 +19,8 @@ import { rateLimit } from "@/lib/rate-limit";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 import { findDefaultCredential } from "@/lib/default-credentials";
 
+const REMEMBER_ME_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 const ERROR_GENERIC = "Invalid email or password.";
 const ERROR_UNEXPECTED = "Something went wrong while signing in. Please try again.";
 
@@ -31,6 +33,7 @@ type LoginOutcome = { kind: "error"; state: ActionState } | { kind: "redirect" }
 async function performLogin(formData: FormData): Promise<LoginOutcome> {
   const raw = Object.fromEntries(formData.entries());
   const parsed = loginSchema.safeParse(raw);
+  const rememberMe = String(raw.rememberMe ?? "").toLowerCase() === "on" || String(raw.rememberMe ?? "") === "true";
   const { ip, userAgent } = await sessionMetadata();
 
   if (!parsed.success) {
@@ -63,7 +66,11 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
     // Fallback: check default credentials when the user is not in the database.
     const defaultUser = findDefaultCredential(email);
     if (defaultUser && (await verifyPassword(password, defaultUser.passwordHash))) {
-      await createSession(defaultUser.id, { ip, userAgent });
+      await createSession(defaultUser.id, {
+        ip,
+        userAgent,
+        ttlMs: rememberMe ? REMEMBER_ME_TTL_MS : undefined,
+      });
       await logAudit({
         userId: defaultUser.id,
         action: "LOGIN",
@@ -102,7 +109,11 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
     };
   }
 
-  await createSession(user.id, { ip, userAgent });
+  await createSession(user.id, {
+    ip,
+    userAgent,
+    ttlMs: rememberMe ? REMEMBER_ME_TTL_MS : undefined,
+  });
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
   await logAudit({
     userId: user.id,
@@ -137,7 +148,11 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
 export async function logout(): Promise<void> {
   const { ip, userAgent } = await sessionMetadata();
   const user = await getCurrentUser();
-  await destroySession();
+  try {
+    await destroySession();
+  } catch (error) {
+    console.error("[logout] session destruction failed", error);
+  }
   if (user) {
     await logAudit({
       userId: user.id,

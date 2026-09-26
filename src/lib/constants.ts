@@ -265,7 +265,7 @@ export type Sex = (typeof SEXES)[number];
 /* -------------------------------------------------------------------------- */
 
 export const SESSION_COOKIE_NAME = "cms_session";
-export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+export const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours (matches UI claim)
 
 /** Statuses eligible for QR generation (verified records only). */
 export const QR_ELIGIBLE_RECORD_STATUSES: RecordStatus[] = ["verified"];

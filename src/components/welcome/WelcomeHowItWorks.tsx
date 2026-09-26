@@ -25,34 +25,30 @@ const steps = [
  */
 export function WelcomeHowItWorks() {
   return (
-    <section className="py-16 md:py-24 bg-white border-y border-brand-200">
+    <section className="py-20 md:py-28 lg:py-36 bg-gradient-to-b from-brand-50/40 to-white border-y border-brand-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-brand-950 md:text-4xl">
+        <div className="mx-auto max-w-2xl text-center mb-20">
+          <h2 className="text-[2rem] font-extrabold tracking-tight text-brand-950 leading-tight md:text-[2.5rem] lg:text-[3rem]">
             How It Works
           </h2>
-          <p className="mt-4 text-lg text-brand-600">
+          <p className="mt-5 text-lg leading-relaxed text-brand-600 md:text-xl">
             A streamlined workflow for authorized personnel to manage child mapping data securely and efficiently.
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {steps.map((step) => (
+        <div className="grid gap-10 md:grid-cols-3 md:gap-6">
+          {steps.map((step, index) => (
             <article
               key={step.number}
-              className="relative flex flex-col items-center text-center px-4"
+              className="group relative flex flex-col items-center text-center px-6 py-10 rounded-3xl border border-brand-200/60 bg-white/60 shadow-sm shadow-brand-100/30 hover:shadow-lg hover:shadow-brand-100/40 hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 font-bold text-2xl text-brand-900">
-                {step.number}
-              </div>
-              <h3 className="text-lg font-semibold text-brand-900">{step.title}</h3>
-              <p className="mt-2 text-sm text-brand-600">{step.description}</p>
-              {step.number !== "03" && (
-                <div
-                  className="absolute top-8 left-1/2 -translate-x-1/2 hidden h-0.5 w-full max-w-[calc(50%-2rem)] bg-brand-200 md:block"
-                  aria-hidden="true"
-                />
-              )}
+              {/* Step number */}
+              <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-brand-900 to-brand-800 shadow-lg shadow-brand-950/10 font-extrabold text-2xl text-white ring-1 ring-brand-200/30">
+                  {step.number}
+                </div>
+
+              <h3 className="text-xl font-bold text-brand-950 tracking-tight">{step.title}</h3>
+              <p className="mt-3 text-base leading-relaxed text-brand-600 max-w-xs mx-auto">{step.description}</p>
             </article>
           ))}
         </div>
