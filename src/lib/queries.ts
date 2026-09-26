@@ -77,8 +77,11 @@ export type ChildQuery = {
   sex?: string;
   ageMin?: number;
   ageMax?: number;
+  education?: string; // current education_status filter
+  school?: string; // current school filter
   sort?: "name" | "recent" | "oldest";
   page?: number;
+  pageSize?: number;
 };
 
 const year = new Date().getFullYear();
@@ -101,6 +104,20 @@ function childFilters(user: SessionUser, q: ChildQuery): SQL | undefined {
   if (q.status) conditions.push(eq(children.recordStatus, q.status as RecordStatus));
   if (q.active) conditions.push(eq(children.status, q.active as ChildStatus));
   if (q.sex) conditions.push(eq(children.sex, q.sex as Sex));
+  if (q.education)
+    conditions.push(sql`exists (
+      select 1 from ${childEducation}
+      where ${childEducation.childId} = ${children.id}
+        and ${childEducation.isCurrent} = 1
+        and ${childEducation.educationStatus} = ${q.education}
+    )`);
+  if (q.school)
+    conditions.push(sql`exists (
+      select 1 from ${childEducation}
+      where ${childEducation.childId} = ${children.id}
+        and ${childEducation.isCurrent} = 1
+        and ${childEducation.schoolId} = ${q.school}
+    )`);
   if (q.ageMin != null)
     conditions.push(sql`${children.birthDate} <= ${`${year - q.ageMin}-12-31`}`);
   if (q.ageMax != null)
@@ -114,21 +131,31 @@ export type ChildRow = {
   childCode: string;
   firstName: string;
   lastName: string;
+  suffix: string | null;
   sex: string;
   birthDate: string;
   age: number | null;
   barangayName: string;
+  sitio: string | null;
+  schoolName: string | null;
+  schoolType: string | null;
+  gradeLevel: string | null;
+  educationStatus: string | null;
   recordStatus: string;
   status: string;
   createdAt: Date;
 };
+
+const ALLOWED_PAGE_SIZES = [10, 25, 50, 100] as const;
 
 export async function listChildren(
   user: SessionUser,
   query: ChildQuery,
 ): Promise<{ rows: ChildRow[]; total: number; page: number; pageSize: number }> {
   const page = Math.max(1, query.page ?? 1);
-  const pageSize = PAGE_SIZE;
+  const pageSize = ALLOWED_PAGE_SIZES.includes(query.pageSize as (typeof ALLOWED_PAGE_SIZES)[number])
+    ? (query.pageSize as number)
+    : PAGE_SIZE;
   const where = childFilters(user, query) ?? sql`1 = 1`;
 
   const totalRow = await db.select({ n: count() }).from(children).where(where);
@@ -147,15 +174,30 @@ export async function listChildren(
       childCode: children.childCode,
       firstName: children.firstName,
       lastName: children.lastName,
+      suffix: children.suffix,
       sex: children.sex,
       birthDate: children.birthDate,
       barangayName: barangays.name,
+      sitio: childAddresses.sitio,
+      schoolName: schools.name,
+      schoolType: schools.schoolType,
+      gradeLevel: childEducation.gradeLevel,
+      educationStatus: childEducation.educationStatus,
       recordStatus: children.recordStatus,
       status: children.status,
       createdAt: children.createdAt,
     })
     .from(children)
     .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .leftJoin(
+      childAddresses,
+      and(eq(childAddresses.childId, children.id), eq(childAddresses.isCurrent, true)),
+    )
+    .leftJoin(
+      childEducation,
+      and(eq(childEducation.childId, children.id), eq(childEducation.isCurrent, true)),
+    )
+    .leftJoin(schools, eq(schools.id, childEducation.schoolId))
     .where(where)
     .orderBy(...orderBy)
     .limit(pageSize)
@@ -519,6 +561,74 @@ export async function dashboardCharts(user: SessionUser): Promise<DashboardChart
       value: r.value,
     })),
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Registry stats (Child Registry KPI cards — same conventions as dashboard)  */
+/* -------------------------------------------------------------------------- */
+
+export type RegistryStats = {
+  total: number;
+  verified: number;
+  verificationRate: number; // verified / total, percent
+  pendingValidation: number;
+  enrolled: number;
+  notYetInSchool: number;
+  withDisability: number;
+  openInterventions: number;
+};
+
+export async function registryStats(user: SessionUser): Promise<RegistryStats> {
+  const scope = childScope(user);
+  const scopeSql = scope ?? sql`1 = 1`;
+
+  const [total, verified, pendingValidation, enrolled, notYetInSchool, withDisability, openInterventions] =
+    await Promise.all([
+      countWith(scopeSql, sql`${children.status} = 'active'`),
+      countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'verified'`),
+      countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'pending_validation'`),
+      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+        select 1 from ${childEducation}
+        where ${childEducation.childId} = ${children.id}
+          and ${childEducation.isCurrent} = 1
+          and ${childEducation.educationStatus} = 'enrolled'
+      )`),
+      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+        select 1 from ${childEducation}
+        where ${childEducation.childId} = ${children.id}
+          and ${childEducation.isCurrent} = 1
+          and ${childEducation.educationStatus} = 'not_yet_in_school'
+      )`),
+      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+        select 1 from ${childDisabilities}
+        where ${childDisabilities.childId} = ${children.id}
+          and ${childDisabilities.hasDisability} = 1
+      )`),
+      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+        select 1 from ${interventions}
+        where ${interventions.childId} = ${children.id}
+          and ${interventions.status} in ('planned', 'ongoing')
+      )`),
+    ]);
+
+  return {
+    total,
+    verified,
+    verificationRate: total > 0 ? Math.round((verified / total) * 1000) / 10 : 0,
+    pendingValidation,
+    enrolled,
+    notYetInSchool,
+    withDisability,
+    openInterventions,
+  };
+}
+
+function countWith(scopeSql: SQL, extra: SQL): Promise<number> {
+  return db
+    .select({ n: count() })
+    .from(children)
+    .where(and(scopeSql, extra))
+    .then((rows) => rows[0]?.n ?? 0);
 }
 
 /* -------------------------------------------------------------------------- */
