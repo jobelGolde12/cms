@@ -1,19 +1,5 @@
 import Link from "next/link";
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  ShieldCheck,
-  Activity,
-  Bell,
-  Settings,
-  LogOut,
-  BarChart3,
-  ClipboardCheck,
-  UsersRound,
-  QrCode,
-  ScanSearch,
-} from "lucide-react";
+import { UsersRound, LogOut } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission, type Permission } from "@/lib/permissions";
 import { ROLE_LABELS, type Role } from "@/lib/constants";
@@ -24,22 +10,22 @@ import { NavItemClient } from "./nav-item-client";
 type NavLink = {
   label: string;
   href: string;
-  icon: typeof LayoutDashboard;
+  icon: string; // icon NAME — resolved to a component on the client (see nav-icons.tsx)
   permission: Permission;
 };
 
 const navLinks: NavLink[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "children.view" },
-  { label: "Child Registry", href: "/children", icon: ClipboardCheck, permission: "children.view" },
-  { label: "Validation", href: "/validation", icon: ShieldCheck, permission: "validation.view" },
-  { label: "Duplicate Review", href: "/duplicates", icon: ScanSearch, permission: "duplicates.view" },
-  { label: "Monitoring", href: "/monitoring", icon: BarChart3, permission: "monitoring.view" },
-  { label: "Reports", href: "/reports", icon: FileText, permission: "reports.view" },
-  { label: "QR Studio", href: "/qr", icon: QrCode, permission: "qr.verify" },
-  { label: "Users", href: "/users", icon: Users, permission: "users.view" },
-  { label: "Activity Logs", href: "/activity-logs", icon: Activity, permission: "audit_logs.view" },
-  { label: "Notifications", href: "/notifications", icon: Bell, permission: "children.view" },
-  { label: "Settings", href: "/settings", icon: Settings, permission: "children.view" },
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard", permission: "children.view" },
+  { label: "Child Registry", href: "/children", icon: "children", permission: "children.view" },
+  { label: "Validation", href: "/validation", icon: "validation", permission: "validation.view" },
+  { label: "Duplicate Review", href: "/duplicates", icon: "duplicates", permission: "duplicates.view" },
+  { label: "Monitoring", href: "/monitoring", icon: "monitoring", permission: "monitoring.view" },
+  { label: "Reports", href: "/reports", icon: "reports", permission: "reports.view" },
+  { label: "QR Studio", href: "/qr", icon: "qr", permission: "qr.verify" },
+  { label: "Users", href: "/users", icon: "users", permission: "users.view" },
+  { label: "Activity Logs", href: "/activity-logs", icon: "activity", permission: "audit_logs.view" },
+  { label: "Notifications", href: "/notifications", icon: "notifications", permission: "children.view" },
+  { label: "Settings", href: "/settings", icon: "settings", permission: "children.view" },
 ];
 
 export default async function AppShell({ children }: { children: React.ReactNode }) {

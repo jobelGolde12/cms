@@ -6,9 +6,9 @@ const nextConfig: NextConfig = {
   // Disable source maps in production to save memory/CPU
   productionBrowserSourceMaps: false,
 
-  // Strip all console logs in production
+  // Strip console logs in production, but keep console.error for diagnostics
   compiler: {
-    removeConsole: true,
+    removeConsole: { exclude: ["error"] },
   },
 
   // Do not ignore TypeScript errors in production builds

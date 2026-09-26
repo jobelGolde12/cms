@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { navIcon } from "./nav-icons";
 
 export function MobileNavToggle({
   links,
 }: {
-  links: { label: string; href: string; icon: React.ComponentType<{ className?: string }> }[];
+  links: { label: string; href: string; icon: string }[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -52,7 +53,7 @@ export function MobileNavToggle({
           </div>
           <nav className="px-3 py-4 space-y-1 overflow-y-auto" aria-label="Mobile navigation">
             {links.map((link) => {
-              const Icon = link.icon;
+              const Icon = navIcon(link.icon);
               return (
                 <a
                   key={link.href}

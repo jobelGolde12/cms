@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { navIcon } from "./nav-icons";
 
 export function NavItemClient({
   link,
 }: {
-  link: { label: string; href: string; icon: React.ComponentType<{ className?: string }> };
+  link: { label: string; href: string; icon: string };
 }) {
   const pathname = usePathname();
   const active = pathname === link.href || pathname.startsWith(link.href + "/");
-  const Icon = link.icon;
+  const Icon = navIcon(link.icon);
   return (
     <Link
       href={link.href}

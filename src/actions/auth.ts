@@ -20,15 +20,21 @@ import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./h
 import { findDefaultCredential } from "@/lib/default-credentials";
 
 const ERROR_GENERIC = "Invalid email or password.";
+const ERROR_UNEXPECTED = "Something went wrong while signing in. Please try again.";
 
-/** Login with server-side rate limiting and a full audit trail. */
-export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
+type LoginOutcome = { kind: "error"; state: ActionState } | { kind: "redirect" };
+
+/**
+ * Core login logic. Never calls redirect() — the caller does, outside the
+ * try/catch, so NEXT_REDIRECT errors are never swallowed.
+ */
+async function performLogin(formData: FormData): Promise<LoginOutcome> {
   const raw = Object.fromEntries(formData.entries());
   const parsed = loginSchema.safeParse(raw);
   const { ip, userAgent } = await sessionMetadata();
 
   if (!parsed.success) {
-    return fail(ERROR_GENERIC);
+    return { kind: "error", state: fail(ERROR_GENERIC) };
   }
 
   const { email, password } = parsed.data;
@@ -43,7 +49,10 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
       ipAddress: ip,
       userAgent,
     });
-    return fail("Too many attempts. Please wait a minute before trying again.");
+    return {
+      kind: "error",
+      state: fail("Too many attempts. Please wait a minute before trying again."),
+    };
   }
 
   const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -63,7 +72,7 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
         ipAddress: ip,
         userAgent,
       });
-      redirect("/dashboard");
+      return { kind: "redirect" };
     }
 
     await logAudit({
@@ -74,7 +83,7 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
       ipAddress: ip,
       userAgent,
     });
-    return fail(ERROR_GENERIC);
+    return { kind: "error", state: fail(ERROR_GENERIC) };
   }
 
   if (!user.isActive) {
@@ -87,7 +96,10 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
       ipAddress: ip,
       userAgent,
     });
-    return fail("This account has been deactivated. Contact the administrator.");
+    return {
+      kind: "error",
+      state: fail("This account has been deactivated. Contact the administrator."),
+    };
   }
 
   await createSession(user.id, { ip, userAgent });
@@ -100,7 +112,25 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
     userAgent,
   });
 
-  redirect("/dashboard");
+  return { kind: "redirect" };
+}
+
+/** Login with server-side rate limiting and a full audit trail. */
+export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let outcome: LoginOutcome;
+  try {
+    outcome = await performLogin(formData);
+  } catch (error) {
+    // Infrastructure failures (DB unreachable, etc.) must surface as an
+    // inline form error — never as the global error boundary.
+    console.error("[login] unexpected error", error);
+    return fail(ERROR_UNEXPECTED);
+  }
+
+  if (outcome.kind === "redirect") {
+    redirect("/dashboard");
+  }
+  return outcome.state;
 }
 
 /** End the current session. */
