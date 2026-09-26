@@ -26,6 +26,7 @@ export default function LoginPage() {
   const emailId = useId();
   const passwordId = useId();
   const errorId = useId();
+  const emailHintId = useId();
 
   const hasError = state.ok === false && Boolean(state.error);
 
@@ -135,19 +136,18 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   inputMode="email"
-                  placeholder="e.g. j.delacruz@deped.gov.ph"
+                  placeholder="j.delacruz@deped.gov.ph"
                   required
                   aria-invalid={hasError || undefined}
-                  aria-describedby={hasError ? errorId : undefined}
+                  aria-describedby={
+                    hasError ? `${emailHintId} ${errorId}` : emailHintId
+                  }
                   className="h-11 w-full rounded-lg border border-brand-300 bg-brand-50 pl-10 pr-3 text-sm text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/20"
                 />
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 text-[10px] font-medium text-brand-400 sm:inline"
-                >
-                  @deped.gov.ph or ID
-                </span>
               </div>
+              <p id={emailHintId} className="text-xs text-brand-500">
+                Use your DepEd email or assigned employee ID.
+              </p>
             </div>
 
             {/* Password Field */}

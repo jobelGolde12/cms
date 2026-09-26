@@ -19,9 +19,7 @@ export function WelcomeHero() {
     <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-white py-16 md:py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <Badge tone="info" icon={false} className="mb-6">
-            Official DepEd Form 1 Verification & Census Portal
-          </Badge>
+          
           <h1 className="text-4xl font-extrabold tracking-tight text-brand-950 leading-tight md:text-5xl lg:text-6xl">
             Municipal Child Mapping System
           </h1>
