@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import Link from "next/link";
 import { ShieldCheck, UserPlus, Lock, Building2, Mail, KeyRound, Check } from "lucide-react";
 import { registerUser } from "@/actions/register";
+import { getBarangays } from "@/actions/get-barangays";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Label, FieldError } from "@/components/ui/field";
 
@@ -14,6 +15,11 @@ const initial: ActionState = { ok: false, error: "" };
 export default function RegisterPage() {
   const [state, formAction, pending] = useActionState(registerUser, initial);
   const [agreed, setAgreed] = useState(false);
+  const [barangays, setBarangays] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    getBarangays().then(setBarangays);
+  }, []);
 
   return (
     <main className="min-h-screen bg-brand-50">
@@ -82,8 +88,13 @@ export default function RegisterPage() {
               </Field>
 
               <div className="md:col-span-2">
-                <Field label="Assigned Station / Barangay" htmlFor="barangayId" hint="Select your assigned station or barangay">
-                  <Input id="barangayId" name="barangayId" type="text" placeholder="e.g. Poblacion 1 / Sta. Magdalena" />
+                <Field label="Assigned Station / Barangay" htmlFor="barangayId" required error={state.ok === false ? state.fieldErrors?.barangayId ?? undefined : undefined} hint="Select your assigned station or barangay">
+                  <Select id="barangayId" name="barangayId" required defaultValue="">
+                    <option value="">Select barangay</option>
+                    {barangays.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </Select>
                 </Field>
               </div>
 

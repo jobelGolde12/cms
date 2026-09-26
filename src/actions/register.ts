@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, barangays } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { fail, ok, zodFieldErrors, type ActionState } from "./helpers";
 
@@ -15,7 +15,7 @@ const registerSchema = z.object({
   roleId: z.enum(["role-admin", "role-lgu", "role-barangay"], {
     message: "Select a valid operational role",
   }),
-  barangayId: z.string().optional().or(z.literal("")),
+  barangayId: z.string().min(1, "Select an assigned barangay."),
   password: z.string().min(8, "Password must be at least 8 characters").max(128),
   confirmPassword: z.string().min(8, "Confirm password is required").max(128),
 });
@@ -37,6 +37,15 @@ export async function registerUser(_prev: ActionState, formData: FormData): Prom
   const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing[0]) {
     return fail("This email is already registered.");
+  }
+
+  if (!barangayId || barangayId === "") {
+    return fail("Select an assigned barangay.", { barangayId: "Select an assigned barangay." });
+  }
+
+  const validBarangay = await db.select().from(barangays).where(eq(barangays.id, barangayId)).limit(1);
+  if (!validBarangay[0]) {
+    return fail("Invalid barangay selected.", { barangayId: "Invalid barangay selected." });
   }
 
   const hash = await hashPassword(password);
