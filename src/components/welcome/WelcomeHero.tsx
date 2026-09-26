@@ -38,14 +38,10 @@ export function WelcomeHero() {
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-brand-700 shadow-sm backdrop-blur-sm mb-8">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-action-600" aria-hidden="true" />
-            Official Municipal Platform
-          </p>
 
           <h1 className="text-[2.75rem] leading-[1.1] font-extrabold tracking-tight text-brand-950 md:text-[3.5rem] lg:text-[4.25rem]">
             Municipal Child{" "}
-            <span className="text-action-700">Mapping</span> System
+            <span className="">Mapping</span> System
           </h1>
 
           <p className="mt-8 text-lg leading-relaxed text-brand-600 md:text-xl md:leading-relaxed">
