@@ -26,9 +26,13 @@ export async function markNotificationsRead(
 }
 
 /** Mark all of the current user's notifications as read. */
-export async function markAllNotificationsRead(): Promise<ActionState> {
+export async function markAllNotificationsRead(
+  formData: FormData,
+): Promise<void> {
   const user = await getCurrentUser();
-  if (!user) return fail("You must be signed in.");
+  if (!user) {
+    return;
+  }
 
   await db
     .update(notifications)
@@ -36,5 +40,4 @@ export async function markAllNotificationsRead(): Promise<ActionState> {
     .where(eq(notifications.userId, user.id));
 
   revalidatePath("/notifications");
-  return ok();
 }

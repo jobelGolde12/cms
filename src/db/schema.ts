@@ -356,6 +356,7 @@ export const childDuplicateCandidates = sqliteTable(
     status: text("status").notNull().default("pending"),
     reviewedBy: text("reviewed_by").references(() => users.id),
     reviewNotes: text("review_notes"),
+    reviewedAt: timestamp("reviewed_at"),
     createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
     updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
   },

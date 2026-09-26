@@ -16,6 +16,7 @@ import {
   interventionFollowups,
   notifications,
   qrVerifications,
+  roles,
   schools,
   users,
 } from "@/db/schema";
@@ -696,6 +697,7 @@ export async function monitoringList(
   type?: MonitoringType,
 ): Promise<MonitorRow[]> {
   const scope = childScope(user);
+  const scopeSql = scope ?? sql`1 = 1`;
   const conditions: SQL[] = [scopeSql];
   if (type) conditions.push(eq(childMonitoring.monitoringType, type));
 
@@ -746,6 +748,7 @@ export async function listInterventions(
   status?: string,
 ): Promise<InterventionRow[]> {
   const scope = childScope(user);
+  const scopeSql = scope ?? sql`1 = 1`;
   const conditions: SQL[] = [scopeSql];
   if (status && status !== "all") conditions.push(eq(interventions.status, status));
 

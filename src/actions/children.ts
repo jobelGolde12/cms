@@ -252,7 +252,7 @@ export async function updateChild(_prev: ActionState, formData: FormData): Promi
     ? "pending_validation"
     : child.recordStatus === "draft" && form.intent === "submit"
       ? "pending_validation"
-      : child.recordStatus;
+      : (child.recordStatus as RecordStatus);
 
   try {
     await db.transaction(async (tx) => {
@@ -400,7 +400,7 @@ export async function reviewValidation(_prev: ActionState, formData: FormData): 
   if (!validation) return fail("No pending validation found for this record.");
 
   const nextRecordStatus: RecordStatus =
-    decision === "approved" ? "verified" : decision === "needs_correction" ? "needs_correction" : "rejected";
+    decision === "approved" ? "verified" : decision === "needs_correction" ? "needs_correction" : "rejected" as RecordStatus;
 
   try {
     await db.transaction(async (tx) => {

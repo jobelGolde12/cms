@@ -265,7 +265,10 @@ export async function buildReport(
 
       const totals: Record<string, number> = {};
       for (const col of columns.slice(1)) {
-        totals[col] = rows.reduce((a, r) => a + Number(r[col] ?? 0), 0);
+        totals[col] = rows.reduce(
+          (a, r) => a + Number((r as Record<string, unknown>)[col] ?? 0),
+          0,
+        );
       }
 
       return {

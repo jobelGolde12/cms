@@ -49,7 +49,7 @@ export async function currentQrToken(
     })
     .from(qrVerifications)
     .where(eq(qrVerifications.childId, childId))
-    .orderBy(desc(qrVerifications.verifiedAt), desc(qrVerifications.createdAt));
+    .orderBy(desc(qrVerifications.verifiedAt));
 
   // Newest event per token decides its state.
   const state = new Map<string, { revoked: boolean; at: Date }>();
