@@ -37,7 +37,7 @@ export function WelcomeHowItWorks() {
         </div>
 
         <div className="grid gap-10 md:grid-cols-3 md:gap-6">
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <article
               key={step.number}
               className="group relative flex flex-col items-center text-center px-6 py-10 rounded-3xl border border-brand-200/60 bg-white/60 shadow-sm shadow-brand-100/30 hover:shadow-lg hover:shadow-brand-100/40 hover:-translate-y-1 transition-all duration-300"

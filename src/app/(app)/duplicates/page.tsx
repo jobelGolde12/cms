@@ -6,11 +6,10 @@ import { listDuplicates, validationStats } from "@/lib/queries";
 import { reviewDuplicate } from "@/actions/duplicates";
 import { hasPermission } from "@/lib/permissions";
 import {
-  DUPLICATE_STATUSES,
   DUPLICATE_STATUS_LABELS,
   type DuplicateStatus,
 } from "@/lib/constants";
-import { ageFromBirthDate, cn, formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import {

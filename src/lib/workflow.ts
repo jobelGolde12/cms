@@ -25,17 +25,39 @@ export function validationStatusFor(record: RecordStatus): ValidationStatus {
   return RECORD_TO_VALIDATION[record];
 }
 
-/** Allowed record_status transitions. */
+/** Allowed record_status transitions (role-gated rules in canTransition). */
 export const RECORD_STATUS_TRANSITIONS: Record<RecordStatus, RecordStatus[]> = {
   draft: ["pending_validation"],
   pending_validation: ["verified", "needs_correction", "marked_duplicate"],
   needs_correction: ["pending_validation"],
-  verified: ["pending_validation"], // admin re-open only
+  // Re-opening a verified record is admin-only — enforced by the role check in
+  // canTransition (and re-checked in the reopenChild action).
+  verified: [],
   marked_duplicate: [], // terminal; restored only by duplicate review
 };
 
+/**
+ * Reviewer decision (from `validationReviewSchema`) → the resulting
+ * `children.record_status`.
+ *
+ * `rejected` is a `child_validations.status` value only — it is NOT a legal
+ * `children.record_status`. A hard reject of a queued record marks it
+ * `marked_duplicate` (the terminal status allowed by RECORD_STATUS_TRANSITIONS),
+ * while the validation history row keeps `rejected` to preserve the reviewer's
+ * intent.
+ */
+export const REVIEW_DECISION_TO_RECORD_STATUS: Record<
+  "approved" | "needs_correction" | "rejected",
+  RecordStatus
+> = {
+  approved: "verified",
+  needs_correction: "needs_correction",
+  rejected: "marked_duplicate",
+};
+
 export function canTransition(from: RecordStatus, to: RecordStatus, role?: string): boolean {
-  if (from === "verified" && role === "admin") return true;
+  // Re-opening a verified record requires an administrator (documented rule).
+  if (from === "verified") return role === "admin" && to === "pending_validation";
   return RECORD_STATUS_TRANSITIONS[from]?.includes(to) ?? false;
 }
 

@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { children, qrVerifications } from "@/db/schema";
+import { qrVerifications } from "@/db/schema";
 import { randomToken } from "./utils";
 
 export const QR_TOKEN_BYTES = 24;
@@ -17,7 +17,6 @@ export async function createQrToken(
   childId: string,
   verifiedBy: string,
   meta: { ipAddress?: string | null; userAgent?: string | null } = {},
-  ttlDays = QR_TOKEN_TTL_DAYS,
 ): Promise<string> {
   const token = randomToken(QR_TOKEN_BYTES);
   await db.insert(qrVerifications).values({

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/db";
 import {
@@ -21,9 +21,6 @@ import {
   users,
 } from "@/db/schema";
 import {
-  type EducationStatus,
-  type EccdStatus,
-  EDUCATION_STATUSES,
   type MonitoringType,
   type Sex,
   type RecordStatus,
@@ -41,7 +38,6 @@ const possibleChild = alias(children, "possible_child");
 const possibleBarangay = alias(barangays, "possible_barangay");
 const possibleEdu = alias(childEducation, "possible_education");
 const possibleSchool = alias(schools, "possible_school");
-const reviewerUser = alias(users, "reviewer_user");
 
 /* -------------------------------------------------------------------------- */
 /*  Reference data                                                            */
@@ -89,7 +85,11 @@ export type ChildQuery = {
 
 const year = new Date().getFullYear();
 
-function childFilters(user: SessionUser, q: ChildQuery): SQL | undefined {
+/**
+ * Build the WHERE clause for registry listing. Exported for unit testing —
+ * pure SQL composition, no database access.
+ */
+export function childFilters(user: SessionUser, q: ChildQuery): SQL | undefined {
   const conditions: SQL[] = [];
   const scope = childScope(user);
   if (scope) conditions.push(scope);
@@ -105,7 +105,8 @@ function childFilters(user: SessionUser, q: ChildQuery): SQL | undefined {
   }
   if (q.barangay) conditions.push(eq(children.barangayId, q.barangay));
   if (q.status) conditions.push(eq(children.recordStatus, q.status as RecordStatus));
-  if (q.active) conditions.push(eq(children.status, q.active as ChildStatus));
+  // "all" is a UI escape hatch meaning "no lifecycle filter".
+  if (q.active && q.active !== "all") conditions.push(eq(children.status, q.active as ChildStatus));
   if (q.sex) conditions.push(eq(children.sex, q.sex as Sex));
   if (q.education)
     conditions.push(sql`exists (
@@ -507,68 +508,51 @@ export async function dashboardStats(user: SessionUser): Promise<DashboardStats>
   };
 }
 
-export type DashboardCharts = {
-  byBarangay: { name: string; value: number }[];
-  byEducation: { name: string; value: number }[];
-  byRecordStatus: { name: string; value: number }[];
-};
-
-const EDU_LABELS: Record<string, string> = {
-  enrolled: "Enrolled",
-  out_of_school: "Out-of-School",
-  not_yet_in_school: "Not Yet in School",
-  graduated: "Graduated",
-  unknown: "Unknown",
-};
-
-const RECORD_LABELS: Record<string, string> = {
-  draft: "Draft",
-  pending_validation: "Pending Validation",
-  needs_correction: "Needs Correction",
-  verified: "Verified",
-  marked_duplicate: "Marked Duplicate",
-};
-
-export async function dashboardCharts(user: SessionUser): Promise<DashboardCharts> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
-
-  const byBarangayRows = await db
-    .select({ name: barangays.name, value: count() })
-    .from(children)
-    .innerJoin(barangays, eq(barangays.id, children.barangayId))
-    .where(scopeSql)
-    .groupBy(children.barangayId)
-    .orderBy(desc(count()));
-
-  const eduRows = await db
-    .select({ key: childEducation.educationStatus, value: count() })
-    .from(childEducation)
-    .innerJoin(children, eq(children.id, childEducation.childId))
-    .where(and(scopeSql, eq(childEducation.isCurrent, true)))
-    .groupBy(childEducation.educationStatus)
-    .orderBy(desc(count()));
-
-  const recordRows = await db
-    .select({ key: children.recordStatus, value: count() })
-    .from(children)
-    .where(scopeSql)
-    .groupBy(children.recordStatus)
-    .orderBy(desc(count()));
-
-  return {
-    byBarangay: byBarangayRows.map((r) => ({ name: r.name, value: r.value })),
-    byEducation: eduRows.map((r) => ({ name: EDU_LABELS[r.key] ?? r.key, value: r.value })),
-    byRecordStatus: recordRows.map((r) => ({
-      name: RECORD_LABELS[r.key] ?? r.key,
-      value: r.value,
-    })),
-  };
-}
-
 /* -------------------------------------------------------------------------- */
 /*  Registry stats (Child Registry KPI cards — same conventions as dashboard)  */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Count-only age-cohort totals for the registry chip row (active, non-duplicate
+ * records in scope). Replaces four full `listChildren` calls per page render.
+ */
+export async function cohortCounts(user: SessionUser): Promise<Record<string, number>> {
+  const scope = childScope(user);
+  const scopeSql = scope ?? sql`1 = 1`;
+  const basis = and(
+    scopeSql,
+    sql`${children.status} = 'active'`,
+    sql`${children.recordStatus} != 'marked_duplicate'`,
+  ) as SQL;
+  const year = new Date().getFullYear();
+
+  const ranges: [number, number][] = [
+    [0, 4],
+    [5, 11],
+    [12, 15],
+    [16, 17],
+  ];
+
+  const counts = await Promise.all(
+    ranges.map(([min, max]) =>
+      db
+        .select({ n: count() })
+        .from(children)
+        .where(and(basis, sql`${children.birthDate} <= ${`${year - min}-12-31`}`, sql`${children.birthDate} >= ${`${year - max}-01-01`}`))
+        .then((rows) => rows[0]?.n ?? 0),
+    ),
+  );
+
+  const total = await db.select({ n: count() }).from(children).where(basis).then((rows) => rows[0]?.n ?? 0);
+
+  return {
+    "": total,
+    "0-4": counts[0],
+    "5-11": counts[1],
+    "12-15": counts[2],
+    "16-17": counts[3],
+  };
+}
 
 export type RegistryStats = {
   total: number;
@@ -584,30 +568,37 @@ export type RegistryStats = {
 export async function registryStats(user: SessionUser): Promise<RegistryStats> {
   const scope = childScope(user);
   const scopeSql = scope ?? sql`1 = 1`;
+  // Same basis as listChildren: active lifecycle AND never marked_duplicate —
+  // keeps the KPI cards reconciled with the table totals.
+  const basis = and(
+    scopeSql,
+    sql`${children.status} = 'active'`,
+    sql`${children.recordStatus} != 'marked_duplicate'`,
+  ) as SQL;
 
   const [total, verified, pendingValidation, enrolled, notYetInSchool, withDisability, openInterventions] =
     await Promise.all([
-      countWith(scopeSql, sql`${children.status} = 'active'`),
-      countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'verified'`),
-      countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'pending_validation'`),
-      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+      countWith(basis, sql`1 = 1`),
+      countWith(basis, sql`${children.recordStatus} = 'verified'`),
+      countWith(basis, sql`${children.recordStatus} = 'pending_validation'`),
+      countWith(basis, sql`exists (
         select 1 from ${childEducation}
         where ${childEducation.childId} = ${children.id}
           and ${childEducation.isCurrent} = 1
           and ${childEducation.educationStatus} = 'enrolled'
       )`),
-      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+      countWith(basis, sql`exists (
         select 1 from ${childEducation}
         where ${childEducation.childId} = ${children.id}
           and ${childEducation.isCurrent} = 1
           and ${childEducation.educationStatus} = 'not_yet_in_school'
       )`),
-      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+      countWith(basis, sql`exists (
         select 1 from ${childDisabilities}
         where ${childDisabilities.childId} = ${children.id}
           and ${childDisabilities.hasDisability} = 1
       )`),
-      countWith(scopeSql, sql`${children.status} = 'active' AND exists (
+      countWith(basis, sql`exists (
         select 1 from ${interventions}
         where ${interventions.childId} = ${children.id}
           and ${interventions.status} in ('planned', 'ongoing')
@@ -787,7 +778,31 @@ export async function listDuplicates(
   status?: string,
   opts: { q?: string; band?: "high" | "moderate" | "review" } = {},
 ): Promise<DuplicateItem[]> {
-  const where = status && status !== "all" ? eq(childDuplicateCandidates.status, status) : undefined;
+  const conditions: SQL[] = [];
+  if (status && status !== "all") conditions.push(eq(childDuplicateCandidates.status, status));
+
+  // The Duplicates page search matches either side of the candidate pair.
+  if (opts.q) {
+    const needle = `%${opts.q}%`;
+    conditions.push(
+      sql`(${children.firstName} LIKE ${needle}
+        OR ${children.lastName} LIKE ${needle}
+        OR ${children.childCode} LIKE ${needle}
+        OR ${possibleChild.firstName} LIKE ${needle}
+        OR ${possibleChild.lastName} LIKE ${needle}
+        OR ${possibleChild.childCode} LIKE ${needle})`,
+    );
+  }
+  // Confidence bands mirror the detector's scoring shown in the UI.
+  if (opts.band === "high") conditions.push(sql`${childDuplicateCandidates.matchScore} >= 90`);
+  if (opts.band === "moderate")
+    conditions.push(
+      sql`${childDuplicateCandidates.matchScore} >= 65 AND ${childDuplicateCandidates.matchScore} < 90`,
+    );
+  if (opts.band === "review")
+    conditions.push(sql`${childDuplicateCandidates.matchScore} < 65`);
+
+  const where = conditions.length ? and(...conditions) : undefined;
 
   const rows = await db
     .select({

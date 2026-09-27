@@ -20,10 +20,11 @@ import {
 import { logAudit, notify } from "@/lib/audit";
 import { nextChildCode } from "@/lib/child-code";
 import { canAccessChild, canEditChild } from "@/lib/scope";
-import { childFormSchema, validationReviewSchema, type ChildFormValues } from "@/lib/schemas";
+import { childFormSchema, validationReviewSchema } from "@/lib/schemas";
 import { refreshDuplicateCandidates } from "@/lib/duplicates";
 import { deactivateChildTokens } from "@/lib/qr";
 import type { RecordStatus } from "@/lib/constants";
+import { REVIEW_DECISION_TO_RECORD_STATUS } from "@/lib/workflow";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
 const scrub = (value: string | undefined | null | ""): string | null =>
@@ -39,64 +40,6 @@ function parseChildForm(formData: FormData) {
     intent: entries.intent === "submit" ? ("submit" as const) : ("draft" as const),
     parsed: childFormSchema.safeParse(withCheckbox),
   };
-}
-
-/** Insert the normalized side-table rows for a child inside a transaction. */
-async function writeChildDetails(
-  childId: string,
-  v: ChildFormValues,
-  updatedBy: string,
-): Promise<void> {
-  await db.transaction(async (tx) => {
-    await tx.insert(childAddresses).values({
-      id: crypto.randomUUID(),
-      childId,
-      barangayId: v.barangayId,
-      householdAddress: v.householdAddress,
-      sitio: scrub(v.sitio),
-      isCurrent: true,
-    });
-
-    await tx.insert(childEducation).values({
-      id: crypto.randomUUID(),
-      childId,
-      schoolId: scrub(v.schoolId),
-      educationStatus: v.educationStatus,
-      gradeLevel: scrub(v.gradeLevel),
-      schoolYear: scrub(v.schoolYear),
-      enrollmentStatus: scrub(v.enrollmentStatus),
-      isCurrent: true,
-    });
-
-    await tx.insert(childEccd).values({
-      id: crypto.randomUUID(),
-      childId,
-      participationStatus: v.eccdStatus,
-      programName: scrub(v.eccdProgramName),
-      provider: scrub(v.eccdProvider),
-      remarks: scrub(v.eccdRemarks),
-    });
-
-    await tx.insert(childDisabilities).values({
-      id: crypto.randomUUID(),
-      childId,
-      hasDisability: v.hasDisability,
-      disabilityType: v.hasDisability ? scrub(v.disabilityType) : null,
-      description: v.hasDisability ? scrub(v.disabilityDescription) : null,
-      supportNeeded: v.hasDisability ? scrub(v.disabilitySupportNeeded) : null,
-      assistanceStatus: v.hasDisability ? scrub(v.assistanceStatus) : null,
-      verified: false,
-    });
-
-    await tx.insert(childValidations).values({
-      id: crypto.randomUUID(),
-      childId,
-      submittedBy: updatedBy,
-      status: "pending",
-      remarks: "Record created",
-      submittedAt: new Date(),
-    });
-  });
 }
 
 /** Create a new child record. `intent=draft` saves; `intent=submit` queues for validation. */
@@ -221,6 +164,7 @@ export async function createChild(_prev: ActionState, formData: FormData): Promi
 
   revalidatePath("/children");
   revalidatePath("/validation");
+  revalidatePath("/dashboard");
   return ok(
     form.intent === "submit" ? "Record submitted for validation." : "Draft saved.",
     `/children/${childId}`,
@@ -399,8 +343,9 @@ export async function reviewValidation(_prev: ActionState, formData: FormData): 
   const validation = validationRows[0];
   if (!validation) return fail("No pending validation found for this record.");
 
-  const nextRecordStatus: RecordStatus =
-    decision === "approved" ? "verified" : decision === "needs_correction" ? "needs_correction" : "rejected" as RecordStatus;
+  // `rejected` is a validation-history status only — the child row gets the
+  // canonical record_status via the workflow map (marked_duplicate).
+  const nextRecordStatus: RecordStatus = REVIEW_DECISION_TO_RECORD_STATUS[decision];
 
   try {
     await db.transaction(async (tx) => {
@@ -451,12 +396,19 @@ export async function reviewValidation(_prev: ActionState, formData: FormData): 
 
   revalidatePath("/validation");
   revalidatePath(`/children/${childId}`);
+  revalidatePath("/children");
+  revalidatePath("/dashboard");
   return ok(decision === "approved" ? "Record approved." : `Record marked ${decision.replace(/_/g, " ")}.`);
 }
 
 /** FormData-only wrapper for plain <form action={…}> usage. */
 export async function reviewValidationForm(formData: FormData): Promise<void> {
   await reviewValidation({ ok: false, error: "" }, formData);
+}
+
+/** FormData-only wrapper so client components can bind archiveChild to a form. */
+export async function archiveChildForm(formData: FormData): Promise<void> {
+  await archiveChild({ ok: false, error: "" }, formData);
 }
 
 /** Admin only: re-open a verified record back into the validation queue. */
@@ -500,6 +452,7 @@ export async function reopenChild(_prev: ActionState, formData: FormData): Promi
 
   revalidatePath("/children");
   revalidatePath("/validation");
+  revalidatePath("/dashboard");
   return ok("Record re-opened for validation.", "/validation");
 }
 
@@ -540,6 +493,7 @@ export async function archiveChild(_prev: ActionState, formData: FormData): Prom
 
   revalidatePath("/children");
   revalidatePath(`/children/${childId}`);
+  revalidatePath("/dashboard");
   return ok("Record archived. It is retained for history but hidden from active lists.");
 }
 

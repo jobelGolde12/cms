@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { listAuditLogs } from "@/lib/queries";
 import { hasPermission } from "@/lib/permissions";
-import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils";
 
 export default async function ActivityLogsPage() {

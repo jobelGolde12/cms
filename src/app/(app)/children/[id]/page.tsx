@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, QrCode, Clock, EyeOff } from "lucide-react";
+import { ShieldCheck, QrCode, Clock, EyeOff } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
+import { canAccessChild } from "@/lib/scope";
 import {
   getChildProfile,
   getCurrentAddress,
@@ -20,6 +22,8 @@ import {
   ECCD_STATUS_LABELS,
   type EccdStatus,
 } from "@/lib/constants";
+import { ValidationReviewForm } from "@/components/validation/review-form";
+import { ArchiveChildButton } from "@/components/archive-child-button";
 
 export default async function ChildProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -28,6 +32,15 @@ export default async function ChildProfilePage({ params }: { params: Promise<{ i
 
   const child = await getChildProfile(id);
   if (!child) redirect("/children");
+
+  // Row-level read guard: the registry's View action links here, so this page
+  // must enforce the same scope the list already applies.
+  if (!canAccessChild(user, child)) redirect("/children");
+
+  const canReview = hasPermission(user.role, "validation.review");
+  const canArchive =
+    hasPermission(user.role, "children.delete") && child.status === "active";
+  const isPending = child.recordStatus === "pending_validation";
 
   const [addresses, education, eccd, disabilities, validations, qrEvents] = await Promise.all([
     getCurrentAddress(id),
@@ -59,6 +72,7 @@ export default async function ChildProfilePage({ params }: { params: Promise<{ i
           <p className="text-sm text-brand-500 font-mono">{child.childCode} · {ageFromBirthDate(child.birthDate)} yrs · {child.barangayName}</p>
         </div>
         <div className="flex gap-2">
+          {canArchive ? <ArchiveChildButton childId={child.id} childCode={child.childCode} /> : null}
           <Link href={`/children/${child.id}/edit`}><Button variant="outline" size="sm">Edit</Button></Link>
         </div>
       </div>
@@ -144,6 +158,19 @@ export default async function ChildProfilePage({ params }: { params: Promise<{ i
         </div>
 
         <div className="space-y-6">
+          {canReview && isPending ? (
+            <div className="rounded-xl border border-brand-200 bg-white shadow-sm p-5">
+              <h3 className="text-sm font-bold text-brand-900 mb-3 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-action-700" /> Review Decision
+              </h3>
+              <p className="mb-3 text-xs text-brand-500">
+                This record is awaiting validation. Your decision is recorded in
+                the validation history and the encoder is notified.
+              </p>
+              <ValidationReviewForm childId={child.id} />
+            </div>
+          ) : null}
+
           <div className="rounded-xl border border-brand-200 bg-white shadow-sm p-5">
             <h3 className="text-sm font-bold text-brand-900 mb-3 flex items-center gap-2"><Clock className="h-4 w-4 text-brand-500" /> Validation History</h3>
             {validations.length === 0 ? <p className="text-xs text-brand-500">No validation records yet.</p> : (

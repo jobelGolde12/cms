@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isEditable } from "@/lib/workflow";
 import { RecordStatusBadge } from "@/components/ui/badge";
 import { EDUCATION_STATUS_LABELS, type RecordStatus, type EducationStatus } from "@/lib/constants";
 import type { ChildRow, RegistryStats } from "@/lib/queries";
@@ -147,7 +148,9 @@ export type RegistryFilterValues = {
   status: string;
   sex: string;
   education: string;
+  school: string;
   cohort: string;
+  active: string;
 };
 
 const COHORTS = [
@@ -247,7 +250,7 @@ export function RegistryFilters({
           label="Assigned School"
           id="filter-school"
           name="school"
-          value=""
+          value={values.school}
           allLabel="All Schools"
           options={schools.map((s) => ({ value: s.id, label: s.name }))}
         />
@@ -286,8 +289,18 @@ export function RegistryFilters({
             { value: "draft", label: "Draft" },
           ]}
         />
-        {/* Preserve cohort across submits; its chip row is the visible control. */}
+        {/*
+          Cohort selection lives in the chip row as ageMin/ageMax URL params.
+          Preserve the effective range across filter submits; it also drives the
+          chip row's active highlight.
+        */}
         <input type="hidden" name="cohort" value={activeCohort} />
+        {activeCohort ? (
+          <>
+            <input type="hidden" name="ageMin" value={activeCohort.split("-")[0]} />
+            <input type="hidden" name="ageMax" value={activeCohort.split("-")[1]} />
+          </>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 px-4 py-3">
@@ -302,6 +315,8 @@ export function RegistryFilters({
             if (values.status) params.set("status", values.status);
             if (values.sex) params.set("sex", values.sex);
             if (values.education) params.set("education", values.education);
+            if (values.school) params.set("school", values.school);
+            if (values.active && values.active !== "active") params.set("active", values.active);
             if (c.key) {
               params.set("ageMin", String(min));
               params.set("ageMax", String(max));
@@ -396,20 +411,77 @@ const EDU_TONE: Record<string, string> = {
   unknown: "text-brand-400",
 };
 
+/** Sortable header link — only the sort keys supported by `listChildren`. */
+function SortHeader({
+  label,
+  keyName,
+  nextKey,
+  activeSort,
+  searchParams,
+  className,
+}: {
+  label: string;
+  keyName: "name" | "recent" | "oldest";
+  /** Sort key applied when clicked (enables recent ⇄ oldest toggling). */
+  nextKey: "name" | "recent" | "oldest";
+  activeSort: string;
+  searchParams: Record<string, string | string[] | undefined>;
+  className?: string;
+}) {
+  const next = new URLSearchParams();
+  for (const [k, v] of Object.entries(searchParams)) {
+    if (k !== "sort" && k !== "page" && typeof v === "string" && v) next.set(k, v);
+  }
+  next.set("sort", nextKey);
+  const isActive = activeSort === keyName;
+  return (
+    <th scope="col" className={cn("px-4 py-2.5", className)}>
+      <Link
+        href={`/children?${next}`}
+        aria-label={`Sort by ${label}`}
+        className={cn(
+          "inline-flex items-center gap-1 transition-colors hover:text-action-700",
+          isActive && "text-action-700 underline decoration-action-300 underline-offset-2",
+        )}
+      >
+        {label}
+      </Link>
+    </th>
+  );
+}
+
 export function ChildRegistryTable({
   rows,
   canEdit,
+  hasFilters,
+  activeSort = "recent",
+  searchParams = {},
 }: {
   rows: ChildRow[];
   canEdit: boolean;
+  hasFilters?: boolean;
+  activeSort?: string;
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[880px] border-collapse text-left">
         <thead>
           <tr className="bg-[#eef3ff] text-[11px] font-semibold uppercase tracking-wide text-brand-700">
-            <th scope="col" className="px-4 py-2.5">Child Mapping ID</th>
-            <th scope="col" className="px-4 py-2.5">Learner Name</th>
+            <SortHeader
+              label={`Child Mapping ID${activeSort === "recent" ? " ↓" : activeSort === "oldest" ? " ↑" : ""}`}
+              keyName={activeSort === "oldest" ? "oldest" : "recent"}
+              nextKey={activeSort === "oldest" ? "recent" : "oldest"}
+              activeSort={activeSort === "oldest" ? "oldest" : "recent"}
+              searchParams={searchParams}
+            />
+            <SortHeader
+              label={`Learner Name${activeSort === "name" ? " ↑" : ""}`}
+              keyName="name"
+              nextKey="name"
+              activeSort={activeSort}
+              searchParams={searchParams}
+            />
             <th scope="col" className="px-4 py-2.5">Age / Sex</th>
             <th scope="col" className="px-4 py-2.5">Barangay / Sitio</th>
             <th scope="col" className="px-4 py-2.5">School / Facility</th>
@@ -422,9 +494,13 @@ export function ChildRegistryTable({
           {rows.length === 0 ? (
             <tr>
               <td colSpan={8} className="px-4 py-12 text-center">
-                <p className="text-sm font-semibold text-brand-800">No child records found</p>
+                <p className="text-sm font-semibold text-brand-800">
+                  {hasFilters ? "No child records match your filters" : "No child records yet"}
+                </p>
                 <p className="mt-1 text-xs text-brand-500">
-                  Try adjusting your search or filters.
+                  {hasFilters
+                    ? "Try adjusting or clearing your search and filters."
+                    : "Records will appear here once children are registered."}
                 </p>
               </td>
             </tr>
@@ -495,7 +571,7 @@ export function ChildRegistryTable({
                       >
                         <Eye aria-hidden="true" className="h-4 w-4" />
                       </Link>
-                      {canEdit ? (
+                      {canEdit && isEditable(r.recordStatus as RecordStatus) ? (
                         <Link
                           href={`/children/${r.id}/edit`}
                           aria-label={`Edit ${r.firstName} ${r.lastName}`}

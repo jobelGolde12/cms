@@ -4,7 +4,6 @@ import { resolveQrToken, registerQrScan } from "@/lib/qr";
 import { db } from "@/db";
 import { children } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { maskName } from "@/lib/utils";
 
 export const metadata = { title: "Record Verification — Sta. Magdalena CMS" };
 

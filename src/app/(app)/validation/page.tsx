@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { validationQueue, validationStats } from "@/lib/queries";
 import { reviewValidationForm } from "@/actions/children";
 import { hasPermission } from "@/lib/permissions";
-import { ageFromBirthDate, cn, formatDate } from "@/lib/utils";
+import { ageFromBirthDate, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { ShieldCheck } from "lucide-react";
@@ -51,6 +51,11 @@ export default async function ValidationPage({
             <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
               {filtered.length} record{filtered.length === 1 ? "" : "s"}
             </span>
+            {!q && stats.pendingReview > filtered.length ? (
+              <span className="text-[11px] text-brand-400">
+                showing first {filtered.length} of {stats.pendingReview} pending
+              </span>
+            ) : null}
           </div>
           <form action="/validation" method="GET" className="w-full sm:w-64">
             <label htmlFor="queue-search" className="sr-only">

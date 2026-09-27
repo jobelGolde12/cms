@@ -23,7 +23,6 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
-import bcrypt from "bcryptjs";
 import {
   auditLogs,
   barangays,
@@ -270,7 +269,7 @@ const barangayOf = (id: string | null): string | null =>
 const userRows = await db
   .insert(users)
   .values(
-    DEFAULT_CREDENTIALS.map((c, i) => ({
+    DEFAULT_CREDENTIALS.map((c) => ({
       id: `user-${c.role}`,
       email: c.email,
       passwordHash: c.passwordHash,

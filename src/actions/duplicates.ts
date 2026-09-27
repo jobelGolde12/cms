@@ -7,7 +7,6 @@ import { childDuplicateCandidates, children } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
 import { logAudit, notify } from "@/lib/audit";
 import { duplicateReviewSchema } from "@/lib/schemas";
-import { canAccessChild } from "@/lib/scope";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
 /**
@@ -113,5 +112,6 @@ export async function reviewDuplicate(
 
   revalidatePath("/duplicates");
   revalidatePath("/children");
+  revalidatePath("/dashboard");
   return ok(`Marked as ${decision.replace(/_/g, " ")}.`);
 }

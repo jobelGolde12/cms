@@ -50,7 +50,7 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Critical: ignore directories that cause infinite recompiles or OS freezes
     config.watchOptions = {
       ...config.watchOptions,

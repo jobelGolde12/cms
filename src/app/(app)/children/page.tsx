@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Plus, FileDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import {
   listChildren,
   listBarangays,
   listSchools,
   registryStats,
+  cohortCounts,
 } from "@/lib/queries";
 import { hasPermission } from "@/lib/permissions";
-import { formatDate } from "@/lib/utils";
 import { EDUCATION_STATUS_LABELS, RECORD_STATUS_LABELS, type EducationStatus, type RecordStatus } from "@/lib/constants";
 import {
   ActiveFilterChips,
@@ -20,13 +20,6 @@ import {
   RegistryPageHeader,
   RegistryPagination,
 } from "@/components/registry/registry-ui";
-
-const COHORT_RANGES: Record<string, [number, number]> = {
-  "0-4": [0, 4],
-  "5-11": [5, 11],
-  "12-15": [12, 15],
-  "16-17": [16, 17],
-};
 
 export default async function ChildrenPage({
   searchParams,
@@ -44,15 +37,23 @@ export default async function ChildrenPage({
   const sex = str("sex");
   const education = str("education");
   const school = str("school");
-  const cohort = str("cohort");
+  // Record lifecycle filter: defaults to active records so the table matches
+  // the KPI basis; archived/inactive rows are visible via an explicit choice.
+  const active = ["active", "inactive", "archived", "all"].includes(str("active"))
+    ? str("active")
+    : "active";
   const sort = params.sort === "name" || params.sort === "oldest" ? params.sort : "recent";
   const page = parseInt(str("page"), 10) || 1;
   const pageSize = parseInt(str("pageSize"), 10) || 10;
-  const cohortRange = COHORT_RANGES[cohort];
-  const ageMin = cohortRange ? cohortRange[0] : parseInt(str("ageMin"), 10) || undefined;
-  const ageMax = cohortRange ? cohortRange[1] : parseInt(str("ageMax"), 10) || undefined;
 
-  const [result, barangays, schools, stats] = await Promise.all([
+  // Cohort chips work through ageMin/ageMax URL params; derive the active
+  // cohort label from them so filters and chips stay in sync.
+  const ageMin = parseInt(str("ageMin"), 10) || undefined;
+  const ageMax = parseInt(str("ageMax"), 10) || undefined;
+  const cohort =
+    ageMin !== undefined && ageMax !== undefined ? `${ageMin}-${ageMax}` : str("cohort");
+
+  const [result, barangays, schools, stats, cohorts] = await Promise.all([
     listChildren(user, {
       q,
       barangay,
@@ -60,6 +61,7 @@ export default async function ChildrenPage({
       sex,
       education,
       school,
+      active,
       ageMin,
       ageMax,
       sort,
@@ -69,21 +71,15 @@ export default async function ChildrenPage({
     listBarangays(),
     listSchools(),
     registryStats(user),
+    cohortCounts(user),
   ]);
 
   const canEdit = hasPermission(user.role, "children.update");
   const canCreate = hasPermission(user.role, "children.create");
 
-  // Real per-cohort counts for the chip row (active records in scope only).
-  const cohortCounts: Record<string, number> = { "": stats.total };
-  await Promise.all(
-    Object.entries(COHORT_RANGES).map(async ([key, [min, max]]) => {
-      const r = await listChildren(user, { ageMin: min, ageMax: max, page: 1, pageSize: 1 });
-      cohortCounts[key] = r.total;
-    }),
-  );
+  const hasFilters = Boolean(q || barangay || status || sex || education || school || ageMin !== undefined || ageMax !== undefined || status !== "" || active !== "active");
 
-  const filterValues = { q, barangay, status, sex, education, cohort };
+  const filterValues = { q, barangay, status, sex, education, school, cohort, active };
 
   return (
     <div className="space-y-5">
@@ -115,6 +111,17 @@ export default async function ChildrenPage({
               value:
                 ageMin !== undefined && ageMax !== undefined ? `${ageMin}–${ageMax} yrs` : "",
             },
+            {
+              label: "Records",
+              value:
+                active === "active"
+                  ? ""
+                  : active === "archived"
+                    ? "Archived only"
+                    : active === "inactive"
+                      ? "Inactive only"
+                      : "",
+            },
           ]}
         />
         <div className="flex flex-wrap items-center gap-2">
@@ -134,11 +141,17 @@ export default async function ChildrenPage({
         values={filterValues}
         barangays={barangays}
         schools={schools}
-        cohorts={cohortCounts}
+        cohorts={cohorts}
       />
 
       <section className="rounded-lg border border-brand-200 bg-white shadow-xs">
-        <ChildRegistryTable rows={result.rows} canEdit={canEdit} />
+        <ChildRegistryTable
+          rows={result.rows}
+          canEdit={canEdit}
+          hasFilters={hasFilters}
+          activeSort={sort}
+          searchParams={params}
+        />
         <RegistryPagination
           page={result.page}
           pageSize={result.pageSize}

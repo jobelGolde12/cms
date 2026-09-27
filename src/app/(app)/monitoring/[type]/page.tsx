@@ -7,11 +7,10 @@ import { monitoringList } from "@/lib/queries";
 import {
   MONITORING_TYPES,
   MONITORING_TYPE_LABELS,
-  MONITORING_STATUSES,
   type MonitoringType,
 } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
-import { ageFromBirthDate, formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 const ALIASES: Record<string, MonitoringType> = {
   osy: "out_of_school_youth",

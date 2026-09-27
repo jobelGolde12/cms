@@ -2,11 +2,11 @@
 
 import { useActionState, useState, useEffect } from "react";
 import Link from "next/link";
-import { ShieldCheck, UserPlus, Lock, Building2, Mail, KeyRound, Check } from "lucide-react";
+import { ShieldCheck, UserPlus, Lock, Building2, KeyRound } from "lucide-react";
 import { registerUser } from "@/actions/register";
 import { getBarangays } from "@/actions/get-barangays";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select, Label, FieldError } from "@/components/ui/field";
+import { Field, Input, Select } from "@/components/ui/field";
 
 import type { ActionState } from "@/actions/helpers";
 

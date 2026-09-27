@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { listUsersWithRoles } from "@/lib/queries";
 import { hasPermission } from "@/lib/permissions";

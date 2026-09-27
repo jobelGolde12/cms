@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Git worktrees / agent sandboxes — not part of the build.
+    ".kilo/**",
   ]),
 ]);
 

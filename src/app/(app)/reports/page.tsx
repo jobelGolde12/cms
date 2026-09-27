@@ -5,7 +5,6 @@ import { db } from "@/db";
 import { reports } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { REPORT_TYPES, REPORT_TYPE_LABELS, type ReportType } from "@/lib/constants";
-import { hasPermission } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/utils";
 
 export default async function ReportsPage() {

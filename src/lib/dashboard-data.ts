@@ -1,15 +1,12 @@
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   auditLogs,
   barangays,
   childDuplicateCandidates,
   childEducation,
-  childEccd,
-  childDisabilities,
   childMonitoring,
   children,
-  interventions,
   users,
 } from "@/db/schema";
 import {
@@ -201,9 +198,17 @@ const scopedCount = (scope: ReturnType<typeof childScope>, extra?: ReturnType<ty
     .where(extra ? and(scope ?? sql`1 = 1`, extra) : (scope ?? sql`1 = 1`))
     .then((rows) => rows[0]?.n ?? 0);
 
+/**
+ * Active, non-duplicate records — the same basis as `dashboardStats().total` so
+ * every chart and distribution on the dashboard reconciles with the KPI grid.
+ */
+const activeNonDuplicate: SQL = sql`${children.status} = 'active' AND ${children.recordStatus} != 'marked_duplicate'`;
+
 export async function dashboardData(user: SessionUser): Promise<DashboardData> {
   const scope = childScope(user);
   const scopeSql = scope ?? sql`1 = 1`;
+  // Scope + active/non-duplicate basis, used by every children-derived chart.
+  const scopedActive = and(scopeSql, activeNonDuplicate) as SQL;
 
   const [
     stats,
@@ -221,11 +226,12 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
     dashboardStats(user),
 
     // Children per barangay (barangay-scope users only see their own rows).
+    // Basis: active, non-duplicate records — matches the KPI total.
     db
       .select({ name: barangays.name, value: count() })
       .from(children)
       .innerJoin(barangays, eq(barangays.id, children.barangayId))
-      .where(scopeSql)
+      .where(scopedActive)
       .groupBy(children.barangayId)
       .orderBy(desc(count())),
 
@@ -238,11 +244,11 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       .groupBy(childEducation.educationStatus)
       .orderBy(desc(count())),
 
-    // Record status distribution (all non-duplicate records).
+    // Record status distribution (active, non-duplicate records).
     db
       .select({ key: children.recordStatus, value: count() })
       .from(children)
-      .where(and(scopeSql, sql`${children.recordStatus} != 'marked_duplicate'`))
+      .where(scopedActive)
       .groupBy(children.recordStatus)
       .orderBy(desc(count())),
 
@@ -272,6 +278,7 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       .limit(8),
 
     // Per-barangay enrollment coverage for the monitoring table.
+    // Basis: active, non-duplicate records — matches the KPI total.
     db
       .select({
         barangay: barangays.name,
@@ -291,7 +298,7 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       })
       .from(children)
       .innerJoin(barangays, eq(barangays.id, children.barangayId))
-      .where(scopeSql)
+      .where(scopedActive)
       .groupBy(children.barangayId)
       .orderBy(desc(count())),
 
@@ -321,7 +328,6 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
   ]);
 
   const total = stats.total || 1;
-  const recordStatusTotal = recordRows.reduce((sum, r) => sum + r.value, 0) || 1;
 
   const kpis: Kpi[] = [
     {

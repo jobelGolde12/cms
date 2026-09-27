@@ -26,9 +26,7 @@ export async function markNotificationsRead(
 }
 
 /** Mark all of the current user's notifications as read. */
-export async function markAllNotificationsRead(
-  formData: FormData,
-): Promise<void> {
+export async function markAllNotificationsRead(): Promise<void> {
   const user = await getCurrentUser();
   if (!user) {
     return;
