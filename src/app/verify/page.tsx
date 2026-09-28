@@ -1,12 +1,13 @@
-import { ShieldCheck } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 export default async function VerifyPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-brand-50 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-brand-200 bg-white shadow-xl p-8">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-900 text-white shadow-md">
-            <ShieldCheck className="h-7 w-7" />
+          {/* Brand mark — single source of truth (see components/logo.tsx). */}
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-brand-200/70">
+            <Logo size="lg" />
           </div>
           <h1 className="text-xl font-extrabold text-brand-900">QR Verification</h1>
           <p className="mt-2 text-sm text-brand-500">Enter a verification token or scan a QR code.</p>

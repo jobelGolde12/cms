@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { login } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 
 type LoginState = Awaited<ReturnType<typeof login>>;
 
@@ -36,9 +37,8 @@ export default function LoginPage() {
       <header className="border-b border-brand-200 bg-white">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-900 text-white shadow-sm">
-              <Lock aria-hidden="true" className="h-5 w-5" />
-            </div>
+            {/* Brand mark — single source of truth (see components/logo.tsx). */}
+            <Logo size="lg" asLink priority />
             <div className="min-w-0 leading-tight">
               <p className="truncate text-[11px] font-bold uppercase tracking-wide text-brand-900">
                 Republic of the Philippines
@@ -78,6 +78,10 @@ export default function LoginPage() {
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10 sm:px-6 sm:py-14 lg:py-16">
         {/* Title Area */}
         <div className="mb-6 text-center sm:mb-8">
+          {/* Brand mark — single source of truth (see components/logo.tsx). */}
+          <div className="mb-4 flex justify-center">
+            <Logo size="xl" />
+          </div>
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-brand-950 sm:text-4xl">
             Sta. Magdalena
           </h1>

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Users, ShieldCheck } from "lucide-react";
-import { MUNICIPALITY } from "@/lib/constants";
+import { ShieldCheck } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 /**
  * Welcome header with institutional branding and refined navigation.
@@ -9,17 +9,10 @@ export function WelcomeHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-brand-200/70 bg-white/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3 group" aria-label="Home">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-900 to-brand-800 shadow-md shadow-brand-950/10 group-hover:shadow-lg transition-shadow duration-200 ring-1 ring-brand-200/30">
-            <Users className="h-5.5 w-5.5 text-white" aria-hidden="true" />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-brand-900">
-              {MUNICIPALITY.shortName}
-            </div>
-            <div className="text-sm font-extrabold text-brand-950 tracking-tight">Child Mapping System</div>
-          </div>
-        </Link>
+        <div className="flex items-center gap-3 group">
+          {/* Brand lockup — single source of truth (see components/logo.tsx). */}
+          <Logo size="xl" variant="lockup" asLink priority />
+        </div>
         <nav className="flex items-center gap-5 md:gap-8" aria-label="Primary">
           <Link
             href="/login"

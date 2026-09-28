@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, UsersRound, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { Logo } from "./logo";
 import { SidebarNav, type SidebarLink, type SidebarSection } from "./sidebar-nav";
 
 /**
@@ -52,9 +53,8 @@ export function MobileNavToggle({
           }`}
         >
           <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-4 py-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-900">
-              <UsersRound aria-hidden="true" className="h-4.5 w-4.5 text-white" />
-            </div>
+            {/* Brand mark — single source of truth (see components/logo.tsx). */}
+            <Logo size="md" asLink />
             <div className="min-w-0 flex-1 leading-tight">
               <div className="truncate text-xs font-bold uppercase tracking-wide text-brand-900">
                 Sta. Magdalena

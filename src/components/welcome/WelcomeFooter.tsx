@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Users } from "lucide-react";
 import { MUNICIPALITY } from "@/lib/constants";
+import { Logo } from "@/components/logo";
 
 /**
  * Footer with refined spacing, typography, and visual polish.
@@ -12,15 +12,8 @@ export function WelcomeFooter() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-900 to-brand-800 shadow-md shadow-brand-950/10 ring-1 ring-brand-200/30">
-                <Users className="h-5 w-5 text-white" aria-hidden="true" />
-              </div>
-              <div className="leading-tight">
-                <div className="text-sm font-extrabold text-brand-950 tracking-tight">
-                  {MUNICIPALITY.shortName} Child Mapping System
-                </div>
-                <div className="text-xs text-brand-500 font-medium">Official DepEd Form 1 Portal</div>
-              </div>
+              {/* Brand lockup — single source of truth (see components/logo.tsx). */}
+              <Logo size="lg" variant="lockup" asLink />
             </div>
             <p className="text-[15px] leading-relaxed text-brand-600 max-w-md">
               Municipal child census and verification platform for the {MUNICIPALITY.name},{" "}

@@ -2,11 +2,12 @@
 
 import { useActionState, useState, useEffect } from "react";
 import Link from "next/link";
-import { ShieldCheck, UserPlus, Lock, Building2, KeyRound } from "lucide-react";
+import { ShieldCheck, Lock, KeyRound } from "lucide-react";
 import { registerUser } from "@/actions/register";
 import { getBarangays } from "@/actions/get-barangays";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
+import { Logo } from "@/components/logo";
 
 import type { ActionState } from "@/actions/helpers";
 
@@ -27,9 +28,8 @@ export default function RegisterPage() {
       <header className="border-b border-brand-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-900 text-white shadow-sm">
-              <Building2 aria-hidden="true" className="h-5 w-5" />
-            </div>
+            {/* Brand mark — single source of truth (see components/logo.tsx). */}
+            <Logo size="lg" asLink priority />
             <div className="leading-tight">
               <p className="text-[11px] font-bold uppercase tracking-wide text-brand-900">Republic of the Philippines</p>
               <p className="text-[10px] font-medium text-brand-500">LGU STA. MAGDALENA • DEPED SORSOGON DIVISION</p>
@@ -47,8 +47,9 @@ export default function RegisterPage() {
         <div className="rounded-2xl border border-brand-200 bg-white px-8 py-10 shadow-lg shadow-brand-100/50 md:px-12 md:py-14">
           {/* Card Header */}
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-50 shadow-sm">
-              <UserPlus aria-hidden="true" className="h-8 w-8 text-action-700" />
+            {/* Brand mark — single source of truth (see components/logo.tsx). */}
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-brand-200/70">
+              <Logo size="lg" />
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-brand-950 md:text-4xl">Personnel Registration</h1>
             <p className="mt-2 text-sm text-brand-500">Apply for authorized system access</p>

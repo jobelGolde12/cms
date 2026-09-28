@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Bell, CircleCheck, MapPin, Search, UsersRound } from "lucide-react";
+import { Bell, CircleCheck, MapPin, Search } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { unreadNotificationCount } from "@/lib/queries";
 import { hasPermission, type Permission } from "@/lib/permissions";
 import { MUNICIPALITY, ROLE_LABELS } from "@/lib/constants";
+import { Logo } from "./logo";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 import { SidebarNav } from "./sidebar-nav";
 import { LogoutButton } from "./logout-button";
@@ -47,16 +48,15 @@ export default async function AppShell({ children }: { children: React.ReactNode
       {/* ------------------------------ Sidebar ------------------------------ */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-[#e5e7eb] bg-white lg:flex">
         <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-5 py-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-900">
-            <UsersRound aria-hidden="true" className="h-5 w-5 text-white" />
-          </div>
+          {/* Brand mark — single source of truth (see components/logo.tsx). */}
+          <Logo size="lg" asLink priority />
           <div className="min-w-0 leading-tight">
             <div className="truncate text-xs font-bold uppercase tracking-wide text-brand-900">
-              Sta. Magdalena
+              {MUNICIPALITY.shortName}
             </div>
             <div className="text-[11px] font-medium text-brand-500">Child Mapping</div>
             <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-400">
-              Sorsogon • LGU / DepEd
+              {MUNICIPALITY.region}
             </div>
           </div>
         </div>
@@ -77,6 +77,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
           <MobileNavToggle sections={NAV_SECTIONS} links={visibleLinks} />
 
           <div className="flex min-w-0 items-center gap-2">
+            <Logo size="md" className="lg:hidden" asLink priority />
             <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base">
               Child Mapping System
             </h1>
