@@ -18,6 +18,7 @@ import { loginSchema, changePasswordSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 import { findDefaultCredential } from "@/lib/default-credentials";
+import { trackEvent } from "@/lib/analytics";
 
 const REMEMBER_ME_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -52,6 +53,7 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
       ipAddress: ip,
       userAgent,
     });
+    await trackEvent("login_failed", { result: "rate-limit" });
     return {
       kind: "error",
       state: fail("Too many attempts. Please wait a minute before trying again."),
@@ -90,6 +92,7 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
       ipAddress: ip,
       userAgent,
     });
+    await trackEvent("login_failed", { result: "bad-credentials" });
     return { kind: "error", state: fail(ERROR_GENERIC) };
   }
 
@@ -103,6 +106,7 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
       ipAddress: ip,
       userAgent,
     });
+    await trackEvent("login_failed", { result: "deactivated" });
     return {
       kind: "error",
       state: fail("This account has been deactivated. Contact the administrator."),
@@ -122,6 +126,7 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
     ipAddress: ip,
     userAgent,
   });
+  await trackEvent("login_completed", { user_role: user.roleId ?? "unknown" });
 
   return { kind: "redirect" };
 }
@@ -161,6 +166,7 @@ export async function logout(): Promise<void> {
       ipAddress: ip,
       userAgent,
     });
+    await trackEvent("logout_completed", { user_role: user.role ?? "unknown" });
   }
   redirect("/login");
 }

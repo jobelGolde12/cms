@@ -922,11 +922,15 @@ export type MonitorRow = {
 export async function monitoringList(
   user: SessionUser,
   type?: MonitoringType,
+  page = 1,
+  pageSize = 50,
 ): Promise<MonitorRow[]> {
   const scope = childScope(user);
   const scopeSql = scope ?? sql`1 = 1`;
   const conditions: SQL[] = [scopeSql];
   if (type) conditions.push(eq(childMonitoring.monitoringType, type));
+
+  const offset = (page - 1) * pageSize;
 
   return db
     .select({
@@ -946,7 +950,8 @@ export async function monitoringList(
     .innerJoin(barangays, eq(barangays.id, children.barangayId))
     .where(and(...conditions))
     .orderBy(desc(childMonitoring.observedAt))
-    .limit(200);
+    .limit(pageSize)
+    .offset(offset);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -973,11 +978,15 @@ export type InterventionRow = {
 export async function listInterventions(
   user: SessionUser,
   status?: string,
+  page = 1,
+  pageSize = 50,
 ): Promise<InterventionRow[]> {
   const scope = childScope(user);
   const scopeSql = scope ?? sql`1 = 1`;
   const conditions: SQL[] = [scopeSql];
   if (status && status !== "all") conditions.push(eq(interventions.status, status));
+
+  const offset = (page - 1) * pageSize;
 
   const rows = await db
     .select({
@@ -1000,7 +1009,8 @@ export async function listInterventions(
     .innerJoin(barangays, eq(barangays.id, children.barangayId))
     .where(and(...conditions))
     .orderBy(desc(interventions.createdAt))
-    .limit(200);
+    .limit(pageSize)
+    .offset(offset);
 
   if (rows.length === 0) return [];
 
@@ -1040,7 +1050,8 @@ export async function getFollowupsForIntervention(interventionId: string) {
 /*  Users / audit / notifications                                             */
 /* -------------------------------------------------------------------------- */
 
-export async function listUsersWithRoles() {
+export async function listUsersWithRoles(page = 1, pageSize = 25) {
+  const offset = (page - 1) * pageSize;
   return db
     .select({
       id: users.id,
@@ -1057,10 +1068,13 @@ export async function listUsersWithRoles() {
     .from(users)
     .innerJoin(roles, eq(roles.id, users.roleId))
     .leftJoin(barangays, eq(barangays.id, users.barangayId))
-    .orderBy(asc(users.createdAt));
+    .orderBy(asc(users.createdAt))
+    .limit(pageSize)
+    .offset(offset);
 }
 
-export async function listAuditLogs(limit = 100) {
+export async function listAuditLogs(page = 1, limit = 50) {
+  const offset = (page - 1) * limit;
   return db
     .select({
       id: auditLogs.id,
@@ -1074,7 +1088,8 @@ export async function listAuditLogs(limit = 100) {
     .from(auditLogs)
     .leftJoin(users, eq(users.id, auditLogs.userId))
     .orderBy(desc(auditLogs.createdAt))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function unreadNotificationCount(userId: string): Promise<number> {
