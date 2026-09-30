@@ -1,68 +1,71 @@
 import Link from "next/link";
 import { MUNICIPALITY } from "@/lib/constants";
 import { Logo } from "@/components/logo";
+import { EditorialContainer } from "./editorial";
 
 /**
- * Footer with refined spacing, typography, and visual polish.
+ * Footer — lightweight and editorial (design.md §26): white background,
+ * hairline top border, small typography, simple link columns.
  */
 export function WelcomeFooter() {
   return (
-    <footer className="border-t border-brand-200/70 bg-gradient-to-b from-white to-brand-50/50">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-5">
-              {/* Brand lockup — single source of truth (see components/logo.tsx). */}
-              <Logo size="lg" variant="lockup" asLink />
-            </div>
-            <p className="text-[15px] leading-relaxed text-brand-600 max-w-md">
-              Municipal child census and verification platform for the {MUNICIPALITY.name},{" "}
-              {MUNICIPALITY.province}, {MUNICIPALITY.region}. Compliant with RA 10173 (Data
-              Privacy Act) and the DepEd Child Protection Policy.
+    <footer className="border-t border-brand-200 bg-white">
+      <EditorialContainer className="py-14 md:py-16">
+        <div className="grid gap-10 md:grid-cols-12 lg:gap-12">
+          {/* Brand + mission */}
+          <div className="md:col-span-6">
+            <Logo size="md" variant="lockup" asLink />
+            <p className="mt-5 max-w-md text-[13px] leading-[1.6] text-brand-500">
+              Municipal child census and verification platform for the{" "}
+              {MUNICIPALITY.name}, {MUNICIPALITY.province}, {MUNICIPALITY.region}.
+              Compliant with RA 10173 (Data Privacy Act) and the DepEd Child
+              Protection Policy.
             </p>
           </div>
 
-          <nav aria-label="Quick links">
-            <h4 className="text-sm font-extrabold text-brand-950 tracking-tight mb-5">Quick Links</h4>
-            <ul className="space-y-3 text-[15px] text-brand-600">
+          {/* Quick links */}
+          <nav className="md:col-span-3" aria-label="Quick links">
+            <p className="eyebrow">Quick Links</p>
+            <ul className="mt-4 space-y-1 text-[13px] text-brand-600">
               <li>
-                <Link href="/login" className="hover:text-brand-950 transition-colors duration-150 font-medium">
+                <Link href="/login" className="-mx-2 inline-flex items-center px-2 py-2 transition-colors duration-150 hover:text-brand-950">
                   Sign In
                 </Link>
               </li>
               <li>
-                <Link href="/register" className="hover:text-brand-950 transition-colors duration-150 font-medium">
+                <Link href="/register" className="-mx-2 inline-flex items-center px-2 py-2 transition-colors duration-150 hover:text-brand-950">
                   Request Access
                 </Link>
               </li>
             </ul>
           </nav>
 
-          <nav aria-label="Compliance">
-            <h4 className="text-sm font-extrabold text-brand-950 tracking-tight mb-5">Compliance</h4>
-            <ul className="space-y-3 text-[15px] text-brand-600">
+          {/* Compliance */}
+          <div className="md:col-span-3">
+            <p className="eyebrow">Compliance</p>
+            <ul className="mt-4 space-y-2.5 text-[13px] leading-[1.55] text-brand-600">
               <li>
-                <span className="font-extrabold text-brand-900">RA 10173</span> — Data Privacy Act
+                <span className="font-medium text-brand-900">RA 10173</span> — Data Privacy Act
               </li>
               <li>
-                <span className="font-extrabold text-brand-900">DepEd Policy</span> — Child Protection
+                <span className="font-medium text-brand-900">DepEd Policy</span> — Child Protection
               </li>
               <li>
-                <span className="font-extrabold text-brand-900">DepEd Form 1</span> — Enrollment Verification
+                <span className="font-medium text-brand-900">DepEd Form 1</span> — Enrollment Verification
               </li>
             </ul>
-          </nav>
+           </div>
         </div>
 
-        <div className="mt-10 pt-8 border-t border-brand-200/60 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-brand-400 font-medium tracking-wide">
+        <div className="mt-12 flex flex-col gap-2 border-t border-brand-200 pt-6 md:flex-row md:items-center md:justify-between">
+          <p className="text-[11px] tracking-[0.02em] text-brand-400">
             © 2026 Municipal Government of Sta. Magdalena · DepEd Schools Division of Sorsogon
           </p>
-          <p className="text-xs text-brand-400 font-medium tracking-wide">
+          <p className="text-[11px] tracking-[0.02em] text-brand-400">
             Secure, audited, and purpose-built for municipal governance.
           </p>
         </div>
-      </div>
+      </EditorialContainer>
     </footer>
   );
 }

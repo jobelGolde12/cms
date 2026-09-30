@@ -23,10 +23,10 @@ export default function RegisterPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-brand-50">
+    <main className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-brand-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 md:px-10 lg:px-16">
           <div className="flex items-center gap-3">
             {/* Brand mark — single source of truth (see components/logo.tsx). */}
             <Logo size="lg" asLink priority />
@@ -44,14 +44,14 @@ export default function RegisterPage() {
 
       {/* Main */}
       <div className="mx-auto max-w-3xl px-4 py-16 md:px-8">
-        <div className="rounded-2xl border border-brand-200 bg-white px-8 py-10 shadow-lg shadow-brand-100/50 md:px-12 md:py-14">
+        <div className="rounded-[3px] border border-brand-200 bg-white px-8 py-10 shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:px-12 md:py-14">
           {/* Card Header */}
           <div className="text-center">
             {/* Brand mark — single source of truth (see components/logo.tsx). */}
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-brand-200/70">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[3px] border border-brand-200 bg-white">
               <Logo size="lg" />
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-brand-950 md:text-4xl">Personnel Registration</h1>
+            <h1 className="text-3xl font-normal tracking-[-0.03em] text-brand-950 md:text-4xl">Personnel Registration</h1>
             <p className="mt-2 text-sm text-brand-500">Apply for authorized system access</p>
           </div>
 
@@ -60,7 +60,7 @@ export default function RegisterPage() {
             {!state.ok && state.error ? (
               <div
                 role="alert"
-                className="rounded-lg border border-red-200 bg-status-error-bg px-4 py-3 text-sm font-medium text-red-800"
+                className="rounded-[3px] border border-red-200 bg-status-error-bg px-4 py-3 text-sm font-medium text-red-800"
               >
                 {state.error}
               </div>
@@ -68,19 +68,19 @@ export default function RegisterPage() {
 
             <div className="grid gap-5 md:grid-cols-2 md:gap-6">
               <Field label="First Name" htmlFor="firstName" required error={state.ok === false ? state.fieldErrors?.firstName ?? undefined : undefined}>
-                <Input id="firstName" name="firstName" type="text" placeholder="e.g. Maria" autoComplete="given-name" required />
+                <Input id="firstName" name="firstName" type="text" placeholder="e.g. Maria" autoComplete="given-name" required className="rounded-[3px]" />
               </Field>
 
               <Field label="Last Name" htmlFor="lastName" required error={state.ok === false ? state.fieldErrors?.lastName ?? undefined : undefined}>
-                <Input id="lastName" name="lastName" type="text" placeholder="e.g. Santos" autoComplete="family-name" required />
+                <Input id="lastName" name="lastName" type="text" placeholder="e.g. Santos" autoComplete="family-name" required className="rounded-[3px]" />
               </Field>
 
               <Field label="Official Email Address" htmlFor="email" required error={state.ok === false ? state.fieldErrors?.email ?? undefined : undefined}>
-                <Input id="email" name="email" type="email" placeholder="name@deped.gov.ph" autoComplete="email" required />
+                <Input id="email" name="email" type="email" placeholder="name@deped.gov.ph" autoComplete="email" required className="rounded-[3px]" />
               </Field>
 
               <Field label="Operational Role" htmlFor="roleId" required error={state.ok === false ? state.fieldErrors?.roleId ?? undefined : undefined}>
-                <Select id="roleId" name="roleId" required defaultValue="">
+                <Select id="roleId" name="roleId" required defaultValue="" className="rounded-[3px]">
                   <option value="">Select role</option>
                   <option value="role-admin">System Administrator</option>
                   <option value="role-lgu">LGU User</option>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
 
               <div className="md:col-span-2">
                 <Field label="Assigned Station / Barangay" htmlFor="barangayId" required error={state.ok === false ? state.fieldErrors?.barangayId ?? undefined : undefined} hint="Select your assigned station or barangay">
-                  <Select id="barangayId" name="barangayId" required defaultValue="">
+                  <Select id="barangayId" name="barangayId" required defaultValue="" className="rounded-[3px]">
                     <option value="">Select barangay</option>
                     {barangays.map((b) => (
                       <option key={b.id} value={b.id}>{b.name}</option>
@@ -100,16 +100,16 @@ export default function RegisterPage() {
               </div>
 
               <Field label="Password" htmlFor="password" required>
-                <Input id="password" name="password" type="password" placeholder="At least 8 characters" autoComplete="new-password" required />
+                <Input id="password" name="password" type="password" placeholder="At least 8 characters" autoComplete="new-password" required className="rounded-[3px]" />
               </Field>
 
               <Field label="Confirm Password" htmlFor="confirmPassword" required>
-                <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Re-enter your password" autoComplete="new-password" required />
+                <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Re-enter your password" autoComplete="new-password" required className="rounded-[3px]" />
               </Field>
             </div>
 
             {/* Privacy / Compliance */}
-            <div className="rounded-xl bg-action-50/60 px-5 py-4">
+            <div className="border-y border-brand-200 px-1 py-4">
               <label className="flex items-start gap-3 text-sm text-brand-800">
                 <input
                   type="checkbox"
@@ -130,7 +130,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Submit */}
-            <Button type="submit" size="lg" className="w-full bg-action-700 hover:bg-action-800" disabled={pending || !agreed}>
+            <Button type="submit" size="lg" className="w-full rounded-[3px] bg-brand-950 text-[13px] font-medium text-white hover:bg-brand-800" disabled={pending || !agreed}>
               <Lock aria-hidden="true" className="h-4 w-4" />
               {pending ? "Submitting…" : "Submit Registration"}
             </Button>

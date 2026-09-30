@@ -1,5 +1,3 @@
-import { Card, CardBody } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Users,
   ShieldCheck,
@@ -9,6 +7,12 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import {
+  EditorialContainer,
+  Eyebrow,
+  SectionTitle,
+  Lede,
+} from "./editorial";
 
 /** Feature item for the system capabilities grid. */
 export interface Feature {
@@ -67,49 +71,58 @@ export const features: Feature[] = [
 ];
 
 /**
- * Individual feature card component with refined design.
+ * Individual capability item — flat editorial treatment (design.md §49: no
+ * rounded cards as the default language). A small line icon, quiet metadata
+ * label, and hairline divider carry the structure instead of boxes.
  */
 export function FeatureCard({ feature }: { feature: Feature }) {
+  const Icon = feature.icon;
   return (
-    <Card className="group h-full rounded-2xl border border-brand-200/70 bg-white/80 shadow-sm shadow-brand-100/20 hover:shadow-xl hover:shadow-brand-100/30 hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm">
-      <CardBody className="flex flex-col h-full p-7">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-900 to-brand-800 shadow-md shadow-brand-900/10 ring-1 ring-brand-100/60 group-hover:shadow-lg group-hover:shadow-brand-900/15 transition-shadow duration-300">
-          <feature.icon className="h-7 w-7 text-white" aria-hidden="true" />
-        </div>
-        <div className="flex items-center gap-2.5 mb-3">
-          <h3 className="text-xl font-extrabold text-brand-950 tracking-tight">{feature.title}</h3>
-          <Badge tone="neutral" className="text-[10px] uppercase tracking-wide px-2.5 py-0.5 font-semibold shadow-sm">
-            {feature.badge}
-          </Badge>
-        </div>
-        <p className="text-[15px] leading-relaxed text-brand-600 flex-1">{feature.description}</p>
-      </CardBody>
-    </Card>
+    <article className="group border-t border-brand-200 pt-8">
+      <div className="flex items-center justify-between gap-3">
+        <Icon
+          className="h-5 w-5 text-brand-400 transition-colors duration-300 group-hover:text-action-600"
+          aria-hidden="true"
+        />
+        <span className="eyebrow">{feature.badge}</span>
+      </div>
+      <h3 className="mt-5 text-lg font-medium tracking-[-0.01em] text-brand-950">
+        {feature.title}
+      </h3>
+      <p className="mt-3 text-[15px] leading-[1.55] text-brand-500">
+        {feature.description}
+      </p>
+    </article>
   );
 }
 
 /**
- * Features section with refined cards.
+ * Capabilities section — editorial grid with hairline dividers, generous
+ * whitespace, and quiet metadata. No cards, no shadows (design.md §18–20).
  */
 export function WelcomeFeatures() {
   return (
-    <section className="py-20 md:py-28 lg:py-36 bg-brand-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center mb-20">
-          <h2 className="text-[2rem] font-extrabold tracking-tight text-brand-950 leading-tight md:text-[2.5rem] lg:text-[3rem]">
-            System Capabilities
-          </h2>
-          <p className="mt-5 text-lg leading-relaxed text-brand-600 md:text-xl">
-            Purpose-built features for municipal child mapping and DepEd compliance.
-          </p>
+    <section className="border-y border-brand-200 bg-brand-50/40 py-24 md:py-32 lg:py-40">
+      <EditorialContainer>
+        <div className="grid gap-8 md:grid-cols-12 md:items-end">
+          <div className="md:col-span-7">
+            <Eyebrow>Capabilities</Eyebrow>
+            <SectionTitle className="mt-4">What the system does.</SectionTitle>
+          </div>
+          <div className="md:col-span-5">
+            <Lede>
+              Purpose-built features for municipal child mapping and DepEd
+              compliance.
+            </Lede>
+          </div>
         </div>
 
-        <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-16 grid gap-x-8 gap-y-12 md:grid-cols-2 lg:grid-cols-3 md:mt-20">
           {features.map((feature) => (
             <FeatureCard key={feature.title} feature={feature} />
           ))}
         </div>
-      </div>
+      </EditorialContainer>
     </section>
   );
 }

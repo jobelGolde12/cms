@@ -13,14 +13,17 @@ import { WelcomeFooter } from "./WelcomeFooter";
  * showcases the major features, and guides users to Sign In / Register.
  * All content is derived from the codebase (routes, constants, real features).
  *
+ * Visual language follows design.md: white editorial canvas, large thin
+ * typography, compact header, generous whitespace, restrained motion.
+ *
  * Server Component — no client-side JavaScript is needed on this page.
  */
 export default function WelcomePage() {
   return (
-    <div className="min-h-screen bg-brand-50">
+    <div className="min-h-screen bg-white">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-950 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-[3px] focus:bg-brand-950 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
       >
         Skip to content
       </a>

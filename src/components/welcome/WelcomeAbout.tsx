@@ -1,81 +1,118 @@
 import { CheckCircle2 } from "lucide-react";
+import {
+  EditorialContainer,
+  Eyebrow,
+  SectionTitle,
+  Lede,
+} from "./editorial";
+
+/** Compliance/purpose items preserved from the previous implementation. */
+const complianceItems = [
+  {
+    title: "DepEd Form 1 Compliance",
+    desc: "Aligned with DepEd enrollment verification requirements and child protection standards.",
+  },
+  {
+    title: "RA 10173 Data Privacy",
+    desc: "Built-in privacy controls, role-based access, and audit logging for Data Privacy Act compliance.",
+  },
+  {
+    title: "Interoperable Exports",
+    desc: "PDF, Excel, and CSV reports formatted for LGU planning, DepEd submissions, and PSA coordination.",
+  },
+];
+
+/** User roles preserved from the previous implementation. */
+const userRoles = [
+  {
+    label: "Barangay Users",
+    desc: "Register and validate child records for their assigned barangay. Generate QR codes for field verification.",
+  },
+  {
+    label: "LGU Users",
+    desc: "Municipal-level oversight: review validations, monitor interventions, generate consolidated reports.",
+  },
+  {
+    label: "Administrators",
+    desc: "Full system access: user management, system settings, audit logs, duplicate resolution.",
+  },
+];
 
 /**
- * About / purpose section explaining the system's role in municipal governance.
+ * About / purpose section — two editorial layouts per design.md §19/§22:
+ * first a large typographic statement (§22), then text-left/detail-right.
+ * Flat, borderless, hierarchy through typography and whitespace only.
  */
 export function WelcomeAbout() {
   return (
-    <section className="py-20 md:py-28 lg:py-36 bg-gradient-to-b from-white via-brand-50/30 to-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-14 lg:grid-cols-2 lg:gap-20 items-start">
-          <div>
-            <h2 className="text-[2rem] font-extrabold tracking-tight text-brand-950 leading-tight md:text-[2.5rem] lg:text-[3rem]">
-              Purpose-Built for{" "}
-              <span className="text-action-700">Municipal Governance</span>
-            </h2>
-            <p className="mt-6 text-lg leading-relaxed text-brand-600 md:text-xl md:leading-relaxed">
-              The Municipal Child Mapping System serves as the single source of truth for child
-              census data in Sta. Magdalena, supporting evidence-based planning for education,
-              health, and social welfare programs across all 14 barangays.
-            </p>
+    <section className="bg-white">
+      {/* ── Part 1: large typographic statement (design.md §22) ── */}
+      <div className="border-b border-brand-200">
+        <EditorialContainer className="py-24 md:py-32 lg:py-40">
+          <Eyebrow>Purpose</Eyebrow>
+          <p className="mt-6 max-w-3xl text-[1.75rem] leading-[1.15] font-normal tracking-[-0.03em] text-brand-950 md:text-[2.25rem] lg:text-[2.75rem]">
+            Purpose-built for municipal governance — the single source of truth
+            for child census data in{" "}
+            <span className="text-action-700">Sta. Magdalena</span>, supporting
+            evidence-based planning for education, health, and social welfare
+            programs across all 14 barangays.
+          </p>
+        </EditorialContainer>
+      </div>
 
-            <div className="mt-10 space-y-6">
-              {[
-                {
-                  title: "DepEd Form 1 Compliance",
-                  desc: "Aligned with DepEd enrollment verification requirements and child protection standards.",
-                },
-                {
-                  title: "RA 10173 Data Privacy",
-                  desc: "Built-in privacy controls, role-based access, and audit logging for Data Privacy Act compliance.",
-                },
-                {
-                  title: "Interoperable Exports",
-                  desc: "PDF, Excel, and CSV reports formatted for LGU planning, DepEd submissions, and PSA coordination.",
-                },
-              ].map((item) => (
-                <div key={item.title} className="flex gap-5">
-                  <div className="flex-shrink-0 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 to-brand-50 shadow-sm shadow-brand-200/30 ring-1 ring-brand-200/40">
-                    <CheckCircle2 className="h-6 w-6 text-action-700" aria-hidden="true" />
-                  </div>
+      {/* ── Part 2: text left / detail right (design.md §19 Layout A) ── */}
+      <EditorialContainer className="py-24 md:py-32 lg:py-40">
+        <div className="grid gap-16 lg:grid-cols-2 lg:gap-24">
+          <div>
+            <Eyebrow>Compliance</Eyebrow>
+            <SectionTitle className="mt-4 text-[1.75rem] md:text-[2.25rem]">
+              Built around standards, not around trends.
+            </SectionTitle>
+            <Lede className="mt-6 max-w-[46ch]">
+              Every workflow in the system maps to an institutional requirement —
+              from enrollment verification to data privacy to interoperable
+              reporting.
+            </Lede>
+
+            <div className="mt-12 divide-y divide-brand-200 border-y border-brand-200">
+              {complianceItems.map((item) => (
+                <div key={item.title} className="flex items-start gap-4 py-5">
+                  <CheckCircle2
+                    className="mt-1 h-4 w-4 shrink-0 text-action-600"
+                    aria-hidden="true"
+                  />
                   <div>
-                    <h4 className="text-base font-extrabold text-brand-950 tracking-tight">{item.title}</h4>
-                    <p className="mt-1.5 text-sm leading-relaxed text-brand-500">{item.desc}</p>
+                    <h3 className="text-base font-medium text-brand-950">{item.title}</h3>
+                    <p className="mt-1.5 max-w-[44ch] text-sm leading-[1.55] text-brand-500">
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="relative rounded-[2rem] border border-brand-200/60 bg-gradient-to-br from-brand-50/80 via-white/60 to-brand-50/80 p-8 md:p-12 shadow-xl shadow-brand-100/20 backdrop-blur-md ring-1 ring-brand-200/30">
-            <div className="absolute top-0 left-8 right-8 h-1 rounded-full bg-gradient-to-r from-transparent via-brand-300/30 to-transparent" aria-hidden="true" />
-            <h3 className="text-2xl font-extrabold text-brand-950 tracking-tight">Who Uses This System</h3>
-            <dl className="mt-8 space-y-6 text-sm">
-              {[
-                {
-                  label: "Barangay Users",
-                  desc: "Register and validate child records for their assigned barangay. Generate QR codes for field verification.",
-                },
-                {
-                  label: "LGU Users",
-                  desc: "Municipal-level oversight: review validations, monitor interventions, generate consolidated reports.",
-                },
-                {
-                  label: "Administrators",
-                  desc: "Full system access: user management, system settings, audit logs, duplicate resolution.",
-                },
-              ].map((item) => (
-                <div key={item.label} className="flex items-start gap-4">
-                  <dt className="flex-shrink-0 w-24 font-extrabold text-sm text-brand-950 tracking-tight pt-0.5">
+          {/* Who uses this system — quiet definition list, no box (§49) */}
+          <div className="lg:pl-8">
+            <Eyebrow>Audience</Eyebrow>
+            <h3 className="mt-4 text-xl font-medium tracking-[-0.01em] text-brand-950 md:text-2xl">
+              Who uses this system
+            </h3>
+            <dl className="mt-10 space-y-10">
+              {userRoles.map((item) => (
+                <div key={item.label} className="border-t border-brand-200 pt-5">
+                  <dt className="text-[13px] font-medium uppercase tracking-[0.12em] text-brand-950">
                     {item.label}
                   </dt>
-                  <dd className="text-brand-600 leading-relaxed">{item.desc}</dd>
+                  <dd className="mt-2 max-w-[42ch] text-[15px] leading-[1.55] text-brand-500">
+                    {item.desc}
+                  </dd>
                 </div>
               ))}
             </dl>
           </div>
         </div>
-      </div>
+      </EditorialContainer>
     </section>
   );
 }

@@ -32,10 +32,10 @@ export default function LoginPage() {
   const hasError = state.ok === false && Boolean(state.error);
 
   return (
-    <main className="flex min-h-screen flex-col bg-brand-50">
+    <main className="flex min-h-screen flex-col bg-white">
       {/* Institutional Header */}
       <header className="border-b border-brand-200 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3 md:px-10 lg:px-16">
           <div className="flex min-w-0 items-center gap-3">
             {/* Brand mark — single source of truth (see components/logo.tsx). */}
             <Logo size="lg" asLink priority />
@@ -82,10 +82,10 @@ export default function LoginPage() {
           <div className="mb-4 flex justify-center">
             <Logo size="xl" />
           </div>
-          <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-brand-950 sm:text-4xl">
+          <h1 className="text-3xl font-normal leading-[1.05] tracking-[-0.03em] text-brand-950 sm:text-4xl">
             Sta. Magdalena
           </h1>
-          <h2 className="mt-1 text-lg font-bold tracking-tight text-brand-900 sm:text-xl">
+          <h2 className="mt-1 text-lg font-medium tracking-[-0.01em] text-brand-900 sm:text-xl">
             Child Mapping System
           </h2>
           <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-action-700 sm:text-sm">
@@ -94,7 +94,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Card */}
-        <div className="w-full rounded-2xl border border-brand-200 bg-white px-5 py-6 shadow-lg shadow-brand-100/50 sm:px-8 sm:py-8">
+        <div className="w-full rounded-[3px] border border-brand-200 bg-white px-5 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] sm:px-8 sm:py-8">
           {/* Security Header */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-brand-200 pb-4">
             <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export default function LoginPage() {
                 id={errorId}
                 role="alert"
                 aria-live="polite"
-                className="flex items-start gap-2 rounded-lg border border-red-200 bg-status-error-bg px-4 py-3 text-sm font-medium text-red-800"
+                className="flex items-start gap-2 rounded-[3px] border border-red-200 bg-status-error-bg px-4 py-3 text-sm font-medium text-red-800"
               >
                 <AlertCircle
                   aria-hidden="true"
@@ -146,7 +146,7 @@ export default function LoginPage() {
                   aria-describedby={
                     hasError ? `${emailHintId} ${errorId}` : emailHintId
                   }
-                  className="h-11 w-full rounded-lg border border-brand-300 bg-brand-50 pl-10 pr-3 text-sm text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/20"
+                  className="h-11 w-full rounded-[3px] border border-brand-300 bg-white pl-10 pr-3 text-sm text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/20"
                 />
               </div>
               <p id={emailHintId} className="text-xs text-brand-500">
@@ -183,7 +183,7 @@ export default function LoginPage() {
                   required
                   aria-invalid={hasError || undefined}
                   aria-describedby={hasError ? errorId : undefined}
-                  className="h-11 w-full rounded-lg border border-brand-300 bg-brand-50 pl-10 pr-10 text-sm text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/20"
+                  className="h-11 w-full rounded-[3px] border border-brand-300 bg-white pl-10 pr-10 text-sm text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/20"
                 />
                 <button
                   type="button"
@@ -222,7 +222,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               size="lg"
-              className="h-12 w-full bg-brand-950 text-base font-semibold text-white hover:bg-brand-900 focus-visible:ring-2 focus-visible:ring-action-600 focus-visible:ring-offset-2"
+              className="h-12 w-full rounded-[3px] bg-brand-950 text-[13px] font-medium text-white hover:bg-brand-800 focus-visible:ring-2 focus-visible:ring-action-600 focus-visible:ring-offset-2"
               disabled={pending}
               aria-busy={pending}
             >
@@ -246,7 +246,7 @@ export default function LoginPage() {
 
         {/* Security Notice */}
         <div className="mt-6 text-center">
-          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs text-brand-600">
+          <div className="inline-flex max-w-full items-center gap-2 px-4 py-2 text-xs text-brand-500">
             <ShieldCheck
               aria-hidden="true"
               className="h-3.5 w-3.5 shrink-0 text-action-700"

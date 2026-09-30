@@ -1,3 +1,11 @@
+import {
+  EditorialContainer,
+  Eyebrow,
+  SectionTitle,
+  Lede,
+  EditorialRule,
+} from "./editorial";
+
 /** Workflow steps derived from the actual application. */
 const steps = [
   {
@@ -21,38 +29,46 @@ const steps = [
 ];
 
 /**
- * Visual workflow explanation showing the three main phases of using the system.
+ * Workflow section — editorial numbered steps separated by hairlines rather
+ * than card boxes (design.md §18, §49: don't turn every section into a grid
+ * of cards). Hierarchy: large thin number → title → description.
  */
 export function WelcomeHowItWorks() {
   return (
-    <section className="py-20 md:py-28 lg:py-36 bg-gradient-to-b from-brand-50/40 to-white border-y border-brand-200/60">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center mb-20">
-          <h2 className="text-[2rem] font-extrabold tracking-tight text-brand-950 leading-tight md:text-[2.5rem] lg:text-[3rem]">
-            How It Works
-          </h2>
-          <p className="mt-5 text-lg leading-relaxed text-brand-600 md:text-xl">
-            A streamlined workflow for authorized personnel to manage child mapping data securely and efficiently.
-          </p>
+    <section className="bg-white py-24 md:py-32 lg:py-40">
+      <EditorialContainer>
+        {/* Section introduction — editorial label + heading + side copy (§18) */}
+        <div className="grid gap-8 md:grid-cols-12 md:items-end">
+          <div className="md:col-span-7">
+            <Eyebrow>Workflow</Eyebrow>
+            <SectionTitle className="mt-4">How it works.</SectionTitle>
+          </div>
+          <div className="md:col-span-5">
+            <Lede>
+              A streamlined workflow for authorized personnel to manage child
+              mapping data securely and efficiently.
+            </Lede>
+          </div>
         </div>
 
-        <div className="grid gap-10 md:grid-cols-3 md:gap-6">
-          {steps.map((step) => (
-            <article
-              key={step.number}
-              className="group relative flex flex-col items-center text-center px-6 py-10 rounded-3xl border border-brand-200/60 bg-white/60 shadow-sm shadow-brand-100/30 hover:shadow-lg hover:shadow-brand-100/40 hover:-translate-y-1 transition-all duration-300"
-            >
-              {/* Step number */}
-              <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-brand-900 to-brand-800 shadow-lg shadow-brand-950/10 font-extrabold text-2xl text-white ring-1 ring-brand-200/30">
-                  {step.number}
-                </div>
+        <EditorialRule className="mt-12 md:mt-16" />
 
-              <h3 className="text-xl font-bold text-brand-950 tracking-tight">{step.title}</h3>
-              <p className="mt-3 text-base leading-relaxed text-brand-600 max-w-xs mx-auto">{step.description}</p>
+        <div className="grid gap-x-8 gap-y-12 pt-12 md:grid-cols-3 md:pt-16">
+          {steps.map((step) => (
+            <article key={step.number} className="group">
+              <p className="numeric text-[13px] font-medium tracking-[0.08em] text-brand-300 transition-colors duration-300 group-hover:text-action-600">
+                {step.number}
+              </p>
+              <h3 className="mt-4 text-lg font-medium tracking-[-0.01em] text-brand-950">
+                {step.title}
+              </h3>
+              <p className="mt-3 max-w-[36ch] text-[15px] leading-[1.55] text-brand-500">
+                {step.description}
+              </p>
             </article>
           ))}
         </div>
-      </div>
+      </EditorialContainer>
     </section>
   );
 }
