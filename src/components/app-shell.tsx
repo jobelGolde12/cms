@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Bell, CircleCheck, MapPin, Search } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
 import { unreadNotificationCount } from "@/lib/queries";
 import { hasPermission, type Permission } from "@/lib/permissions";
 import { MUNICIPALITY, ROLE_LABELS } from "@/lib/constants";
@@ -8,6 +7,7 @@ import { Logo } from "./logo";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 import { SidebarNav } from "./sidebar-nav";
 import { LogoutButton } from "./logout-button";
+import type { SessionUser } from "@/lib/auth";
 
 type NavLink = {
   label: string;
@@ -36,10 +36,13 @@ const NAV_SECTIONS: { heading: string; items: string[] }[] = [
   { heading: "System", items: ["/users", "/settings"] },
 ];
 
-export default async function AppShell({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  if (!user) return <div className="min-h-screen bg-brand-50" />;
-
+export default async function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: SessionUser;
+}) {
   const visibleLinks = navLinks.filter((link) => hasPermission(user.role, link.permission));
   const unread = await unreadNotificationCount(user.id);
 

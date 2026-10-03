@@ -49,6 +49,7 @@ export function SidebarNav({
                   <li key={link.href}>
                     <Link
                       href={link.href}
+                      prefetch={true}
                       onClick={onNavigate}
                       aria-current={active ? "page" : undefined}
                       className={cn(

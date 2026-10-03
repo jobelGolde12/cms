@@ -73,6 +73,17 @@ body {
 }
 
 /* Numeric data (child codes, counts) renders in the mono ramp. */
+/* Subtle shimmer animation for modern skeleton loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Numeric data (child codes, counts) renders in the mono ramp. */
 .numeric {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
