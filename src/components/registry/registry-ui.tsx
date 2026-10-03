@@ -26,7 +26,7 @@ export function RegistryPageHeader({ stats }: { stats: RegistryStats }) {
         <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
           Child Mapping Registry
         </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[32px] sm:leading-tight">
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px] sm:leading-tight">
           Child Registry
         </h1>
         <p className="mt-1 text-sm text-brand-500">

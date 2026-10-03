@@ -55,6 +55,25 @@ const ASSISTANCE_LABELS: Record<string, string> = {
   completed: "Completed",
 };
 
+/** Shared section shell so every form group looks identical. */
+function FormSection({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-brand-200 bg-white p-5 shadow-xs sm:p-6">
+      <h2 className="text-sm font-semibold text-brand-900">{title}</h2>
+      {hint ? <p className="mt-1 text-xs text-brand-500">{hint}</p> : null}
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
 export function ChildForm({
   barangays,
   schools,
@@ -70,8 +89,11 @@ export function ChildForm({
   const initial: Awaited<ReturnType<typeof createChild>> = { ok: false, error: "" };
   const [state, formAction, pending] = useActionState(action, initial);
 
+  const err = (key: string): string | undefined =>
+    state.ok === false ? state.fieldErrors?.[key] : undefined;
+
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-5">
       {mode === "edit" ? <input type="hidden" name="childId" value={defaults.id ?? ""} /> : null}
 
       {state.ok === false && state.error ? (
@@ -81,25 +103,24 @@ export function ChildForm({
       ) : null}
 
       {/* Basic information */}
-      <section className="rounded-xl border border-brand-200 bg-white shadow-sm p-6 space-y-4">
-        <h3 className="text-sm font-bold text-brand-900">Basic Information</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="First name" htmlFor="firstName" required error={state.ok === false ? state.fieldErrors?.firstName : undefined}>
+      <FormSection title="Basic Information">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="First name" htmlFor="firstName" required error={err("firstName")}>
             <Input id="firstName" name="firstName" defaultValue={defaults.firstName ?? ""} required maxLength={60} />
           </Field>
-          <Field label="Middle name" htmlFor="middleName" error={state.ok === false ? state.fieldErrors?.middleName : undefined}>
+          <Field label="Middle name" htmlFor="middleName" error={err("middleName")}>
             <Input id="middleName" name="middleName" defaultValue={defaults.middleName ?? ""} maxLength={60} />
           </Field>
-          <Field label="Last name" htmlFor="lastName" required error={state.ok === false ? state.fieldErrors?.lastName : undefined}>
+          <Field label="Last name" htmlFor="lastName" required error={err("lastName")}>
             <Input id="lastName" name="lastName" defaultValue={defaults.lastName ?? ""} required maxLength={60} />
           </Field>
-          <Field label="Suffix" htmlFor="suffix" error={state.ok === false ? state.fieldErrors?.suffix : undefined}>
+          <Field label="Suffix" htmlFor="suffix" error={err("suffix")}>
             <Input id="suffix" name="suffix" defaultValue={defaults.suffix ?? ""} maxLength={10} placeholder="Jr., III…" />
           </Field>
-          <Field label="Birth date" htmlFor="birthDate" required error={state.ok === false ? state.fieldErrors?.birthDate : undefined}>
+          <Field label="Birth date" htmlFor="birthDate" required error={err("birthDate")}>
             <Input id="birthDate" name="birthDate" type="date" defaultValue={defaults.birthDate ?? ""} required />
           </Field>
-          <Field label="Sex" htmlFor="sex" required error={state.ok === false ? state.fieldErrors?.sex : undefined}>
+          <Field label="Sex" htmlFor="sex" required error={err("sex")}>
             <Select id="sex" name="sex" defaultValue={defaults.sex ?? ""} required>
               <option value="" disabled>Select…</option>
               {SEXES.map((s) => (
@@ -114,13 +135,12 @@ export function ChildForm({
             <Input id="birthPlace" name="birthPlace" defaultValue={defaults.birthPlace ?? ""} maxLength={200} />
           </Field>
         </div>
-      </section>
+      </FormSection>
 
       {/* Address */}
-      <section className="rounded-xl border border-brand-200 bg-white shadow-sm p-6 space-y-4">
-        <h3 className="text-sm font-bold text-brand-900">Household Address</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Barangay" htmlFor="barangayId" required error={state.ok === false ? state.fieldErrors?.barangayId : undefined}>
+      <FormSection title="Household Address">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Barangay" htmlFor="barangayId" required error={err("barangayId")}>
             <Select id="barangayId" name="barangayId" defaultValue={defaults.barangayId ?? ""} required>
               <option value="" disabled>Select barangay…</option>
               {barangays.map((b) => (
@@ -132,18 +152,17 @@ export function ChildForm({
             <Input id="sitio" name="sitio" defaultValue={defaults.sitio ?? ""} maxLength={120} />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Household address" htmlFor="householdAddress" required error={state.ok === false ? state.fieldErrors?.householdAddress : undefined}>
+            <Field label="Household address" htmlFor="householdAddress" required error={err("householdAddress")}>
               <Textarea id="householdAddress" name="householdAddress" defaultValue={defaults.householdAddress ?? ""} required maxLength={300} />
             </Field>
           </div>
         </div>
-      </section>
+      </FormSection>
 
       {/* Education */}
-      <section className="rounded-xl border border-brand-200 bg-white shadow-sm p-6 space-y-4">
-        <h3 className="text-sm font-bold text-brand-900">Education</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Educational status" htmlFor="educationStatus" required error={state.ok === false ? state.fieldErrors?.educationStatus : undefined}>
+      <FormSection title="Education">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Educational status" htmlFor="educationStatus" required error={err("educationStatus")}>
             <Select id="educationStatus" name="educationStatus" defaultValue={defaults.educationStatus ?? "not_yet_in_school"} required>
               {EDUCATION_STATUSES.map((s) => (
                 <option key={s} value={s}>{EDUCATION_STATUS_LABELS[s]}</option>
@@ -161,17 +180,16 @@ export function ChildForm({
           <Field label="Grade level" htmlFor="gradeLevel">
             <Input id="gradeLevel" name="gradeLevel" defaultValue={defaults.gradeLevel ?? ""} maxLength={30} placeholder="Kinder, Grade 3…" />
           </Field>
-          <Field label="School year" htmlFor="schoolYear" error={state.ok === false ? state.fieldErrors?.schoolYear : undefined}>
+          <Field label="School year" htmlFor="schoolYear" error={err("schoolYear")}>
             <Input id="schoolYear" name="schoolYear" defaultValue={defaults.schoolYear ?? ""} maxLength={9} placeholder="2026-2027" />
           </Field>
         </div>
-      </section>
+      </FormSection>
 
       {/* ECCD */}
-      <section className="rounded-xl border border-brand-200 bg-white shadow-sm p-6 space-y-4">
-        <h3 className="text-sm font-bold text-brand-900">ECCD</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="ECCD participation" htmlFor="eccdStatus" required error={state.ok === false ? state.fieldErrors?.eccdStatus : undefined}>
+      <FormSection title="ECCD">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="ECCD participation" htmlFor="eccdStatus" required error={err("eccdStatus")}>
             <Select id="eccdStatus" name="eccdStatus" defaultValue={defaults.eccdStatus ?? "unknown"} required>
               {ECCD_STATUSES.map((s) => (
                 <option key={s} value={s}>{ECCD_STATUS_LABELS[s]}</option>
@@ -188,17 +206,18 @@ export function ChildForm({
             <Input id="eccdRemarks" name="eccdRemarks" maxLength={300} />
           </Field>
         </div>
-      </section>
+      </FormSection>
 
       {/* Disability (sensitive) */}
-      <section className="rounded-xl border border-brand-200 bg-white shadow-sm p-6 space-y-4">
-        <h3 className="text-sm font-bold text-brand-900">Disability Information</h3>
-        <p className="text-xs text-brand-500">Handled as restricted data; only authorized users can view it.</p>
+      <FormSection
+        title="Disability Information"
+        hint="Handled as restricted data; only authorized users can view it."
+      >
         <label className="flex items-center gap-2 text-sm text-brand-800">
           <input type="checkbox" name="hasDisability" defaultChecked={defaults.hasDisability ?? false} className="h-4 w-4 rounded border-brand-300" />
           Child has a recorded disability
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Disability type" htmlFor="disabilityType">
             <Select id="disabilityType" name="disabilityType" defaultValue={defaults.disabilityType ?? ""}>
               <option value="">Not specified</option>
@@ -226,7 +245,7 @@ export function ChildForm({
             </Field>
           </div>
         </div>
-      </section>
+      </FormSection>
 
       {/* Submit */}
       <div className="flex flex-wrap gap-3">

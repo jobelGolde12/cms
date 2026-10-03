@@ -8,19 +8,24 @@ import {
   Landmark,
 } from "lucide-react";
 import { MUNICIPALITY } from "@/lib/constants";
-import { BRAND_NAME, logoImage } from "@/components/logo";
 import {
   EditorialContainer,
   Eyebrow,
 } from "./editorial";
+
+// Hero illustration (public/hero-section-image.svg) as a static import:
+// TypeScript infers the intrinsic 960×845.748 dimensions and Next fingerprints
+// the asset. Rendered with `unoptimized` below because next/image does not
+// process SVGs through the optimizer (avoids prod-only rasterization issues).
+import heroImage from "../../../public/hero-section-image.svg";
 
 /**
  * Hero — the defining section of the editorial redesign (design.md §7–16).
  *
  * Left-aligned thin headline, tiny eyebrow, short supporting copy, one
  * minimal CTA pair, and a single dominant visual object on the right:
- * the square institutional brand emblem as an art-directed, frame-less
- * object with an editorial annotation. Metadata strip anchors the bottom.
+ * the hero illustration as an art-directed, frame-less object with an
+ * editorial annotation. Metadata strip anchors the bottom.
  * All content is preserved from the previous hero.
  */
 export function WelcomeHero() {
@@ -33,19 +38,17 @@ export function WelcomeHero() {
       />
 
       <EditorialContainer className="relative">
-        <div className="grid items-center gap-16 pb-24 pt-14 md:pb-32 md:pt-20 lg:grid-cols-12 lg:gap-8 lg:pb-36 lg:pt-24">
+        <div className="grid gap-12 pb-24 pt-14 md:pb-32 md:pt-20 lg:grid-cols-12 lg:items-center lg:gap-12 lg:pb-36 lg:pt-24">
           {/* ── Left: editorial text composition (columns 1–7) ── */}
-          <div className="lg:col-span-7">
+          <div className="min-w-0 lg:col-span-7">
             <div className="rise">
               <Eyebrow>
                 Republic of the Philippines · {MUNICIPALITY.region}
               </Eyebrow>
             </div>
 
-            <h1 className="rise rise-d1 mt-6 max-w-[11ch] text-[2.75rem] leading-[0.98] font-normal tracking-[-0.05em] text-brand-950 sm:text-[3.5rem] md:text-[4rem] lg:text-[4.5rem] xl:text-[5rem]">
-              Municipal Child
-              <br />
-              Mapping System.
+            <h1 className="rise rise-d1 mt-6 max-w-[17ch] text-balance text-[clamp(2.75rem,6.2vw,5rem)] leading-[1.02] font-normal tracking-[-0.04em] text-brand-950">
+              Municipal Child Mapping System.
             </h1>
 
             <p className="rise rise-d2 mt-8 max-w-[38ch] text-[15px] leading-[1.55] text-brand-500 md:text-base">
@@ -85,17 +88,20 @@ export function WelcomeHero() {
           </div>
 
           {/* ── Right: one dominant visual object (columns 8–12) ── */}
-          <div className="rise rise-d2 lg:col-span-5">
-            <div className="relative mx-auto max-w-sm lg:ml-auto lg:max-w-md lg:translate-y-2">
-              <div className="relative aspect-square">
-                {/* Next/Image with static import → inferred dimensions, no CLS. */}
+          <div className="rise rise-d2 min-w-0 lg:col-span-5">
+            <div className="relative mx-auto w-full max-w-[420px] lg:ml-auto lg:max-w-lg">
+              <div className="relative aspect-[960/845.748]">
+                {/* `unoptimized`: next/image does not optimize SVGs; per-image
+                    opt-out keeps dev/prod identical without enabling
+                    dangerouslyAllowSVG globally. */}
                 <Image
-                  src={logoImage}
-                  alt={`${BRAND_NAME} official seal`}
+                  src={heroImage}
+                  alt="Illustration of municipal child census records being organized and reviewed"
                   fill
                   priority
-                  sizes="(min-width: 1024px) 448px, (min-width: 640px) 384px, 80vw"
-                  className="object-contain drop-shadow-[0_24px_48px_rgba(2,6,23,0.14)]"
+                  unoptimized
+                  sizes="(min-width: 1024px) 40vw, (min-width: 640px) 448px, 90vw"
+                  className="object-contain"
                 />
               </div>
 

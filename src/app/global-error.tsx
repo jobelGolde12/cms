@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
 
 export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
@@ -11,19 +12,18 @@ export default function GlobalError({ error, reset }: { error: Error; reset: () 
   return (
     <html lang="en">
       <body className="min-h-screen bg-brand-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full rounded-2xl border border-brand-200 bg-white shadow-xl p-8 text-center">
+        <div className="max-w-md w-full rounded-[3px] border border-brand-200 bg-white p-8 text-center shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
           {/* Brand mark — single source of truth (see components/logo.tsx). */}
           <div className="mx-auto mb-4 flex w-fit">
             <Logo size="xl" />
           </div>
-          <h1 className="text-2xl font-extrabold text-brand-900 mb-2">System Error</h1>
-          <p className="text-brand-500 mb-6">A critical error occurred. Please refresh the page.</p>
-          <button
-            onClick={() => reset()}
-            className="inline-flex items-center rounded-lg bg-action-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-action-800 shadow-sm"
-          >
+          <h1 className="text-xl font-bold tracking-tight text-brand-900">System Error</h1>
+          <p className="mt-2 text-sm text-brand-500">
+            A critical error occurred. Please refresh the page.
+          </p>
+          <Button type="button" onClick={reset} className="mt-6">
             Refresh
-          </button>
+          </Button>
         </div>
       </body>
     </html>

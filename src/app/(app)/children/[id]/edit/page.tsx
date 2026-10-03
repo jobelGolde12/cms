@@ -39,15 +39,20 @@ export default async function EditChildPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6">
-      <Link href={`/children/${id}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-900">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to profile
+      <Link href={`/children/${id}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 transition-colors hover:text-brand-900">
+        <ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" /> Back to profile
       </Link>
-      <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">
-        Edit {child.childCode}
-      </h1>
-      <p className="text-sm text-brand-500 -mt-4">
-        Changes create new history entries; previous records are preserved.
-      </p>
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
+          Child Mapping Registry
+        </p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
+          Edit <span className="numeric">{child.childCode}</span>
+        </h1>
+        <p className="mt-1 text-sm text-brand-500">
+          Changes create new history entries; previous records are preserved.
+        </p>
+      </div>
       <ChildForm
         barangays={barangays}
         schools={schools}

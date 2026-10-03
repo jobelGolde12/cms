@@ -28,6 +28,20 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children?: ReactNode;
 };
 
+/**
+ * Class composer for Button styling. Exported so anchor-based buttons
+ * (e.g. report downloads) match <Button> exactly instead of hand-rolling
+ * divergent utility strings.
+ */
+export function buttonStyles(variant: Variant = "primary", size: Size = "md"): string {
+  return cn(
+    "inline-flex cursor-pointer items-center justify-center rounded-lg font-medium transition-colors duration-200",
+    "disabled:cursor-not-allowed disabled:opacity-50",
+    variants[variant],
+    sizes[size],
+  );
+}
+
 export function Button({
   variant = "primary",
   size = "md",
@@ -38,13 +52,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={cn(
-        "inline-flex cursor-pointer items-center justify-center rounded-lg font-medium transition-colors duration-200",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        variants[variant],
-        sizes[size],
-        className,
-      )}
+      className={cn(buttonStyles(variant, size), className)}
       {...props}
     />
   );

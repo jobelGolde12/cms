@@ -24,14 +24,15 @@ export function WelcomeHeader() {
           : "border-transparent",
       )}
     >
-      <div className="mx-auto w-full max-w-6xl px-6 md:px-10 lg:px-16">
-        <div className="flex h-16 items-center justify-between gap-6 md:h-14">
-          {/* Brand lockup — single source of truth (see components/logo.tsx). */}
-          <div className="flex items-center">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-10 lg:px-16">
+        <div className="flex h-16 items-center justify-between gap-4 md:h-14 md:gap-6">
+          {/* Brand lockup — single source of truth (see components/logo.tsx).
+              min-w-0 lets the lockup's truncate engage on narrow screens. */}
+          <div className="flex min-w-0 items-center">
             <Logo size="md" variant="lockup" asLink priority />
           </div>
 
-          <nav className="flex items-center gap-1 md:gap-2" aria-label="Primary">
+          <nav className="flex shrink-0 items-center gap-1 md:gap-2" aria-label="Primary">
             <Link
               href="/login"
               className="rounded-md px-3 py-2.5 text-[13px] font-medium text-brand-600 transition-colors duration-200 hover:text-brand-950"

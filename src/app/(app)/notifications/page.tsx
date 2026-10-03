@@ -5,6 +5,10 @@ import { recentNotifications } from "@/lib/queries";
 import { markAllNotificationsRead } from "@/actions/notifications";
 import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/states";
+import { PageHeader } from "@/components/ui/page-header";
+import { cn } from "@/lib/utils";
 
 export default async function NotificationsPage() {
   const user = await getCurrentUser();
@@ -14,43 +18,85 @@ export default async function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">Notifications</h1>
-          <p className="mt-1 text-sm text-brand-500">{unread} unread</p>
-        </div>
-        {unread > 0 ? (
-          <form action={markAllNotificationsRead}>
-            <Button type="submit" variant="outline" size="sm">Mark all read</Button>
-          </form>
-        ) : null}
-      </div>
-      <div className="rounded-xl border border-brand-200 bg-white shadow-sm p-6 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Bell className="h-5 w-5 text-action-700" />
-          <h2 className="text-base font-bold text-brand-900">Recent</h2>
-        </div>
+      <PageHeader
+        eyebrow="Your Alerts"
+        title="Notifications"
+        description={
+          unread > 0
+            ? `You have ${unread} unread notification${unread === 1 ? "" : "s"}.`
+            : "You're all caught up."
+        }
+        actions={
+          unread > 0 ? (
+            <form action={markAllNotificationsRead}>
+              <Button type="submit" variant="outline" size="sm">
+                Mark all read
+              </Button>
+            </form>
+          ) : null
+        }
+      />
+
+      <Card>
         {notifications.length === 0 ? (
-          <p className="text-sm text-brand-500">No notifications.</p>
+          <EmptyState
+            icon={<Bell className="h-10 w-10" />}
+            title="No notifications"
+            description="Alerts about validations, duplicate conflicts, and record updates addressed to you will appear here."
+          />
         ) : (
           <ul className="divide-y divide-brand-100">
             {notifications.map((n) => (
-              <li key={n.id} className="py-3">
+              <li
+                key={n.id}
+                className={cn(
+                  "px-4 py-3 transition-colors sm:px-5",
+                  !n.isRead && "bg-action-50/60",
+                )}
+              >
                 <div className="flex items-center justify-between gap-3">
-                  {n.link ? (
-                    <a href={n.link} className="text-sm font-medium text-brand-900 hover:text-action-700">{n.title}</a>
-                  ) : (
-                    <span className="text-sm font-medium text-brand-900">{n.title}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        n.isRead ? "bg-brand-200" : "bg-action-600",
+                      )}
+                    />
+                    {n.link ? (
+                      <a
+                        href={n.link}
+                        className={cn(
+                          "truncate text-sm hover:text-action-700",
+                          n.isRead ? "font-medium text-brand-700" : "font-semibold text-brand-900",
+                        )}
+                      >
+                        {n.title}
+                      </a>
+                    ) : (
+                      <span
+                        className={cn(
+                          "truncate text-sm",
+                          n.isRead ? "font-medium text-brand-700" : "font-semibold text-brand-900",
+                        )}
+                      >
+                        {n.title}
+                      </span>
+                    )}
+                  </span>
+                  {!n.isRead && (
+                    <span className="shrink-0 rounded-full bg-action-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-action-800">
+                      New
+                    </span>
                   )}
-                  {!n.isRead && <span className="text-[10px] font-bold uppercase tracking-wide text-action-700">New</span>}
                 </div>
-                <p className="text-xs text-brand-500 mt-1">{n.message ?? "—"}</p>
-                <p className="text-[10px] text-brand-400 mt-0.5">{formatDateTime(n.createdAt)}</p>
+                <p className="mt-1 pl-3.5 text-xs text-brand-500">{n.message ?? "—"}</p>
+                <p className="mt-0.5 pl-3.5 text-[11px] text-brand-400">{formatDateTime(n.createdAt)}</p>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

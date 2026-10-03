@@ -7,6 +7,9 @@ import { db } from "@/db";
 import { children, qrVerifications } from "@/db/schema";
 import { desc, eq, and } from "drizzle-orm";
 import { formatDateTime } from "@/lib/utils";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function QrPage() {
   const user = await getCurrentUser();
@@ -31,61 +34,82 @@ export default async function QrPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-extrabold text-brand-900 tracking-tight">QR Studio</h1>
+      <PageHeader
+        eyebrow="QR Verification Tools"
+        title="QR Studio"
+        description="Generate secure QR identifiers from child profiles and review recent activity."
+      />
 
-      <div className="rounded-xl border border-brand-200 bg-white shadow-sm p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <QrCode className="h-5 w-5 text-action-700" />
-          <h2 className="text-base font-bold text-brand-900">Secure QR tokens</h2>
-        </div>
-        <ul className="text-sm text-brand-600 space-y-2 list-disc pl-5">
-          <li>QR codes are generated per verified child from their profile page.</li>
-          <li>
-            The QR payload contains <strong>only an opaque random token</strong> — never a name,
-            birth date, address, disability data, or contact information.
-          </li>
-          <li>
-            The public page <Link href="/verify" className="text-action-700 underline underline-offset-2">/verify</Link>{" "}
-            resolves the token server-side and shows minimal permitted information.
-          </li>
-          <li>Generating a new token supersedes older ones; tokens can be revoked at any time.</li>
-        </ul>
-      </div>
+      <Card>
+        <CardHeader
+          title="Secure QR tokens"
+          icon={<QrCode aria-hidden="true" className="h-4 w-4 text-action-700" />}
+        />
+        <CardBody>
+          <ul className="list-disc space-y-2 pl-5 text-sm text-brand-600">
+            <li>QR codes are generated per verified child from their profile page.</li>
+            <li>
+              The QR payload contains <strong>only an opaque random token</strong> — never a name,
+              birth date, address, disability data, or contact information.
+            </li>
+            <li>
+              The public page{" "}
+              <Link
+                href="/verify"
+                className="font-medium text-action-700 underline underline-offset-2 hover:text-action-800"
+              >
+                /verify
+              </Link>{" "}
+              resolves the token server-side and shows minimal permitted information.
+            </li>
+            <li>Generating a new token supersedes older ones; tokens can be revoked at any time.</li>
+          </ul>
+        </CardBody>
+      </Card>
 
-      <div className="rounded-xl border border-brand-200 bg-white shadow-sm overflow-x-auto">
-        <div className="px-5 py-4 border-b border-brand-100 flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-brand-500" />
-          <h2 className="text-sm font-bold text-brand-900">Recent QR activity</h2>
-        </div>
-        <table className="w-full min-w-[560px] text-sm">
-          <thead className="bg-brand-100/60 text-xs font-semibold uppercase text-brand-600 tracking-wide">
+      <Card>
+        <CardHeader
+          title="Recent QR activity"
+          description="Latest generation events across your scope."
+          icon={<ShieldCheck aria-hidden="true" className="h-4 w-4" />}
+        />
+        <TableWrap minWidth={560}>
+          <thead>
             <tr>
-              <th className="px-4 py-3 text-left">Child code</th>
-              <th className="px-4 py-3 text-left">Event</th>
-              <th className="px-4 py-3 text-left">Result</th>
-              <th className="px-4 py-3 text-left">When</th>
+              <Th>Child code</Th>
+              <Th>Event</Th>
+              <Th>Result</Th>
+              <Th>When</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-brand-100">
             {recent.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-brand-500">No QR events yet.</td></tr>
+              <TableEmptyState
+                colSpan={4}
+                icon={<QrCode className="h-10 w-10" />}
+                title="No QR events yet"
+                description="Activity appears once QR codes are generated from verified child profiles."
+              />
             ) : (
               recent.map((r) => (
-                <tr key={r.id} className="hover:bg-brand-50">
-                  <td className="px-4 py-3">
-                    <Link href={`/children/${r.childId}`} className="font-mono text-xs text-brand-700 hover:text-action-700">
+                <tr key={r.id} className="transition-colors hover:bg-brand-50/70">
+                  <Td>
+                    <Link
+                      href={`/children/${r.childId}`}
+                      className="numeric font-medium text-brand-700 hover:text-action-700"
+                    >
                       {r.childCode}
                     </Link>
-                  </td>
-                  <td className="px-4 py-3 text-xs capitalize text-brand-600">{r.type}</td>
-                  <td className="px-4 py-3 text-xs text-brand-600">{r.result}</td>
-                  <td className="px-4 py-3 text-xs text-brand-500">{formatDateTime(r.verifiedAt)}</td>
+                  </Td>
+                  <Td className="capitalize text-brand-600">{r.type}</Td>
+                  <Td className="text-brand-600">{r.result}</Td>
+                  <Td className="text-brand-500">{formatDateTime(r.verifiedAt)}</Td>
                 </tr>
               ))
             )}
           </tbody>
-        </table>
-      </div>
+        </TableWrap>
+      </Card>
     </div>
   );
 }
