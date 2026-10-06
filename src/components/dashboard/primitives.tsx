@@ -88,10 +88,10 @@ function PanelLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-xs font-medium text-action-700 hover:text-action-800"
+      className="inline-flex items-center gap-1 text-xs font-medium text-action-700 hover:text-action-800 transition-all duration-150 group"
     >
-      {children}
-      <span aria-hidden="true">→</span>
+      <span className="transition-transform duration-200 group-hover:translate-x-0.5">{children}</span>
+      <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
     </Link>
   );
 }
@@ -152,7 +152,7 @@ export function KpiGrid({ kpis }: { kpis: Kpi[] }) {
         return (
           <article
             key={kpi.key}
-            className="rounded-lg border border-brand-200 bg-white px-4 py-3.5 shadow-xs"
+            className="rounded-lg border border-brand-200 bg-white px-4 py-3.5 shadow-xs transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-brand-300"
           >
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-brand-500">

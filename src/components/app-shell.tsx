@@ -7,6 +7,7 @@ import { Logo } from "./logo";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 import { SidebarNav } from "./sidebar-nav";
 import { LogoutButton } from "./logout-button";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { SessionUser } from "@/lib/auth";
 
 type NavLink = {
@@ -116,18 +117,20 @@ export default async function AppShell({
               System Online
             </span>
 
-            <Link
-              href="/notifications"
-              aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
-              className="relative rounded-md p-2 text-brand-600 transition-colors hover:bg-brand-100 hover:text-brand-900"
-            >
-              <Bell aria-hidden="true" className="h-4.5 w-4.5" />
-              {unread > 0 ? (
-                <span className="absolute right-1 top-1 flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-action-600" />
-                </span>
-              ) : null}
-            </Link>
+            <Tooltip content={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}>
+              <Link
+                href="/notifications"
+                aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
+                className="relative rounded-md p-2 text-brand-600 transition-all duration-150 hover:bg-brand-100 hover:text-brand-900 hover:scale-105 active:scale-95"
+              >
+                <Bell aria-hidden="true" className="h-4.5 w-4.5" />
+                {unread > 0 ? (
+                  <span className="absolute right-1 top-1 flex h-2 w-2 transition-transform duration-150 hover:scale-125">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-action-600 animate-pulse" />
+                  </span>
+                ) : null}
+              </Link>
+            </Tooltip>
 
             <Link
               href="/settings"

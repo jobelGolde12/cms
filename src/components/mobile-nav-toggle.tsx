@@ -31,15 +31,15 @@ export function MobileNavToggle({
         <Menu className="h-5 w-5" />
       </button>
 
-      <div
-        id="mobile-nav-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation menu"
-        className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-200 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-      >
+        <div
+          id="mobile-nav-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
+          className={`fixed inset-0 z-50 lg:hidden transition-[opacity,backdrop-filter] duration-300 ease-in-out ${
+            open ? "opacity-100 pointer-events-auto backdrop-blur-[2px]" : "opacity-0 pointer-events-none"
+          }`}
+        >
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-brand-950/40"

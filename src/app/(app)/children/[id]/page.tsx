@@ -17,6 +17,7 @@ import { formatDate, formatDateTime, fullName, ageFromBirthDate } from "@/lib/ut
 import { RecordStatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { CopyButton } from "@/components/copy-button";
 import {
   EDUCATION_STATUS_LABELS,
   type EducationStatus,
@@ -95,8 +96,11 @@ export default async function ChildProfilePage({ params }: { params: Promise<{ i
             </h1>
             <RecordStatusBadge status={child.recordStatus as never} />
           </div>
-          <p className="numeric mt-1 text-sm text-brand-500">
-            {child.childCode} · {ageFromBirthDate(child.birthDate)} yrs · {child.barangayName}
+          <p className="numeric mt-1 flex items-center gap-2 text-sm text-brand-500">
+            <span>
+              {child.childCode} · {ageFromBirthDate(child.birthDate)} yrs · {child.barangayName}
+            </span>
+            <CopyButton value={child.childCode} />
           </p>
         </div>
         <div className="flex shrink-0 gap-2">

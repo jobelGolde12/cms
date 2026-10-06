@@ -53,10 +53,10 @@ export function SidebarNav({
                       onClick={onNavigate}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors",
+                        "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-all duration-200 ease-out",
                         active
-                          ? "bg-brand-900 text-white shadow-sm"
-                          : "text-brand-700 hover:bg-slate-100 hover:text-brand-900",
+                          ? "bg-brand-900 text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] translate-x-[1px]"
+                          : "text-brand-700 hover:bg-brand-100 hover:text-brand-900 hover:translate-x-[1px]",
                       )}
                     >
                       {createElement(navIcon(link.icon), {

@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isEditable } from "@/lib/workflow";
 import { RecordStatusBadge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
 import { EDUCATION_STATUS_LABELS, type RecordStatus, type EducationStatus } from "@/lib/constants";
 import type { ChildRow, RegistryStats } from "@/lib/queries";
 
@@ -563,23 +564,25 @@ export function ChildRegistryTable({
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-1">
-                      <Link
-                        href={`/children/${r.id}`}
-                        aria-label={`View ${r.firstName} ${r.lastName}`}
-                        title="View record"
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-brand-500 transition-colors hover:bg-brand-100 hover:text-brand-900"
-                      >
-                        <Eye aria-hidden="true" className="h-4 w-4" />
-                      </Link>
-                      {canEdit && isEditable(r.recordStatus as RecordStatus) ? (
+                      <Tooltip content="View record">
                         <Link
-                          href={`/children/${r.id}/edit`}
-                          aria-label={`Edit ${r.firstName} ${r.lastName}`}
-                          title="Edit record"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-brand-500 transition-colors hover:bg-brand-100 hover:text-brand-900"
+                          href={`/children/${r.id}`}
+                          aria-label={`View ${r.firstName} ${r.lastName}`}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-brand-500 transition-all duration-150 hover:bg-brand-100 hover:text-brand-900 hover:scale-105 active:scale-95"
                         >
-                          <Pencil aria-hidden="true" className="h-4 w-4" />
+                          <Eye aria-hidden="true" className="h-4 w-4" />
                         </Link>
+                      </Tooltip>
+                      {canEdit && isEditable(r.recordStatus as RecordStatus) ? (
+                        <Tooltip content="Edit record">
+                          <Link
+                            href={`/children/${r.id}/edit`}
+                            aria-label={`Edit ${r.firstName} ${r.lastName}`}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-brand-500 transition-all duration-150 hover:bg-brand-100 hover:text-brand-900 hover:scale-105 active:scale-95"
+                          >
+                            <Pencil aria-hidden="true" className="h-4 w-4" />
+                          </Link>
+                        </Tooltip>
                       ) : null}
                     </div>
                   </td>

@@ -102,6 +102,12 @@ export function ChildForm({
         </div>
       ) : null}
 
+      {state.ok === true && state.message ? (
+        <div role="status" className="rounded-lg border border-emerald-200 bg-status-verified-bg px-3 py-2.5 text-sm font-medium text-status-verified transition-opacity duration-300 animate-[fadeIn_300ms_ease-in]">
+          {state.message}
+        </div>
+      ) : null}
+
       {/* Basic information */}
       <FormSection title="Basic Information">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
