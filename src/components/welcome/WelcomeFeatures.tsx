@@ -27,44 +27,44 @@ export interface Feature {
  */
 export const features: Feature[] = [
   {
-    title: "Child Registry",
+    title: "Student Registry",
     description:
-      "Register and manage comprehensive child profiles with personal details, addresses, education status, ECCD participation, and disability information.",
+      "Register and manage comprehensive student profiles with personal details, guardians, addresses, and contact information — the school's single source of truth.",
     icon: ClipboardCheck,
     badge: "Core Feature",
   },
   {
-    title: "Record Validation",
+    title: "Record Verification",
     description:
-      "Official DepEd Form 1 verification workflow with status tracking — draft, pending validation, needs correction, verified, and duplicate detection.",
+      "Verification workflow with status tracking — draft, pending verification, needs correction, verified, and duplicate detection. Verified records unlock QR codes.",
     icon: ShieldCheck,
     badge: "Core Feature",
   },
   {
-    title: "Monitoring & Interventions",
+    title: "Student Development",
     description:
-      "Track educational status, out-of-school youth, ECCD participation, and disability support. Assign and monitor interventions with follow-up scheduling.",
+      "Track reading, literacy, and numeracy assessments, behavior records, and interventions with follow-up scheduling for holistic learner support.",
     icon: BarChart3,
     badge: "Core Feature",
   },
   {
-    title: "Reporting & Analytics",
+    title: "Performance Analytics",
     description:
-      "Generate municipal and barangay-level reports: child registry, educational status, out-of-school youth, ECCD, disability, and intervention summaries. Export to PDF, Excel, or CSV.",
+      "Grade and attendance analytics by subject, grading period, section, and grade level. Identify failing grades early and generate intervention lists. Export to PDF or Excel.",
     icon: FileText,
     badge: "Core Feature",
   },
   {
     title: "QR Verification",
     description:
-      "Generate and scan QR codes for instant child record verification in the field. Secure, offline-capable validation for barangay personnel.",
+      "Generate and scan QR codes for instant student record verification. Secure, offline-capable validation for school personnel.",
     icon: QrCode,
     badge: "Field Ready",
   },
   {
     title: "Role-Based Access",
     description:
-      "Three-tier permission system: Barangay Users (local data), LGU Users (municipal oversight), System Administrators (full control). Audit logging on all actions.",
+      "Five school roles: System Administrator, School Administrator, Teacher/Adviser, Records, and Guidance personnel. Advisers see their own sections. Audit logging on all actions.",
     icon: Users,
     badge: "Secure",
   },
@@ -111,7 +111,7 @@ export function WelcomeFeatures() {
           </div>
           <div className="md:col-span-5">
             <Lede>
-              Purpose-built features for municipal child mapping and DepEd
+              Purpose-built features for school records management and DepEd
               compliance.
             </Lede>
           </div>

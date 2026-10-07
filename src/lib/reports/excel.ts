@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { BuiltReport } from "./report-data";
-import { MUNI_HEADER } from "./report-data";
+import { SCHOOL_HEADER } from "./report-data";
 import { formatDateTime } from "../utils";
 
 /** Build an .xlsx workbook buffer from a built report. */
@@ -12,11 +12,11 @@ export async function renderReportExcel(report: BuiltReport): Promise<Buffer> {
   const sheet = workbook.addWorksheet("Report");
 
   sheet.mergeCells("A1", "F1");
-  sheet.getCell("A1").value = MUNI_HEADER.name;
+  sheet.getCell("A1").value = SCHOOL_HEADER.name;
   sheet.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF0F172A" } };
 
   sheet.mergeCells("A2", "F2");
-  sheet.getCell("A2").value = `${MUNI_HEADER.province} · ${MUNI_HEADER.region}`;
+  sheet.getCell("A2").value = `${SCHOOL_HEADER.address} · ${SCHOOL_HEADER.region}`;
   sheet.getCell("A2").font = { size: 9, color: { argb: "FF334155" } };
 
   sheet.mergeCells("A3", "F3");

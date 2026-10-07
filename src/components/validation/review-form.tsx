@@ -1,24 +1,24 @@
 "use client";
 
 import { useActionState } from "react";
-import { reviewValidation } from "@/actions/children";
+import { reviewVerification } from "@/actions/students";
 import { Button } from "@/components/ui/button";
 
 /**
- * Reviewer decision form for a record in the validation queue.
+ * Reviewer decision form for a record in the verification queue.
  * Uses the same server action as the queue quick-actions but lets the
  * reviewer type remarks. Server-side guard (permission + status + scope)
  * remains authoritative.
  */
-export function ValidationReviewForm({ childId }: { childId: string }) {
-  const [state, formAction, pending] = useActionState(reviewValidation, {
+export function ValidationReviewForm({ studentId }: { studentId: string }) {
+  const [state, formAction, pending] = useActionState(reviewVerification, {
     ok: false,
     error: "",
   });
 
   return (
     <form action={formAction} className="space-y-3">
-      <input type="hidden" name="childId" value={childId} />
+      <input type="hidden" name="studentId" value={studentId} />
 
       {state.ok === false && state.error ? (
         <p role="alert" className="text-xs font-medium text-red-700">

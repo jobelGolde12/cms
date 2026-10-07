@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
-import { roles, sessions, users } from "@/db/schema";
+import { sessions, users } from "@/db/schema";
 import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
@@ -36,18 +36,21 @@ export type SessionUser = {
   lastName: string;
   roleId: string;
   role: Role;
-  barangayId: string | null;
 };
 
-/** Resolve the human-readable role name (e.g. "LGU User") from the DB id. */
+/** Resolve the application role key from the DB role id (stable seed ids). */
 export function roleNameFromId(roleId: string): Role | null {
   switch (roleId) {
     case "role-admin":
       return "admin";
-    case "role-lgu":
-      return "lgu";
-    case "role-barangay":
-      return "barangay";
+    case "role-school-admin":
+      return "school_admin";
+    case "role-teacher":
+      return "teacher";
+    case "role-records":
+      return "records";
+    case "role-guidance":
+      return "guidance";
     default:
       return null;
   }
@@ -70,20 +73,17 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
       firstName: users.firstName,
       lastName: users.lastName,
       roleId: users.roleId,
-      barangayId: users.barangayId,
       isActive: users.isActive,
-      roleName: roles.name,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
-    .innerJoin(roles, eq(roles.id, users.roleId))
     .where(and(eq(sessions.tokenHash, tokenHash), gt(sessions.expiresAt, new Date())))
     .limit(1);
 
   const row = rows[0];
   if (!row || !row.isActive) return null;
 
-  // Map the DB role name onto the application role key.
+  // Map the DB role id onto the application role key.
   const role = roleNameFromId(row.roleId);
   if (!role) return null; // unknown role ⇒ no access
 
@@ -94,7 +94,6 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
     lastName: row.lastName,
     roleId: row.roleId,
     role,
-    barangayId: row.barangayId,
   };
 });
 

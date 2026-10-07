@@ -39,9 +39,10 @@ export async function GET(
     return NextResponse.json({ error: "Unsupported format" }, { status: 400 });
   }
 
-  const barangayId = request.nextUrl.searchParams.get("barangay") ?? undefined;
+  const gradeLevelId = request.nextUrl.searchParams.get("gradeLevel") ?? undefined;
+  const sectionId = request.nextUrl.searchParams.get("section") ?? undefined;
 
-  const built = await buildReport(user, reportType, { barangayId });
+  const built = await buildReport(user, reportType, { gradeLevelId, sectionId });
   const stamp = new Date().toISOString().slice(0, 10);
   const baseName = `${reportType}-${stamp}`;
 
@@ -54,7 +55,7 @@ export async function GET(
       reportType,
       generatedBy: user.id,
       scope: built.scope,
-      filtersJson: JSON.stringify({ barangayId: barangayId ?? null }),
+      filtersJson: JSON.stringify({ gradeLevelId: gradeLevelId ?? null, sectionId: sectionId ?? null }),
     })
     .returning();
 

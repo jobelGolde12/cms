@@ -18,8 +18,7 @@ export function WelcomeCTA() {
         </h2>
 
         <p className="mt-6 max-w-[52ch] text-[15px] leading-[1.55] text-brand-300 md:text-base">
-          Authorized personnel can sign in or request an account through the
-          official registration portal.
+          Authorized school personnel can sign in with their DepEd email.
         </p>
 
         <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-4">
@@ -34,10 +33,10 @@ export function WelcomeCTA() {
             />
           </Link>
           <Link
-            href="/register"
+            href="/verify"
             className="group -my-2.5 inline-flex items-center gap-1.5 py-2.5 text-[13px] font-medium text-white underline-offset-4 decoration-brand-500 hover:decoration-white transition-colors duration-200"
           >
-            Register for Access
+            Verify a Record
             <ArrowRight
               className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1"
               aria-hidden="true"
@@ -46,7 +45,7 @@ export function WelcomeCTA() {
         </div>
 
         <p className="mt-10 max-w-[52ch] text-xs leading-[1.6] text-brand-400">
-          Registration requires approval from the Municipal LGU. All access is
+          Accounts are provisioned by the school administrator. All access is
           logged and audited per RA 10173.
         </p>
       </EditorialContainer>

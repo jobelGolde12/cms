@@ -7,7 +7,7 @@ import { WelcomeCTA } from "./WelcomeCTA";
 import { WelcomeFooter } from "./WelcomeFooter";
 
 /**
- * Main Welcome / Landing Page for the Municipal Child Mapping System.
+ * Main Welcome / Landing Page for the Records Management System.
  *
  * Public-facing entry point: communicates the system's purpose and audience,
  * showcases the major features, and guides users to Sign In / Register.

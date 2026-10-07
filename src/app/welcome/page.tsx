@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import WelcomePage from "@/components/welcome/WelcomePage";
 
 export const metadata: Metadata = {
-  title: "Child Mapping System — Sta. Magdalena",
+  title: "Records Management System — Sta. Magdalena NHS",
   description:
-    "Official child census, DepEd Form 1 verification, and monitoring platform for the Municipality of Sta. Magdalena, Sorsogon. For authorized barangay, LGU, and administrator personnel.",
+    "Student records, enrollment, performance analytics, and student development platform for Sta. Magdalena National High School, Sorsogon. For authorized school personnel.",
 };
 
 export default function Page() {

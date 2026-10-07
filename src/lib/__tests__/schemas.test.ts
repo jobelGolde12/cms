@@ -1,58 +1,55 @@
 import { describe, it, expect } from "vitest";
-import { childFormSchema, validationReviewSchema } from "../schemas";
+import { studentFormSchema, verificationReviewSchema } from "../schemas";
 
-describe("childFormSchema", () => {
+describe("studentFormSchema", () => {
   const validBase = {
     firstName: "Juan",
     lastName: "Dela Cruz",
-    birthDate: "2019-03-05",
+    birthDate: "2012-03-05",
     sex: "male",
-    barangayId: "brgy-1",
-    householdAddress: "Purok 2",
-    educationStatus: "enrolled",
-    eccdStatus: "participating",
   };
 
-  it("accepts a minimal valid submission", () => {
-    const parsed = childFormSchema.safeParse(validBase);
+  it("accepts a minimal valid submission (guardian optional)", () => {
+    const parsed = studentFormSchema.safeParse(validBase);
     expect(parsed.success).toBe(true);
   });
 
-  it("requires first name, last name, barangay, and address", () => {
-    const { success } = childFormSchema.safeParse({});
+  it("requires first name, last name, birth date, and sex", () => {
+    const { success } = studentFormSchema.safeParse({});
     expect(success).toBe(false);
   });
 
   it("rejects malformed birth dates", () => {
-    const parsed = childFormSchema.safeParse({ ...validBase, birthDate: "03/05/2019" });
+    const parsed = studentFormSchema.safeParse({ ...validBase, birthDate: "03/05/2012" });
     expect(parsed.success).toBe(false);
   });
 
   it("rejects unrealistic birth years", () => {
-    const parsed = childFormSchema.safeParse({ ...validBase, birthDate: "1800-01-01" });
+    const parsed = studentFormSchema.safeParse({ ...validBase, birthDate: "1800-01-01" });
     expect(parsed.success).toBe(false);
   });
 
-  it("coerces the hasDisability checkbox", () => {
-    const on = childFormSchema.safeParse({ ...validBase, hasDisability: "on" });
-    const off = childFormSchema.safeParse({ ...validBase });
-    expect(on.success && on.data.hasDisability).toBe(true);
-    expect(off.success && off.data.hasDisability).toBe(false);
+  it("rejects contact numbers with unexpected characters", () => {
+    const parsed = studentFormSchema.safeParse({ ...validBase, contactNumber: "not-a-number!" });
+    expect(parsed.success).toBe(false);
   });
 
-  it("validates the school year format when provided", () => {
-    const bad = childFormSchema.safeParse({ ...validBase, schoolYear: "2026" });
-    const good = childFormSchema.safeParse({ ...validBase, schoolYear: "2026-2027" });
-    expect(bad.success).toBe(false);
-    expect(good.success).toBe(true);
+  it("accepts guardian blocks when provided", () => {
+    const parsed = studentFormSchema.safeParse({
+      ...validBase,
+      guardianFirstName: "Maria",
+      guardianLastName: "Santos",
+      guardianRelationship: "mother",
+    });
+    expect(parsed.success).toBe(true);
   });
 });
 
-describe("validationReviewSchema", () => {
+describe("verificationReviewSchema", () => {
   it("accepts the three legal decisions", () => {
     for (const decision of ["approved", "needs_correction", "rejected"]) {
-      const parsed = validationReviewSchema.safeParse({
-        childId: "c1",
+      const parsed = verificationReviewSchema.safeParse({
+        studentId: "s1",
         decision,
         remarks: "ok",
       });
@@ -61,18 +58,18 @@ describe("validationReviewSchema", () => {
   });
 
   it("rejects unknown decisions", () => {
-    const parsed = validationReviewSchema.safeParse({ childId: "c1", decision: "maybe" });
+    const parsed = verificationReviewSchema.safeParse({ studentId: "s1", decision: "maybe" });
     expect(parsed.success).toBe(false);
   });
 
-  it("requires a childId", () => {
-    const parsed = validationReviewSchema.safeParse({ decision: "approved" });
+  it("requires a studentId", () => {
+    const parsed = verificationReviewSchema.safeParse({ decision: "approved" });
     expect(parsed.success).toBe(false);
   });
 
   it("caps remarks length", () => {
-    const parsed = validationReviewSchema.safeParse({
-      childId: "c1",
+    const parsed = verificationReviewSchema.safeParse({
+      studentId: "s1",
       decision: "approved",
       remarks: "x".repeat(501),
     });

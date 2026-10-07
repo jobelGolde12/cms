@@ -26,12 +26,12 @@ import {
 import { cn } from "@/lib/utils";
 import type {
   ActivityItem,
-  BarangayRow,
   DistributionRow,
+  GradeLevelRow,
   Kpi,
-  MonitoringBarangayRow,
+  SectionCoverageRow,
   SystemStatus,
-  ValidationCounts,
+  VerificationCounts,
 } from "@/lib/dashboard-data";
 import {
   activityIcon,
@@ -209,20 +209,20 @@ export function OperationalBanner({
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="max-w-2xl">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
-            Child Mapping Operations
+            Student Records Operations
           </p>
           <h2 className="mt-1 text-base font-semibold sm:text-lg">
-            Current Child Registration &amp; Validation Cycle
+            Current Enrollment &amp; Verification Cycle
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-brand-300">
-            Monitor registered children, barangay coverage, verification
-            progress, and intervention requirements across the municipality.
+            Monitor enrolled students, grade-level coverage, verification
+            progress, and student development across the school.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-x-8 gap-y-3">
           <div>
             <p className="numeric text-2xl font-bold">{registered}</p>
-            <p className="text-xs text-brand-400">Registered children</p>
+            <p className="text-xs text-brand-400">Enrolled students</p>
           </div>
           <div>
             <p className="numeric text-2xl font-bold">{verified}</p>
@@ -230,13 +230,13 @@ export function OperationalBanner({
           </div>
           <div>
             <p className="numeric text-2xl font-bold">{barangayCount}</p>
-            <p className="text-xs text-brand-400">Barangays covered</p>
+            <p className="text-xs text-brand-400">Grade levels</p>
           </div>
           <Link
-            href="/children"
+            href="/students"
             className="rounded-md bg-white px-3.5 py-2 text-xs font-semibold text-brand-900 transition-colors hover:bg-brand-100"
           >
-            View Child Registry
+            View Student Registry
           </Link>
         </div>
       </div>
@@ -248,16 +248,16 @@ export function OperationalBanner({
 /*  Barangay distribution                                                     */
 /* -------------------------------------------------------------------------- */
 
-export function BarangayDistribution({ rows }: { rows: BarangayRow[] }) {
+export function BarangayDistribution({ rows }: { rows: GradeLevelRow[] }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   const visible = rows.slice(0, 8);
   const hidden = rows.length - visible.length;
 
   return (
     <Panel
-      title="Children by Barangay"
-      description="Distribution of registered children across barangays."
-      action={rows.length > 0 ? <PanelLink href="/children">View registry</PanelLink> : undefined}
+      title="Students by Grade Level"
+      description="Distribution of enrolled students across grade levels."
+      action={rows.length > 0 ? <PanelLink href="/students">View registry</PanelLink> : undefined}
     >
       {rows.length === 0 ? (
         <p className="py-6 text-center text-sm text-brand-400">No records yet.</p>
@@ -290,8 +290,8 @@ export function BarangayDistribution({ rows }: { rows: BarangayRow[] }) {
           </ul>
           {hidden > 0 ? (
             <p className="mt-3 border-t border-brand-100 pt-2.5 text-xs text-brand-500">
-              + {hidden} more barangay{hidden === 1 ? "" : "s"} in the{" "}
-              <Link href="/children" className="font-medium text-action-700 hover:text-action-800">
+              + {hidden} more grade level{hidden === 1 ? "" : "s"} in the{" "}
+              <Link href="/students" className="font-medium text-action-700 hover:text-action-800">
                 full registry
               </Link>
             </p>
@@ -308,7 +308,7 @@ export function BarangayDistribution({ rows }: { rows: BarangayRow[] }) {
 
 const RECORD_TONES: Record<string, string> = {
   Verified: "bg-emerald-500",
-  "Pending Validation": "bg-amber-500",
+  "Pending Verification": "bg-amber-500",
   "Needs Correction": "bg-red-500",
   Draft: "bg-brand-300",
 };
@@ -318,7 +318,7 @@ export function RecordStatusCard({ rows }: { rows: DistributionRow[] }) {
     <Panel
       title="Record Status"
       description="Workflow state of registered records."
-      action={rows.length > 0 ? <PanelLink href="/children?status=pending_validation">Review</PanelLink> : undefined}
+      action={rows.length > 0 ? <PanelLink href="/students?status=pending_validation">Review</PanelLink> : undefined}
     >
       <ul className="divide-y divide-brand-100">
         {rows.map((row) => (
@@ -345,11 +345,10 @@ export function RecordStatusCard({ rows }: { rows: DistributionRow[] }) {
 /* -------------------------------------------------------------------------- */
 
 const EDU_BAR: Record<string, string> = {
-  Enrolled: "bg-emerald-600",
-  "Out-of-School": "bg-red-500",
-  "Not Yet in School": "bg-sky-500",
-  Graduated: "bg-brand-700",
-  Unknown: "bg-brand-300",
+  Active: "bg-emerald-600",
+  Completed: "bg-sky-600",
+  Transferred: "bg-amber-500",
+  Withdrawn: "bg-red-500",
 };
 
 export function EducationDistribution({ rows }: { rows: DistributionRow[] }) {
@@ -358,19 +357,19 @@ export function EducationDistribution({ rows }: { rows: DistributionRow[] }) {
 
   return (
     <Panel
-      title="Education Status Distribution"
-      description="Current schooling status of registered children."
-      action={total > 0 ? <PanelLink href="/monitoring">Open monitoring</PanelLink> : undefined}
+      title="Enrollment Status Distribution"
+      description="Current enrollment status of registered students."
+      action={total > 0 ? <PanelLink href="/students">Open registry</PanelLink> : undefined}
     >
       {total === 0 ? (
-        <p className="py-6 text-center text-sm text-brand-400">No education records yet.</p>
+        <p className="py-6 text-center text-sm text-brand-400">No enrollment records yet.</p>
       ) : (
         <>
           {/* Stacked distribution bar */}
           <div
             className="flex h-2.5 w-full overflow-hidden rounded-full bg-brand-100"
             role="img"
-            aria-label={`Education status distribution of ${total} children`}
+            aria-label={`Enrollment status distribution of ${total} students`}
           >
             {withValues.map((row) => (
               <div
@@ -414,20 +413,20 @@ export function ValidationQueueCard({
   counts,
   canReview,
 }: {
-  counts: ValidationCounts;
+  counts: VerificationCounts;
   canReview: boolean;
 }) {
   const rows = [
     { label: "Verified Records", value: counts.verified, tone: "bg-emerald-500" },
-    { label: "Pending Validation", value: counts.pending, tone: "bg-amber-500" },
+    { label: "Pending Verification", value: counts.pending, tone: "bg-amber-500" },
     { label: "Needs Correction", value: counts.needsCorrection, tone: "bg-red-500" },
     { label: "Duplicate Flags", value: counts.duplicateFlags, tone: "bg-brand-400" },
   ];
-  const href = canReview ? "/validation" : "/children?status=pending_validation";
+  const href = canReview ? "/verification" : "/students?status=pending_validation";
 
   return (
     <Panel
-      title="Validation Queue"
+      title="Verification Queue"
       description="Verification progress and review backlog."
       action={<PanelLink href={href}>Open queue</PanelLink>}
     >
@@ -514,12 +513,12 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
 /*  Monitoring summary (barangay coverage table)                              */
 /* -------------------------------------------------------------------------- */
 
-export function MonitoringBarangayTable({ rows }: { rows: MonitoringBarangayRow[] }) {
+export function SectionCoverageTable({ rows }: { rows: SectionCoverageRow[] }) {
   return (
     <Panel
-      title="Barangay Enrollment Coverage"
-      description="Registered children and current schooling per barangay."
-      action={<PanelLink href="/monitoring">Open monitoring</PanelLink>}
+      title="Grade-Level Coverage"
+      description="Enrolled students and grade recording per grade level."
+      action={<PanelLink href="/performance">Open performance</PanelLink>}
       bodyClassName="px-0 py-0"
     >
       {rows.length === 0 ? (
@@ -529,32 +528,28 @@ export function MonitoringBarangayTable({ rows }: { rows: MonitoringBarangayRow[
           <table className="w-full min-w-[480px] text-left text-xs">
             <thead>
               <tr className="border-b border-brand-100 text-[11px] uppercase tracking-wide text-brand-400">
-                <th scope="col" className="px-4 py-2 font-semibold">Barangay</th>
-                <th scope="col" className="px-3 py-2 text-right font-semibold">Registered</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Grade Level</th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">Enrolled</th>
-                <th scope="col" className="px-3 py-2 text-right font-semibold">Out-of-School</th>
-                <th scope="col" className="px-4 py-2 text-right font-semibold">Coverage</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">With Grades</th>
+                <th scope="col" className="px-4 py-2 text-right font-semibold">Recorded</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-100">
               {rows.map((row) => {
                 const coverage =
                   row.registered > 0
-                    ? Math.round((row.enrolled / row.registered) * 100)
+                    ? Math.round((row.withGrades / row.registered) * 100)
                     : 0;
                 return (
-                  <tr key={row.barangay}>
-                    <td className="max-w-[140px] truncate px-4 py-2 text-brand-700" title={row.barangay}>
-                      {row.barangay}
+                  <tr key={row.gradeLevel}>
+                    <td className="max-w-[140px] truncate px-4 py-2 text-brand-700" title={row.gradeLevel}>
+                      {row.gradeLevel}
                     </td>
                     <td className="numeric px-3 py-2 text-right font-medium text-brand-900">
                       {row.registered}
                     </td>
                     <td className="numeric px-3 py-2 text-right text-emerald-700">
-                      {row.enrolled}
-                    </td>
-                    <td className="numeric px-3 py-2 text-right text-red-700">
-                      {row.outOfSchool}
+                      {row.withGrades}
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex items-center justify-end gap-2">
@@ -582,7 +577,7 @@ export function MonitoringBarangayTable({ rows }: { rows: MonitoringBarangayRow[
 /*  Monitoring casework (open cases by type)                                  */
 /* -------------------------------------------------------------------------- */
 
-export function MonitoringCasework({
+export function BehaviorConcernsCard({
   counts,
   openTotal,
 }: {
@@ -592,12 +587,12 @@ export function MonitoringCasework({
   const max = Math.max(1, ...counts.map((c) => c.value));
   return (
     <Panel
-      title="Open Monitoring Casework"
-      description={`${openTotal} open case${openTotal === 1 ? "" : "s"} in your scope.`}
-      action={<PanelLink href="/monitoring">View cases</PanelLink>}
+      title="Open Behavior Concerns"
+      description={`${openTotal} open concern record${openTotal === 1 ? "" : "s"} in your scope.`}
+      action={<PanelLink href="/development/behavior">View records</PanelLink>}
     >
       {counts.length === 0 ? (
-        <p className="py-6 text-center text-sm text-brand-400">No open monitoring cases.</p>
+        <p className="py-6 text-center text-sm text-brand-400">No open behavior concerns.</p>
       ) : (
         <ul className="space-y-2.5">
           {counts.map((row) => (
@@ -645,8 +640,8 @@ export function SystemStatusCard({
       ok: true,
     },
     {
-      label: "Open monitoring cases",
-      value: `${status.openMonitoring}`,
+      label: "Open interventions",
+      value: `${status.openInterventions}`,
       ok: true,
     },
     {
@@ -685,7 +680,7 @@ export function SystemStatusCard({
         ))}
       </ul>
       <p className="mt-3 border-t border-brand-100 pt-2.5 text-[11px] text-brand-400">
-        Sta. Magdalena Child Mapping System — Municipal Government of Sta. Magdalena, Sorsogon
+        Records Management System — Sta. Magdalena National High School
       </p>
     </Panel>
   );

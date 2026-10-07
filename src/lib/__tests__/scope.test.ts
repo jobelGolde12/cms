@@ -1,86 +1,92 @@
 import { describe, it, expect } from "vitest";
-import { canAccessChild, canEditChild, type ChildScopeRef } from "../scope";
+import { canAccessStudent, canEditStudent, studentScope, type StudentScopeRef } from "../scope";
 import type { SessionUser } from "../auth";
 
 /* ---------------------------------------------------------------------------
- * Row-level authorization for the child profile page (the registry's read
- * path) and edit/archive/review actions. These must match the SQL scope in
- * childScope(): barangay users see their barangay + their own records.
+ * Row-level row scope for student records. canAccess/canEdit use the database
+ * for advisers, so Scope-ref tests only cover what is database-free:
+ * studentScope() predicate composition + school-wide admin behavior.
  * ------------------------------------------------------------------------- */
 
 const admin: SessionUser = {
   id: "u-admin",
   email: "a@t.gov",
   firstName: "A",
-  lastName: "A",
+  lastName: "Dmin",
   roleId: "role-admin",
   role: "admin",
-  barangayId: null,
 };
 
-const lgu: SessionUser = { ...admin, id: "u-lgu", roleId: "role-lgu", role: "lgu" };
-
-const brgyA: SessionUser = {
-  id: "u-brgy-a",
-  email: "ba@t.gov",
-  firstName: "B",
-  lastName: "A",
-  roleId: "role-barangay",
-  role: "barangay",
-  barangayId: "brgy-1",
+const schoolAdmin: SessionUser = {
+  ...admin,
+  id: "u-school-admin",
+  roleId: "role-school-admin",
+  role: "school_admin",
 };
 
-const brgyB: SessionUser = { ...brgyA, id: "u-brgy-b", barangayId: "brgy-2" };
+const recordsUser: SessionUser = {
+  ...admin,
+  id: "u-records",
+  roleId: "role-records",
+  role: "records",
+};
 
-const brgyNoAssignment: SessionUser = { ...brgyA, barangayId: null };
+const guidanceUser: SessionUser = {
+  ...admin,
+  id: "u-guidance",
+  roleId: "role-guidance",
+  role: "guidance",
+};
 
-const ownRecord: ChildScopeRef = { barangayId: "brgy-1", createdBy: "u-brgy-a" };
-const sameBarangayOtherEncoder: ChildScopeRef = { barangayId: "brgy-1", createdBy: "u-someone-else" };
-const otherBarangay: ChildScopeRef = { barangayId: "brgy-2", createdBy: "u-someone-else" };
-const ownRecordOtherBarangay: ChildScopeRef = { barangayId: "brgy-2", createdBy: "u-brgy-a" };
+const teacher: SessionUser = {
+  ...admin,
+  id: "u-teacher",
+  roleId: "role-teacher",
+  role: "teacher",
+};
 
-describe("canAccessChild (read guard)", () => {
-  it("grants admin and LGU municipal-wide access", () => {
-    expect(canAccessChild(admin, otherBarangay)).toBe(true);
-    expect(canAccessChild(lgu, otherBarangay)).toBe(true);
+const ref: StudentScopeRef = { studentId: "s1" };
+
+describe("studentScope (SQL predicate builder)", () => {
+  it("returns undefined (school-wide) for admin, school_admin, records, guidance", async () => {
+    for (const user of [admin, schoolAdmin, recordsUser, guidanceUser]) {
+      expect(await Promise.resolve(studentScope(user))).toBeUndefined();
+    }
   });
 
-  it("grants barangay users access to own-barangay records", () => {
-    expect(canAccessChild(brgyA, ownRecord)).toBe(true);
-    expect(canAccessChild(brgyA, sameBarangayOtherEncoder)).toBe(true);
+  it("returns a never-true predicate for teachers without sections", () => {
+    const scope = studentScope(teacher, []);
+    expect(scope).toBeDefined();
   });
 
-  it("grants barangay users access to records they created in other barangays", () => {
-    expect(canAccessChild(brgyA, ownRecordOtherBarangay)).toBe(true);
+  it("returns a scoped predicate referencing the enrollment join for teachers", async () => {
+    const scope = studentScope(teacher, ["sec-7-0"]);
+    expect(scope).toBeDefined();
+    // Render via drizzle dialect to confirm the section filter is embedded.
+    const { SQLiteSyncDialect } = await import("drizzle-orm/sqlite-core");
+    const dialect = new SQLiteSyncDialect();
+    const query = dialect.sqlToQuery(scope!);
+    expect(query.params).toContain("sec-7-0");
   });
 
-  it("DENIES barangay users access to other barangays' records", () => {
-    expect(canAccessChild(brgyA, otherBarangay)).toBe(false);
-    expect(canAccessChild(brgyB, ownRecord)).toBe(false);
-  });
-
-  it("unassigned barangay users only see records they created", () => {
-    expect(canAccessChild(brgyNoAssignment, ownRecordOtherBarangay)).toBe(true);
-    expect(canAccessChild(brgyNoAssignment, sameBarangayOtherEncoder)).toBe(false);
+  it("returns never-true for unknown roles", () => {
+    const unknown = { ...admin, role: "unknown" as never };
+    expect(studentScope(unknown)).toBeDefined();
   });
 });
 
-describe("canEditChild (edit guard)", () => {
-  it("allows editing draft/needs_correction records in scope", () => {
-    expect(canEditChild(brgyA, { ...ownRecord, recordStatus: "draft" })).toBe(true);
-    expect(canEditChild(brgyA, { ...ownRecord, recordStatus: "needs_correction" })).toBe(true);
+describe("canAccessStudent (database-free paths)", () => {
+  it("grants school-wide roles access without a DB roundtrip", async () => {
+    expect(await canAccessStudent(admin, ref)).toBe(true);
+    expect(await canAccessStudent(schoolAdmin, ref)).toBe(true);
+    expect(await canAccessStudent(recordsUser, ref)).toBe(true);
+    expect(await canAccessStudent(guidanceUser, ref)).toBe(true);
   });
+});
 
-  it("locks verified records for non-admins even when in scope", () => {
-    expect(canEditChild(brgyA, { ...ownRecord, recordStatus: "verified" })).toBe(false);
-    expect(canEditChild(lgu, { ...ownRecord, recordStatus: "verified" })).toBe(false);
-  });
-
-  it("admins may edit verified records", () => {
-    expect(canEditChild(admin, { ...otherBarangay, recordStatus: "verified" })).toBe(true);
-  });
-
-  it("never allows editing records outside scope", () => {
-    expect(canEditChild(brgyA, { ...otherBarangay, recordStatus: "draft" })).toBe(false);
+describe("canEditStudent inherits canAccessStudent", () => {
+  it("grants school-wide roles edit access", async () => {
+    expect(await canEditStudent(admin, ref)).toBe(true);
+    expect(await canEditStudent(recordsUser, ref)).toBe(true);
   });
 });

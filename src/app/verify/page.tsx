@@ -16,8 +16,8 @@ export default async function VerifyPage() {
           </div>
           <h1 className="text-xl font-bold tracking-tight text-brand-900">QR Verification</h1>
           <p className="mt-2 text-sm text-brand-500">
-            Enter a verification token or scan a QR code to confirm a child
-            record is registered with the municipality.
+            Enter a verification token or scan a QR code to confirm a student
+            record is registered with the school.
           </p>
         </div>
         <form className="flex flex-col gap-3" action="/verify/result" method="GET">

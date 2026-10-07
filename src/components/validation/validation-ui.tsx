@@ -15,32 +15,27 @@ import {
 } from "lucide-react";
 import { cn, ageFromBirthDate, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import type { DuplicateItem, ValidationStats } from "@/lib/queries";
-import {
-  DUPLICATE_STATUS_LABELS,
-  EDUCATION_STATUS_LABELS,
-  type DuplicateStatus,
-  type EducationStatus,
-} from "@/lib/constants";
+import type { DuplicateItem, VerificationStats } from "@/lib/queries";
+import { DUPLICATE_STATUS_LABELS, type DuplicateStatus } from "@/lib/constants";
 
 /* -------------------------------------------------------------------------- */
 /*  Page header                                                               */
 /* -------------------------------------------------------------------------- */
 
-export function ValidationPageHeader({ stats }: { stats: ValidationStats }) {
+export function ValidationPageHeader({ stats }: { stats: VerificationStats }) {
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
-          Validation Control Center
+          Verification Control Center
         </p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px] sm:leading-tight">
-          Validation &amp; Duplicate Review
+          Record Verification &amp; Duplicate Review
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-brand-500">
-          Review submitted child records, resolve algorithmic duplicate
-          conflicts, and verify demographics before records are confirmed for
-          municipal reporting.
+          Review submitted student records, resolve algorithmic duplicate
+          conflicts, and verify learner information before records are
+          confirmed for school reporting.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -78,7 +73,7 @@ const KPI_ICON_STYLES = {
   verified: "text-emerald-700 bg-emerald-100",
 } as const;
 
-export function ValidationKpiGrid({ stats }: { stats: ValidationStats }) {
+export function ValidationKpiGrid({ stats }: { stats: VerificationStats }) {
   const dupTotal = Math.max(1, stats.duplicateFlags);
   const total = Math.max(1, stats.totalActive);
   const cards = [
@@ -94,7 +89,7 @@ export function ValidationKpiGrid({ stats }: { stats: ValidationStats }) {
       icon: "pending" as const,
       label: "Pending Initial Review",
       value: stats.pendingReview,
-      supporting: "Records awaiting validation",
+      supporting: "Records awaiting verification",
       progress: Math.round((stats.pendingReview / total) * 100),
       bar: "bg-sky-500",
     },
@@ -108,7 +103,7 @@ export function ValidationKpiGrid({ stats }: { stats: ValidationStats }) {
     },
     {
       icon: "verified" as const,
-      label: "Validated Records",
+      label: "Verified Records",
       value: stats.verified,
       supporting: `${Math.round((stats.verified / total) * 100)}% of active records`,
       progress: Math.round((stats.verified / total) * 100),
@@ -164,14 +159,14 @@ const REASON_LABELS: Record<string, string> = {
   name: "Exact name match",
   middle_name: "Middle name matches",
   birth_date: "Exact date of birth match",
-  barangay: "Same barangay of residence",
+  sex: "Same sex on file",
 };
 
 const REASON_WEIGHTS: Record<string, number> = {
   name: 40,
   middle_name: 10,
   birth_date: 35,
-  barangay: 15,
+  sex: 15,
 };
 
 export function MatchEvidence({ item }: { item: DuplicateItem }) {
@@ -219,10 +214,6 @@ type Side = {
   name: string;
   birth: string;
   sex: string | null;
-  barangay: string | null;
-  school: string | null;
-  grade: string | null;
-  edu: string | null;
   registered: Date | null;
   href: string;
 };
@@ -285,48 +276,37 @@ function compareState(a: unknown, b: unknown): "match" | "difference" | "unavail
 
 export function RecordComparison({ item }: { item: DuplicateItem }) {
   const base: Side = {
-    code: item.childCode,
-    name: `${item.childLast}, ${item.childFirst}`,
-    birth: item.childBirth,
-    sex: item.childSex,
-    barangay: item.childBarangayName,
-    school: item.childSchool,
-    grade: item.childGrade,
-    edu: item.childEduStatus,
-    registered: item.childCreatedAt,
-    href: `/children/${item.childId}`,
+    code: item.studentNumber,
+    name: `${item.studentLast}, ${item.studentFirst}`,
+    birth: item.studentBirth,
+    sex: item.studentSex,
+    registered: item.studentCreatedAt,
+    href: `/students/${item.studentId}`,
   };
   const incoming: Side = {
-    code: item.possibleCode,
+    code: item.possibleNumber,
     name: `${item.possibleLast}, ${item.possibleFirst}`,
     birth: item.possibleBirth,
     sex: item.possibleSex,
-    barangay: item.possibleBarangayName,
-    school: item.possibleSchool,
-    grade: item.possibleGrade,
-    edu: item.possibleEduStatus,
     registered: item.possibleCreatedAt,
-    href: `/children/${item.possibleChildId}`,
+    href: `/students/${item.possibleStudentId}`,
   };
-
-  const eduLabel = (s: string | null) =>
-    s ? (EDUCATION_STATUS_LABELS[s as EducationStatus] ?? s) : null;
 
   return (
     <div className="space-y-2.5">
       <FieldBlock
-        label="Mapping ID"
+        label="Student Number"
         base={<span className="numeric">{base.code}</span>}
         incoming={<span className="numeric">{incoming.code}</span>}
         state="match"
-        note="IDs always differ — they are generated per intake, not compared."
+        note="Numbers always differ — they are generated per intake, not compared."
       />
       <FieldBlock
         label="Full Name"
         base={base.name}
         incoming={incoming.name}
         state={compareState(
-          normalizeFullName(item.childLast, item.childFirst),
+          normalizeFullName(item.studentLast, item.studentFirst),
           normalizeFullName(item.possibleLast, item.possibleFirst),
         )}
       />
@@ -340,27 +320,6 @@ export function RecordComparison({ item }: { item: DuplicateItem }) {
             ? `Exact DOB match — age ${ageFromBirthDate(base.birth) ?? "—"}`
             : `DOB differs — ages ${ageFromBirthDate(base.birth) ?? "—"} vs ${ageFromBirthDate(incoming.birth) ?? "—"}`
         }
-      />
-      <FieldBlock
-        label="Barangay of Residence"
-        base={base.barangay ?? "—"}
-        incoming={incoming.barangay ?? "—"}
-        state={compareState(base.barangay, incoming.barangay)}
-        note={
-          base.barangay !== incoming.barangay
-            ? "Cross-barangay candidate — verify residence before deciding."
-            : undefined
-        }
-      />
-      <FieldBlock
-        label="School & Grade"
-        base={base.school ? `${base.school}${base.grade ? ` · ${base.grade}` : ""}` : eduLabel(base.edu) ?? "No current record"}
-        incoming={
-          incoming.school
-            ? `${incoming.school}${incoming.grade ? ` · ${incoming.grade}` : ""}`
-            : eduLabel(incoming.edu) ?? "No current record"
-        }
-        state={compareState(base.school, incoming.school)}
       />
       <FieldBlock
         label="Registered On"

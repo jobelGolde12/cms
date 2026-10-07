@@ -15,7 +15,7 @@ const scrub = (value: string | null | undefined): string | null =>
 
 /** Create a new system user (users.create permission). */
 export async function createUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const actor = await getAuthorizedUser("users.create");
+  const actor = await getAuthorizedUser("users.manage");
   const { ip, userAgent } = await sessionMetadata();
   if (!actor) return fail("Only administrators can manage users.");
 
@@ -46,7 +46,6 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
     middleName: scrub(data.middleName),
     lastName: data.lastName,
     roleId: data.roleId,
-    barangayId: scrub(data.barangayId),
     phone: scrub(data.phone),
     isActive: data.isActive ?? true,
   });
@@ -76,7 +75,7 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
 
 /** Update a system user (users.update permission). Blank password = keep existing. */
 export async function updateUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const actor = await getAuthorizedUser("users.update");
+  const actor = await getAuthorizedUser("users.manage");
   const { ip, userAgent } = await sessionMetadata();
   if (!actor) return fail("Only administrators can manage users.");
 
@@ -113,7 +112,6 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
       middleName: scrub(data.middleName),
       lastName: data.lastName,
       roleId: data.roleId,
-      barangayId: scrub(data.barangayId),
       phone: scrub(data.phone),
       isActive: data.isActive ?? true,
       updatedAt: new Date(),
@@ -144,7 +142,7 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
 
 /** Deactivate (never delete) a user (users.disable permission). */
 export async function deactivateUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const actor = await getAuthorizedUser("users.disable");
+  const actor = await getAuthorizedUser("users.manage");
   const { ip, userAgent } = await sessionMetadata();
   if (!actor) return fail("Only administrators can manage users.");
 

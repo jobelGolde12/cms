@@ -46,31 +46,39 @@ export async function sessionMetadata(): Promise<{ ip: string | null; userAgent:
 
 /** Role ids used by seeds and actions (stable, deterministic). */
 export const ROLE_IDS = {
-  barangay: "role-barangay",
-  lgu: "role-lgu",
   admin: "role-admin",
+  school_admin: "role-school-admin",
+  teacher: "role-teacher",
+  records: "role-records",
+  guidance: "role-guidance",
 } as const;
 
 /**
- * Notify every active user holding the given permission-bearing roles
- * (validators = admin + lgu). Best-effort — failures never throw.
+ * Notify every active user holding a verification-capable role
+ * (admin + school_admin + records). Best-effort — failures never throw.
  */
-export async function notifyValidators(
+export async function notifyVerifiers(
   message: string,
   link: string,
-  title = "Record awaiting validation",
+  title = "Record awaiting verification",
 ): Promise<void> {
   try {
     const rows = await db
       .select({ id: users.id })
       .from(users)
-      .where(or(eq(users.roleId, ROLE_IDS.admin), eq(users.roleId, ROLE_IDS.lgu)));
+      .where(
+        or(
+          eq(users.roleId, ROLE_IDS.admin),
+          eq(users.roleId, ROLE_IDS.school_admin),
+          eq(users.roleId, ROLE_IDS.records),
+        ),
+      );
 
     await Promise.all(
-      rows.map((u) => notify({ userId: u.id, type: "validation", title, message, link })),
+      rows.map((u) => notify({ userId: u.id, type: "verification", title, message, link })),
     );
   } catch (error) {
-    console.error("[notifyValidators]", error);
+    console.error("[notifyVerifiers]", error);
   }
 }
 

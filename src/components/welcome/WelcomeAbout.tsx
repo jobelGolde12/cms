@@ -9,8 +9,8 @@ import {
 /** Compliance/purpose items preserved from the previous implementation. */
 const complianceItems = [
   {
-    title: "DepEd Form 1 Compliance",
-    desc: "Aligned with DepEd enrollment verification requirements and child protection standards.",
+    title: "DepEd Grading & Records Compliance",
+    desc: "Aligned with DepEd grading, learner records, and child protection standards.",
   },
   {
     title: "RA 10173 Data Privacy",
@@ -18,19 +18,19 @@ const complianceItems = [
   },
   {
     title: "Interoperable Exports",
-    desc: "PDF, Excel, and CSV reports formatted for LGU planning, DepEd submissions, and PSA coordination.",
+    desc: "PDF and Excel reports formatted for school planning, DepEd submissions, and division reporting.",
   },
 ];
 
 /** User roles preserved from the previous implementation. */
 const userRoles = [
   {
-    label: "Barangay Users",
-    desc: "Register and validate child records for their assigned barangay. Generate QR codes for field verification.",
+    label: "Teachers / Advisers",
+    desc: "Record grades, attendance, behavior, and assessments for their advisory sections. Generate section reports.",
   },
   {
-    label: "LGU Users",
-    desc: "Municipal-level oversight: review validations, monitor interventions, generate consolidated reports.",
+    label: "Records & Guidance Personnel",
+    desc: "School-wide record keeping: enrollment, verification, assessments, interventions, and consolidated reports.",
   },
   {
     label: "Administrators",
@@ -51,11 +51,10 @@ export function WelcomeAbout() {
         <EditorialContainer className="py-24 md:py-32 lg:py-40">
           <Eyebrow>Purpose</Eyebrow>
           <p className="mt-6 max-w-3xl text-[1.75rem] leading-[1.15] font-normal tracking-[-0.03em] text-brand-950 md:text-[2.25rem] lg:text-[2.75rem]">
-            Purpose-built for municipal governance — the single source of truth
-            for child census data in{" "}
+            Purpose-built for school governance — the single source of truth
+            for learner records in{" "}
             <span className="text-action-700">Sta. Magdalena</span>, supporting
-            evidence-based planning for education, health, and social welfare
-            programs across all 14 barangays.
+            evidence-based teaching, guidance, and reporting for Grades 7–12.
           </p>
         </EditorialContainer>
       </div>

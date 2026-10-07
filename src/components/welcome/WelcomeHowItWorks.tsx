@@ -10,21 +10,21 @@ import {
 const steps = [
   {
     number: "01",
-    title: "Register Account",
+    title: "Enroll & Record",
     description:
-      "Authorized personnel apply for system access through the official registration portal, subject to LGU approval.",
+      "Records personnel register students with guardians and enroll them in grade levels and sections. Verification keeps learner data accurate.",
   },
   {
     number: "02",
-    title: "Access Dashboard",
+    title: "Teach & Track",
     description:
-      "Sign in to reach the role-appropriate dashboard with scoped navigation — barangay, municipal, or admin view.",
+      "Advisers record grades, attendance, behavior, and reading/literacy/numeracy assessments for their sections.",
   },
   {
     number: "03",
-    title: "Manage Records",
+    title: "Analyze & Intervene",
     description:
-      "Create, validate, and monitor child records. Use QR codes for field verification. Generate reports for planning and compliance.",
+      "Analytics surface performance trends; guidance plans interventions, and reports export to PDF or Excel for compliance.",
   },
 ];
 
@@ -45,8 +45,8 @@ export function WelcomeHowItWorks() {
           </div>
           <div className="md:col-span-5">
             <Lede>
-              A streamlined workflow for authorized personnel to manage child
-              mapping data securely and efficiently.
+              A streamlined workflow for school personnel to manage learner
+              records securely and efficiently.
             </Lede>
           </div>
         </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
-import Link from "next/link";
 import {
   ShieldCheck,
   Lock,
@@ -44,7 +43,7 @@ export default function LoginPage() {
                 Republic of the Philippines
               </p>
               <p className="truncate text-[10px] font-medium text-brand-500">
-                LGU STA. MAGDALENA • DEPED SORSOGON DIVISION
+                STA. MAGDALENA NHS • DEPED SORSOGON DIVISION
               </p>
             </div>
           </div>
@@ -86,10 +85,10 @@ export default function LoginPage() {
             Sta. Magdalena
           </h1>
           <h2 className="mt-1 text-lg font-medium tracking-[-0.01em] text-brand-900 sm:text-xl">
-            Child Mapping System
+            Records Management System
           </h2>
           <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-action-700 sm:text-sm">
-            Official DepEd Form 1 Verification &amp; Census Portal
+            Student Records &amp; Performance Analytics Portal
           </p>
         </div>
 
@@ -128,7 +127,7 @@ export default function LoginPage() {
                 htmlFor={emailId}
                 className="block text-sm font-semibold text-brand-800"
               >
-                Username or DepEd Email
+                DepEd Email
               </label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brand-400">
@@ -150,7 +149,7 @@ export default function LoginPage() {
                 />
               </div>
               <p id={emailHintId} className="text-xs text-brand-500">
-                Use your DepEd email or assigned employee ID.
+                Use your school-issued DepEd email.
               </p>
             </div>
 
@@ -230,16 +229,11 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Registration Link */}
+          {/* Account notice */}
           <div className="mt-5 text-center">
             <p className="text-sm text-brand-600">
-              Need an authorized account?{" "}
-              <Link
-                href="/register"
-                className="font-semibold text-action-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-600 focus-visible:ring-offset-2"
-              >
-                Register here
-              </Link>
+              Accounts are provisioned by the school administrator. Contact the
+              school office if you need access.
             </p>
           </div>
         </div>

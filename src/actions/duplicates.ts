@@ -3,14 +3,14 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { childDuplicateCandidates, children } from "@/db/schema";
+import { duplicateCandidates, students } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
 import { logAudit, notify } from "@/lib/audit";
 import { duplicateReviewSchema } from "@/lib/schemas";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
 /**
- * Human review of a duplicate candidate. Detection never marks a child as a
+ * Human review of a duplicate candidate. Detection never marks a student as a
  * duplicate by itself — only an authorized reviewer decision here does.
  *
  * - confirmed_duplicate: the newer record is marked `marked_duplicate`
@@ -31,51 +31,51 @@ export async function reviewDuplicate(
 
   const rows = await db
     .select()
-    .from(childDuplicateCandidates)
-    .where(eq(childDuplicateCandidates.id, id))
+    .from(duplicateCandidates)
+    .where(eq(duplicateCandidates.id, id))
     .limit(1);
   const candidate = rows[0];
   if (!candidate) return fail("Duplicate candidate not found.");
 
   await db
-    .update(childDuplicateCandidates)
+    .update(duplicateCandidates)
     .set({
       status: decision,
       reviewedBy: user.id,
       reviewNotes: notes || null,
       updatedAt: new Date(),
     })
-    .where(eq(childDuplicateCandidates.id, candidate.id));
+    .where(eq(duplicateCandidates.id, candidate.id));
 
   if (decision === "confirmed_duplicate") {
     // Mark the newer record (the candidate that triggered detection) as duplicate.
-    const childRows = await db
-      .select({ createdAt: children.createdAt })
-      .from(children)
-      .where(eq(children.id, candidate.childId))
+    const studentRows = await db
+      .select({ createdAt: students.createdAt })
+      .from(students)
+      .where(eq(students.id, candidate.studentId))
       .limit(1);
     const possibleRows = await db
-      .select({ createdAt: children.createdAt })
-      .from(children)
-      .where(eq(children.id, candidate.possibleChildId))
+      .select({ createdAt: students.createdAt })
+      .from(students)
+      .where(eq(students.id, candidate.possibleStudentId))
       .limit(1);
 
     const newerId =
-      (childRows[0]?.createdAt ?? 0) >= (possibleRows[0]?.createdAt ?? 0)
-        ? candidate.childId
-        : candidate.possibleChildId;
+      (studentRows[0]?.createdAt ?? 0) >= (possibleRows[0]?.createdAt ?? 0)
+        ? candidate.studentId
+        : candidate.possibleStudentId;
 
     await db
-      .update(children)
+      .update(students)
       .set({ recordStatus: "marked_duplicate", updatedBy: user.id, updatedAt: new Date() })
-      .where(eq(children.id, newerId));
+      .where(eq(students.id, newerId));
 
     await logAudit({
       userId: user.id,
       action: "MARK_DUPLICATE",
-      entityType: "child_duplicate_candidate",
+      entityType: "duplicate_candidate",
       entityId: candidate.id,
-      newValues: { markedChildId: newerId, notes },
+      newValues: { markedStudentId: newerId, notes },
       ipAddress: ip,
       userAgent,
     });
@@ -83,7 +83,7 @@ export async function reviewDuplicate(
     await logAudit({
       userId: user.id,
       action: decision === "not_duplicate" ? "DUPLICATE_NOT_DUPLICATE" : "DUPLICATE_DISMISSED",
-      entityType: "child_duplicate_candidate",
+      entityType: "duplicate_candidate",
       entityId: candidate.id,
       newValues: { decision, notes },
       ipAddress: ip,
@@ -92,26 +92,26 @@ export async function reviewDuplicate(
   }
 
   // Inform both record creators (no sensitive details in the message).
-  for (const childId of [candidate.childId, candidate.possibleChildId]) {
-    const childRows = await db
-      .select({ createdBy: children.createdBy, childCode: children.childCode })
-      .from(children)
-      .where(eq(children.id, childId))
+  for (const studentId of [candidate.studentId, candidate.possibleStudentId]) {
+    const studentRows = await db
+      .select({ createdBy: students.createdBy, studentNumber: students.studentNumber })
+      .from(students)
+      .where(eq(students.id, studentId))
       .limit(1);
-    const child = childRows[0];
-    if (child) {
+    const student = studentRows[0];
+    if (student) {
       await notify({
-        userId: child.createdBy,
+        userId: student.createdBy,
         type: "duplicate",
         title: `Duplicate review: ${decision.replace(/_/g, " ")}`,
-        message: `Record ${child.childCode} was reviewed (${decision.replace(/_/g, " ")}).`,
-        link: `/children/${childId}`,
+        message: `Record ${student.studentNumber} was reviewed (${decision.replace(/_/g, " ")}).`,
+        link: `/students/${studentId}`,
       });
     }
   }
 
   revalidatePath("/duplicates");
-  revalidatePath("/children");
+  revalidatePath("/students");
   revalidatePath("/dashboard");
   return ok(`Marked as ${decision.replace(/_/g, " ")}.`);
 }

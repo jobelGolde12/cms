@@ -5,9 +5,9 @@ import {
   CheckCircle2,
   MapPin,
   Award,
-  Landmark,
+  GraduationCap,
 } from "lucide-react";
-import { MUNICIPALITY } from "@/lib/constants";
+import { SCHOOL } from "@/lib/constants";
 import {
   EditorialContainer,
   Eyebrow,
@@ -43,22 +43,21 @@ export function WelcomeHero() {
           <div className="min-w-0 lg:col-span-7">
             <div className="rise">
               <Eyebrow>
-                Republic of the Philippines · {MUNICIPALITY.region}
+                Republic of the Philippines · {SCHOOL.region}
               </Eyebrow>
             </div>
 
             <h1 className="rise rise-d1 mt-6 max-w-[17ch] text-balance text-[clamp(2.75rem,6.2vw,5rem)] leading-[1.02] font-normal tracking-[-0.04em] text-brand-950">
-              Municipal Child Mapping System.
+              Records Management System.
             </h1>
 
             <p className="rise rise-d2 mt-8 max-w-[38ch] text-[15px] leading-[1.55] text-brand-500 md:text-base">
-              The official platform for the Municipality of{" "}
+              The official platform for{" "}
               <strong className="font-medium text-brand-800">
-                {MUNICIPALITY.shortName}
+                {SCHOOL.name}
               </strong>{" "}
-              to register, validate, and monitor child census data across all{" "}
-              <strong className="font-medium text-brand-800">14 barangays</strong>{" "}
-              — compliant with RA 10173 and the DepEd Child Protection Policy.
+              to enroll, verify, and monitor student records and performance —
+              compliant with RA 10173 and the DepEd Child Protection Policy.
             </p>
 
             {/* Minimal CTA pair: one compact dark button + one text link (§12). */}
@@ -71,10 +70,10 @@ export function WelcomeHero() {
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
               </Link>
               <Link
-                href="/register"
+                href="/verify"
                 className="group -my-2.5 inline-flex items-center gap-1.5 py-2.5 text-[13px] font-medium text-brand-900 transition-colors duration-200 hover:text-action-700"
               >
-                Request Access
+                Verify a Record
                 <ArrowRight
                   className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1"
                   aria-hidden="true"
@@ -83,7 +82,8 @@ export function WelcomeHero() {
             </div>
 
             <p className="rise rise-d4 mt-6 text-xs text-brand-400">
-              Authorized personnel only. Registration requires LGU approval.
+              Authorized school personnel only. Accounts are provisioned by the
+              school administrator.
             </p>
           </div>
 
@@ -107,8 +107,8 @@ export function WelcomeHero() {
 
               {/* Editorial annotation — one small art-directed detail (§16). */}
               <p className="mt-6 flex items-center gap-2 pl-1 text-xs text-brand-400">
-                <Landmark className="h-3.5 w-3.5 text-action-600" aria-hidden="true" />
-                LGU {MUNICIPALITY.shortName} · DepEd Sorsogon Division
+                <GraduationCap className="h-3.5 w-3.5 text-action-600" aria-hidden="true" />
+                {SCHOOL.shortName} · DepEd Sorsogon Division
               </p>
             </div>
           </div>
@@ -117,9 +117,9 @@ export function WelcomeHero() {
         {/* ── Metadata strip — quiet institutional anchors (§24) ── */}
         <div className="rise rise-d3 grid grid-cols-1 gap-6 border-t border-brand-200 py-8 sm:grid-cols-3 lg:grid-cols-3">
           {[
-            { icon: MapPin, label: "Location", value: `${MUNICIPALITY.region}` },
-            { icon: Award, label: "Province", value: `${MUNICIPALITY.province}` },
-            { icon: CheckCircle2, label: "Coverage", value: "14 Barangays" },
+            { icon: MapPin, label: "Location", value: `${SCHOOL.address}` },
+            { icon: Award, label: "Province", value: `${SCHOOL.province}` },
+            { icon: CheckCircle2, label: "Coverage", value: "Grades 7–12" },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3">
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" aria-hidden="true" />

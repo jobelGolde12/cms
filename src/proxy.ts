@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Redirect authenticated users away from auth pages.
-  if (pathname === "/login" || pathname === "/register") {
+  if (pathname === "/login") {
     const raw = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (raw) {
       try {
@@ -124,13 +124,13 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/login",
-    "/register",
     "/api/reports/:path*",
     "/dashboard/:path*",
-    "/children/:path*",
-    "/validation/:path*",
+    "/students/:path*",
+    "/verification/:path*",
     "/duplicates/:path*",
-    "/monitoring/:path*",
+    "/performance/:path*",
+    "/development/:path*",
     "/reports/:path*",
     "/qr/:path*",
     "/activity-logs/:path*",

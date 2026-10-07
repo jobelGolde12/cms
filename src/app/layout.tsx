@@ -35,18 +35,18 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "Child Mapping System — Sta. Magdalena",
-    template: "%s — Child Mapping System",
+    default: "Records Management System — Sta. Magdalena NHS",
+    template: "%s — Records Management System",
   },
   description:
-    "Municipal child-mapping information management platform for the Municipality of Sta. Magdalena, Sorsogon.",
+    "Records management system with profile and performance analytics for Sta. Magdalena National High School, Sorsogon.",
   openGraph: {
     type: "website",
     siteName: BRAND_NAME,
     locale: "en_PH",
-    title: "Child Mapping System — Sta. Magdalena",
+    title: "Records Management System — Sta. Magdalena NHS",
     description:
-      "Municipal child-mapping information management platform for the Municipality of Sta. Magdalena, Sorsogon.",
+      "Records management system with profile and performance analytics for Sta. Magdalena National High School, Sorsogon.",
     images: [
       {
         url: logoImage.src,
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
   twitter: {
     // Square brand mark → "summary" card.
     card: "summary",
-    title: "Child Mapping System — Sta. Magdalena",
+    title: "Records Management System — Sta. Magdalena NHS",
     description:
-      "Municipal child-mapping information management platform for the Municipality of Sta. Magdalena, Sorsogon.",
+      "Records management system with profile and performance analytics for Sta. Magdalena National High School, Sorsogon.",
     images: [logoImage.src],
   },
 };

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Bell, CircleCheck, MapPin, Search } from "lucide-react";
+import { Bell, CircleCheck, GraduationCap, Search } from "lucide-react";
 import { unreadNotificationCount } from "@/lib/queries";
 import { hasPermission, type Permission } from "@/lib/permissions";
-import { MUNICIPALITY, ROLE_LABELS } from "@/lib/constants";
+import { SCHOOL, ROLE_LABELS } from "@/lib/constants";
 import { Logo } from "./logo";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 import { SidebarNav } from "./sidebar-nav";
@@ -18,21 +18,22 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-  { label: "Dashboard", href: "/dashboard", icon: "dashboard", permission: "children.view" },
-  { label: "Child Registry", href: "/children", icon: "children", permission: "children.view" },
-  { label: "Validation", href: "/validation", icon: "validation", permission: "validation.view" },
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard", permission: "dashboard.view" },
+  { label: "Students", href: "/students", icon: "students", permission: "students.view" },
+  { label: "Performance", href: "/performance", icon: "performance", permission: "grades.view" },
+  { label: "Student Development", href: "/development", icon: "development", permission: "behavior.view" },
+  { label: "Verification", href: "/verification", icon: "verification", permission: "verification.review" },
   { label: "Duplicate Review", href: "/duplicates", icon: "duplicates", permission: "duplicates.view" },
-  { label: "Monitoring", href: "/monitoring", icon: "monitoring", permission: "monitoring.view" },
   { label: "Reports", href: "/reports", icon: "reports", permission: "reports.view" },
   { label: "QR Studio", href: "/qr", icon: "qr", permission: "qr.verify" },
   { label: "Activity Logs", href: "/activity-logs", icon: "activity", permission: "audit_logs.view" },
-  { label: "Notifications", href: "/notifications", icon: "notifications", permission: "children.view" },
+  { label: "Notifications", href: "/notifications", icon: "notifications", permission: "students.view" },
   { label: "Users", href: "/users", icon: "users", permission: "users.view" },
-  { label: "Settings", href: "/settings", icon: "settings", permission: "children.view" },
+  { label: "Settings", href: "/settings", icon: "settings", permission: "dashboard.view" },
 ];
 
 const NAV_SECTIONS: { heading: string; items: string[] }[] = [
-  { heading: "Core Modules", items: ["/dashboard", "/children", "/validation", "/duplicates", "/monitoring", "/reports"] },
+  { heading: "Core Modules", items: ["/dashboard", "/students", "/performance", "/development", "/verification", "/duplicates", "/reports"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
   { heading: "System", items: ["/users", "/settings"] },
 ];
@@ -56,11 +57,11 @@ export default async function AppShell({
           <Logo size="lg" asLink priority />
           <div className="min-w-0 leading-tight">
             <div className="truncate text-xs font-bold uppercase tracking-wide text-brand-900">
-              {MUNICIPALITY.shortName}
+              {SCHOOL.shortName}
             </div>
-            <div className="text-[11px] font-medium text-brand-500">Child Mapping</div>
+            <div className="text-[11px] font-medium text-brand-500">Records Management</div>
             <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-400">
-              {MUNICIPALITY.region}
+              {SCHOOL.region}
             </div>
           </div>
         </div>
@@ -83,18 +84,18 @@ export default async function AppShell({
           <div className="flex min-w-0 items-center gap-2">
             <Logo size="md" className="lg:hidden" asLink priority />
             <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base">
-              Child Mapping System
+              Records Management System
             </h1>
             <span className="hidden items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-600 md:inline-flex">
-              <MapPin aria-hidden="true" className="h-3 w-3" />
-              {MUNICIPALITY.shortName}
+              <GraduationCap aria-hidden="true" className="h-3 w-3" />
+              {SCHOOL.shortName}
             </span>
           </div>
 
           {/* Search (links into the registry search) */}
-          <form action="/children" className="ml-2 hidden min-w-0 flex-1 max-w-sm lg:block" role="search">
+          <form action="/students" className="ml-2 hidden min-w-0 flex-1 max-w-sm lg:block" role="search">
             <label htmlFor="global-search" className="sr-only">
-              Search children in the registry
+              Search students in the registry
             </label>
             <div className="relative">
               <Search
@@ -105,7 +106,7 @@ export default async function AppShell({
                 id="global-search"
                 type="search"
                 name="q"
-                placeholder="Search children, codes…"
+                placeholder="Search students, numbers…"
                 className="h-8 w-full rounded-md border border-brand-200 bg-[#f8fafc] pl-8 pr-3 text-xs text-brand-800 placeholder:text-brand-400 focus:border-action-500 focus:bg-white focus:outline-none"
               />
             </div>
@@ -166,7 +167,7 @@ export default async function AppShell({
         </main>
 
         <footer className="border-t border-brand-200/70 px-4 py-4 text-center text-[11px] text-brand-400 sm:px-6">
-          {MUNICIPALITY.name} • {MUNICIPALITY.province} • {MUNICIPALITY.region}
+          {SCHOOL.name} • {SCHOOL.address} • {SCHOOL.region}
         </footer>
       </div>
     </div>

@@ -3,7 +3,7 @@ import {
   REVIEW_DECISION_TO_RECORD_STATUS,
   canTransition,
   isEditable,
-  isAwaitingValidation,
+  isAwaitingVerification,
   validationStatusFor,
 } from "../workflow";
 import { RECORD_STATUSES, type RecordStatus } from "../constants";
@@ -47,6 +47,11 @@ describe("canTransition (workflow guard)", () => {
     expect(canTransition("verified", "pending_validation")).toBe(false);
     expect(canTransition("verified", "pending_validation", "admin")).toBe(true);
   });
+
+  it("forbids verified and marked_duplicate transitions for non-admins", () => {
+    expect(canTransition("verified", "pending_validation", "records")).toBe(false);
+    expect(canTransition("marked_duplicate", "draft")).toBe(false);
+  });
 });
 
 describe("record helpers", () => {
@@ -58,12 +63,12 @@ describe("record helpers", () => {
     expect(isEditable("marked_duplicate")).toBe(false);
   });
 
-  it("isAwaitingValidation: only pending_validation", () => {
-    expect(isAwaitingValidation("pending_validation")).toBe(true);
-    expect(isAwaitingValidation("draft")).toBe(false);
+  it("isAwaitingVerification: only pending_validation", () => {
+    expect(isAwaitingVerification("pending_validation")).toBe(true);
+    expect(isAwaitingVerification("draft")).toBe(false);
   });
 
-  it("validationStatusFor maps record → validation history status", () => {
+  it("validationStatusFor maps record → verification history status", () => {
     expect(validationStatusFor("verified")).toBe("approved");
     expect(validationStatusFor("marked_duplicate")).toBe("rejected");
     expect(validationStatusFor("pending_validation")).toBe("pending");

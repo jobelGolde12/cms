@@ -1,15 +1,15 @@
 import { eq, or } from "drizzle-orm";
 import { db } from "@/db";
-import { childDuplicateCandidates, children } from "@/db/schema";
+import { duplicateCandidates, students } from "@/db/schema";
 import { normalizeName } from "./utils";
 
 export type DuplicateMatch = {
-  possibleChildId: string;
-  possibleChildCode: string;
+  possibleStudentId: string;
+  possibleStudentNumber: string;
   first: string;
   last: string;
   birthDate: string;
-  barangayId: string;
+  sex: string;
   reasons: string[];
   score: number;
 };
@@ -19,45 +19,44 @@ export type DuplicateInput = {
   lastName: string;
   middleName?: string | null;
   birthDate: string;
-  barangayId: string;
-  excludeChildId?: string | null;
+  sex: string;
+  excludeStudentId?: string | null;
 };
 
 /**
- * Finds potential duplicate records. A candidate is flagged when at least two
- * identifying fields agree (name + birth date, name + barangay, or birth date
- * + barangay with a same-last-name). Matching NEVER marks a child as a
- * duplicate by itself — it only creates review candidates.
+ * Finds potential duplicate student records. A candidate is flagged when at
+ * least two identifying fields agree (name + birth date, or name + sex with a
+ * same-last-name). Matching NEVER marks a student as a duplicate by itself —
+ * it only creates review candidates for human verification.
  */
 export async function detectDuplicates(
   input: DuplicateInput,
 ): Promise<DuplicateMatch[]> {
   const rows = await db
     .select({
-      id: children.id,
-      childCode: children.childCode,
-      firstName: children.firstName,
-      lastName: children.lastName,
-      middleName: children.middleName,
-      birthDate: children.birthDate,
-      barangayId: children.barangayId,
-      recordStatus: children.recordStatus,
+      id: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      middleName: students.middleName,
+      birthDate: students.birthDate,
+      sex: students.sex,
+      recordStatus: students.recordStatus,
     })
-    .from(children)
+    .from(students)
     .where(
       or(
-        eq(children.lastName, input.lastName),
-        eq(children.firstName, input.firstName),
-        eq(children.birthDate, input.birthDate),
-        eq(children.barangayId, input.barangayId),
+        eq(students.lastName, input.lastName),
+        eq(students.firstName, input.firstName),
+        eq(students.birthDate, input.birthDate),
       ),
     );
 
   const matches: DuplicateMatch[] = [];
 
   for (const row of rows) {
-    if (row.id === input.excludeChildId) continue;
-    // Archived records are out of scope for duplicate review.
+    if (row.id === input.excludeStudentId) continue;
+    // Records already marked duplicates are out of scope for review.
     if (row.recordStatus === "marked_duplicate") continue;
 
     const reasons: string[] = [];
@@ -84,25 +83,25 @@ export async function detectDuplicates(
       reasons.push("birth_date");
       score += 35;
     }
-    if (row.barangayId === input.barangayId) {
-      reasons.push("barangay");
+    if (row.sex === input.sex) {
+      reasons.push("sex");
       score += 15;
     }
 
     // Require at least two independent identifiers.
     const strongMatch =
-      (sameName && (reasons.includes("birth_date") || reasons.includes("barangay"))) ||
-      (!sameName && reasons.includes("birth_date") && reasons.includes("barangay"));
+      (sameName && (reasons.includes("birth_date") || reasons.includes("sex"))) ||
+      (!sameName && reasons.includes("birth_date") && reasons.includes("sex"));
 
     if (!strongMatch || reasons.length < 2) continue;
 
     matches.push({
-      possibleChildId: row.id,
-      possibleChildCode: row.childCode,
+      possibleStudentId: row.id,
+      possibleStudentNumber: row.studentNumber,
       first: row.firstName,
       last: row.lastName,
       birthDate: row.birthDate,
-      barangayId: row.barangayId,
+      sex: row.sex,
       reasons,
       score: Math.min(score, 100),
     });
@@ -112,62 +111,62 @@ export async function detectDuplicates(
 }
 
 /**
- * Refresh pending/not_duplicate review candidates for a child. Rows already
+ * Refresh pending/not_duplicate review candidates for a student. Rows already
  * reviewed (confirmed_duplicate) are left untouched. Existing pending rows
  * that no longer match are dismissed. This never changes `record_status`.
  */
 export async function refreshDuplicateCandidates(
-  childId: string,
+  studentId: string,
   input: DuplicateInput,
 ): Promise<void> {
   const existing = await db
     .select({
-      id: childDuplicateCandidates.id,
-      possibleChildId: childDuplicateCandidates.possibleChildId,
-      status: childDuplicateCandidates.status,
+      id: duplicateCandidates.id,
+      possibleStudentId: duplicateCandidates.possibleStudentId,
+      status: duplicateCandidates.status,
     })
-    .from(childDuplicateCandidates)
-    .where(eq(childDuplicateCandidates.childId, childId));
+    .from(duplicateCandidates)
+    .where(eq(duplicateCandidates.studentId, studentId));
 
-  const matches = await detectDuplicates({ ...input, excludeChildId: childId });
-  const matchIds = new Set(matches.map((m) => m.possibleChildId));
+  const matches = await detectDuplicates({ ...input, excludeStudentId: studentId });
+  const matchIds = new Set(matches.map((m) => m.possibleStudentId));
 
   // Dismiss stale pending candidates that no longer match.
   for (const row of existing) {
     if (
-      !matchIds.has(row.possibleChildId) &&
+      !matchIds.has(row.possibleStudentId) &&
       (row.status === "pending" || row.status === "not_duplicate")
     ) {
       await db
-        .update(childDuplicateCandidates)
+        .update(duplicateCandidates)
         .set({ status: "dismissed", updatedAt: new Date() })
-        .where(eq(childDuplicateCandidates.id, row.id));
+        .where(eq(duplicateCandidates.id, row.id));
     }
   }
 
   // Insert new pending candidates (pair-unique).
   for (const m of matches) {
-    const already = existing.find((e) => e.possibleChildId === m.possibleChildId);
+    const already = existing.find((e) => e.possibleStudentId === m.possibleStudentId);
     if (already) {
       if (already.status === "not_duplicate") {
         await db
-          .update(childDuplicateCandidates)
+          .update(duplicateCandidates)
           .set({
             status: "pending",
             matchScore: m.score,
             matchReason: JSON.stringify(m.reasons),
             updatedAt: new Date(),
           })
-          .where(eq(childDuplicateCandidates.id, already.id));
+          .where(eq(duplicateCandidates.id, already.id));
       }
       continue;
     }
     await db
-      .insert(childDuplicateCandidates)
+      .insert(duplicateCandidates)
       .values({
         id: crypto.randomUUID(),
-        childId,
-        possibleChildId: m.possibleChildId,
+        studentId,
+        possibleStudentId: m.possibleStudentId,
         matchScore: m.score,
         matchReason: JSON.stringify(m.reasons),
         status: "pending",

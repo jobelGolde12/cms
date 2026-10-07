@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission, type Permission } from "@/lib/permissions";
+import { hasPermission } from "@/lib/permissions";
 import { recentNotifications, unreadNotificationCount } from "@/lib/queries";
-import { MUNICIPALITY } from "@/lib/constants";
+import { SCHOOL } from "@/lib/constants";
 import { dashboardData } from "@/lib/dashboard-data";
 import {
   BarangayDistribution,
   EducationDistribution,
   KpiGrid,
-  MonitoringBarangayTable,
-  MonitoringCasework,
+  SectionCoverageTable,
+  BehaviorConcernsCard,
   OperationalBanner,
   RecentActivity,
   RecentNotifications,
@@ -28,13 +28,10 @@ export default async function AppDashboardPage() {
     unreadNotificationCount(user.id),
   ]);
 
-  const canReview = hasPermission(user.role, "validation.review" as Permission);
-  const canMonitor = hasPermission(user.role, "monitoring.view" as Permission);
+  const canReview = hasPermission(user.role, "verification.review");
+  const canDevelopment = hasPermission(user.role, "behavior.view");
 
-  const openMonitoringTotal = data.monitoringTypeCounts.reduce(
-    (sum, row) => sum + row.value,
-    0,
-  );
+  const openConcernsTotal = data.openConcerns.reduce((sum, row) => sum + row.value, 0);
 
   return (
     <div className="space-y-5">
@@ -42,19 +39,19 @@ export default async function AppDashboardPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
-            Child Mapping Overview
+            Student Records Overview
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
-            Child Mapping &amp; Demographics Overview
+            Enrollment &amp; Performance Overview
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-brand-500">
-            Current child registration, validation, education status, and
-            intervention monitoring across {MUNICIPALITY.shortName}.
+            Current enrollment, record verification, academic performance, and
+            student development at {SCHOOL.shortName}.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-600">
-            Current Cycle: {new Date().getFullYear()}
+            Current School Year: {new Date().getFullYear()}-{new Date().getFullYear() + 1}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-600">
             {new Date().toLocaleDateString("en-PH", {
@@ -72,22 +69,22 @@ export default async function AppDashboardPage() {
       {/* ----------------------- Operational banner ----------------------- */}
       <OperationalBanner
         registered={data.system.totalRecords}
-        verified={data.validation.verified}
-        barangayCount={data.byBarangay.length}
+        verified={data.verification.verified}
+        barangayCount={data.byGradeLevel.length}
       />
 
       {/* --------------------- Main two-column layout --------------------- */}
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
         {/* ------------------------- Main column ------------------------- */}
         <div className="space-y-5 xl:col-span-2">
-          <BarangayDistribution rows={data.byBarangay} />
+          <BarangayDistribution rows={data.byGradeLevel} />
 
-          {canMonitor ? (
+          {canDevelopment ? (
             <>
-              <MonitoringBarangayTable rows={data.monitoringByBarangay} />
-              <MonitoringCasework
-                counts={data.monitoringTypeCounts}
-                openTotal={openMonitoringTotal}
+              <SectionCoverageTable rows={data.sectionCoverage} />
+              <BehaviorConcernsCard
+                counts={data.openConcerns}
+                openTotal={openConcernsTotal}
               />
             </>
           ) : null}
@@ -97,8 +94,8 @@ export default async function AppDashboardPage() {
 
         {/* ------------------------- Right column ------------------------- */}
         <div className="space-y-5">
-          <EducationDistribution rows={data.education} />
-          <ValidationQueueCard counts={data.validation} canReview={canReview} />
+          <EducationDistribution rows={data.enrollment} />
+          <ValidationQueueCard counts={data.verification} canReview={canReview} />
           <RecordStatusCard rows={data.recordStatus} />
           <RecentNotifications items={notifications} />
           <SystemStatusCard status={data.system} notifications={unread} />

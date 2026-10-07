@@ -4,7 +4,7 @@ import { QrCode, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { db } from "@/db";
-import { children, qrVerifications } from "@/db/schema";
+import { students, qrVerifications } from "@/db/schema";
 import { desc, eq, and } from "drizzle-orm";
 import { formatDateTime } from "@/lib/utils";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -16,18 +16,18 @@ export default async function QrPage() {
   if (!user) redirect("/login");
   if (!hasPermission(user.role, "qr.verify")) redirect("/dashboard");
 
-  // Recent generate events with child codes (codes only — tokens are opaque).
+  // Recent generate events with student numbers (numbers only — tokens are opaque).
   const recent = await db
     .select({
       id: qrVerifications.id,
-      childId: qrVerifications.childId,
-      childCode: children.childCode,
+      studentId: qrVerifications.studentId,
+      studentNumber: students.studentNumber,
       type: qrVerifications.verificationType,
       result: qrVerifications.result,
       verifiedAt: qrVerifications.verifiedAt,
     })
     .from(qrVerifications)
-    .innerJoin(children, eq(children.id, qrVerifications.childId))
+    .innerJoin(students, eq(students.id, qrVerifications.studentId))
     .where(and(eq(qrVerifications.verificationType, "generate")))
     .orderBy(desc(qrVerifications.verifiedAt))
     .limit(10);
@@ -37,7 +37,7 @@ export default async function QrPage() {
       <PageHeader
         eyebrow="QR Verification Tools"
         title="QR Studio"
-        description="Generate secure QR identifiers from child profiles and review recent activity."
+        description="Generate secure QR identifiers from student profiles and review recent activity."
       />
 
       <Card>
@@ -47,7 +47,7 @@ export default async function QrPage() {
         />
         <CardBody>
           <ul className="list-disc space-y-2 pl-5 text-sm text-brand-600">
-            <li>QR codes are generated per verified child from their profile page.</li>
+            <li>QR codes are generated per verified student from their profile page.</li>
             <li>
               The QR payload contains <strong>only an opaque random token</strong> — never a name,
               birth date, address, disability data, or contact information.
@@ -76,7 +76,7 @@ export default async function QrPage() {
         <TableWrap minWidth={560}>
           <thead>
             <tr>
-              <Th>Child code</Th>
+              <Th>Student No.</Th>
               <Th>Event</Th>
               <Th>Result</Th>
               <Th>When</Th>
@@ -88,17 +88,17 @@ export default async function QrPage() {
                 colSpan={4}
                 icon={<QrCode className="h-10 w-10" />}
                 title="No QR events yet"
-                description="Activity appears once QR codes are generated from verified child profiles."
+                description="Activity appears once QR codes are generated from verified student profiles."
               />
             ) : (
               recent.map((r) => (
                 <tr key={r.id} className="transition-colors hover:bg-brand-50/70">
                   <Td>
                     <Link
-                      href={`/children/${r.childId}`}
+                      href={`/students/${r.studentId}`}
                       className="numeric font-medium text-brand-700 hover:text-action-700"
                     >
-                      {r.childCode}
+                      {r.studentNumber}
                     </Link>
                   </Td>
                   <Td className="capitalize text-brand-600">{r.type}</Td>

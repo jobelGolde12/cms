@@ -11,7 +11,7 @@ import { fail, ok, sessionMetadata, type ActionState } from "./helpers";
 /** Editable setting keys — never secrets (those live in environment variables). */
 const EDITABLE_KEYS = new Set([
   "system_name",
-  "child_code_prefix",
+  "student_number_prefix",
   "default_school_year",
   "maintenance_mode",
 ]);

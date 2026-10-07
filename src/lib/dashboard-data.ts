@@ -2,22 +2,23 @@ import { and, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   auditLogs,
-  barangays,
-  childDuplicateCandidates,
-  childEducation,
-  childMonitoring,
-  children,
+  behaviorCategories,
+  behaviorRecords,
+  duplicateCandidates,
+  gradeLevels,
+  interventions,
+  studentEnrollments,
+  students,
   users,
 } from "@/db/schema";
 import {
-  EDUCATION_STATUS_LABELS,
-  MONITORING_TYPE_LABELS,
+  ENROLLMENT_STATUS_LABELS,
   RECORD_STATUS_LABELS,
-  type EducationStatus,
+  type EnrollmentStatus,
   type RecordStatus,
 } from "./constants";
 import type { SessionUser } from "./auth";
-import { childScope } from "./scope";
+import { userSectionScope } from "./scope";
 import { dashboardStats } from "./queries";
 
 /* -------------------------------------------------------------------------- */
@@ -35,10 +36,10 @@ export type Kpi = {
   progress: number | null;
 };
 
-export type BarangayRow = { name: string; value: number };
+export type GradeLevelRow = { name: string; value: number };
 export type DistributionRow = { label: string; value: number };
 
-export type ValidationCounts = {
+export type VerificationCounts = {
   verified: number;
   pending: number;
   needsCorrection: number;
@@ -53,30 +54,30 @@ export type ActivityItem = {
   createdAt: Date;
 };
 
-export type MonitoringBarangayRow = {
-  barangay: string;
+export type SectionCoverageRow = {
+  gradeLevel: string;
   registered: number;
-  enrolled: number;
-  outOfSchool: number;
+  withGrades: number;
+  activeEnrollments: number;
 };
 
 export type SystemStatus = {
   databaseOnline: boolean;
   activeRecords: number;
   totalRecords: number;
-  openMonitoring: number;
+  openInterventions: number;
 };
 
 export type DashboardData = {
   kpis: Kpi[];
-  byBarangay: BarangayRow[];
-  education: DistributionRow[];
+  byGradeLevel: GradeLevelRow[];
+  enrollment: DistributionRow[];
   recordStatus: DistributionRow[];
-  validation: ValidationCounts;
+  verification: VerificationCounts;
   duplicateFlags: number;
   activity: ActivityItem[];
-  monitoringByBarangay: MonitoringBarangayRow[];
-  monitoringTypeCounts: { label: string; value: number }[];
+  sectionCoverage: SectionCoverageRow[];
+  openConcerns: { label: string; value: number }[];
   system: SystemStatus;
 };
 
@@ -87,18 +88,23 @@ export type DashboardData = {
 const ACTIVITY_LABELS: Record<string, string> = {
   LOGIN: "Signed in",
   LOGOUT: "Signed out",
-  CREATE_CHILD: "Child record created",
-  UPDATE_CHILD: "Child record updated",
-  ARCHIVE_CHILD: "Child record archived",
-  SUBMIT_VALIDATION: "Record submitted for validation",
-  APPROVE_VALIDATION: "Record approved",
-  NEEDS_CORRECTION: "Correction requested",
-  REOPEN_VALIDATION: "Validation reopened",
+  CREATE_STUDENT: "Student record created",
+  UPDATE_STUDENT: "Student record updated",
+  ARCHIVE_STUDENT: "Student record archived",
+  SUBMIT_VERIFICATION: "Record submitted for verification",
+  APPROVE_VERIFICATION: "Record approved",
+  REJECT_VERIFICATION: "Record rejected",
+  RETURN_VERIFICATION: "Correction requested",
+  REOPEN_VERIFICATION: "Verification reopened",
   MARK_DUPLICATE: "Duplicate record flagged",
   CONFIRM_DUPLICATE: "Duplicate confirmed",
-  DISMISS_DUPLICATE: "Duplicate candidate dismissed",
-  CREATE_MONITORING: "Monitoring record opened",
-  UPDATE_MONITORING: "Monitoring record updated",
+  DUPLICATE_NOT_DUPLICATE: "Duplicate candidate cleared",
+  DUPLICATE_DISMISSED: "Duplicate candidate dismissed",
+  SAVE_ENROLLMENT: "Enrollment saved",
+  SAVE_GRADE: "Grade recorded",
+  SAVE_ATTENDANCE: "Attendance recorded",
+  SAVE_BEHAVIOR: "Behavior record saved",
+  SAVE_ASSESSMENT: "Assessment recorded",
   CREATE_INTERVENTION: "Intervention planned",
   UPDATE_INTERVENTION: "Intervention updated",
   CREATE_FOLLOWUP: "Follow-up recorded",
@@ -112,18 +118,23 @@ const ACTIVITY_LABELS: Record<string, string> = {
 };
 
 const ACTIVITY_ICONS: Record<string, string> = {
-  CREATE_CHILD: "userPlus",
-  UPDATE_CHILD: "children",
-  ARCHIVE_CHILD: "archive",
-  SUBMIT_VALIDATION: "validation",
-  APPROVE_VALIDATION: "check",
-  NEEDS_CORRECTION: "alert",
-  REOPEN_VALIDATION: "clock",
+  CREATE_STUDENT: "userPlus",
+  UPDATE_STUDENT: "children",
+  ARCHIVE_STUDENT: "archive",
+  SUBMIT_VERIFICATION: "validation",
+  APPROVE_VERIFICATION: "check",
+  REJECT_VERIFICATION: "alert",
+  RETURN_VERIFICATION: "alert",
+  REOPEN_VERIFICATION: "clock",
   MARK_DUPLICATE: "duplicates",
   CONFIRM_DUPLICATE: "duplicates",
-  DISMISS_DUPLICATE: "check",
-  CREATE_MONITORING: "monitoring",
-  UPDATE_MONITORING: "monitoring",
+  DUPLICATE_NOT_DUPLICATE: "check",
+  DUPLICATE_DISMISSED: "check",
+  SAVE_ENROLLMENT: "bookOpen",
+  SAVE_GRADE: "reports",
+  SAVE_ATTENDANCE: "clock",
+  SAVE_BEHAVIOR: "monitoring",
+  SAVE_ASSESSMENT: "monitoring",
   CREATE_INTERVENTION: "plus",
   UPDATE_INTERVENTION: "reports",
   CREATE_FOLLOWUP: "clock",
@@ -139,25 +150,26 @@ const ACTIVITY_ICONS: Record<string, string> = {
 };
 
 const ACTIVITY_TONES: Record<string, "green" | "red" | "amber" | "blue" | "gray"> = {
-  CREATE_CHILD: "green",
-  APPROVE_VALIDATION: "green",
-  DISMISS_DUPLICATE: "green",
+  CREATE_STUDENT: "green",
+  APPROVE_VERIFICATION: "green",
+  DUPLICATE_NOT_DUPLICATE: "green",
+  DUPLICATE_DISMISSED: "green",
   VERIFY_QR: "green",
-  NEEDS_CORRECTION: "red",
+  REJECT_VERIFICATION: "red",
+  RETURN_VERIFICATION: "red",
   MARK_DUPLICATE: "red",
   CONFIRM_DUPLICATE: "red",
-  ARCHIVE_CHILD: "red",
+  ARCHIVE_STUDENT: "red",
   DISABLE_USER: "red",
-  SUBMIT_VALIDATION: "amber",
-  REOPEN_VALIDATION: "amber",
-  CREATE_MONITORING: "amber",
-  UPDATE_MONITORING: "amber",
+  SUBMIT_VERIFICATION: "amber",
+  REOPEN_VERIFICATION: "amber",
   CREATE_INTERVENTION: "amber",
   UPDATE_INTERVENTION: "amber",
   CREATE_FOLLOWUP: "amber",
+  SAVE_BEHAVIOR: "amber",
 };
 
-/** Human description of an audit row, e.g. "Child record created — Child Registry". */
+/** Human description of an audit row, e.g. "Student record created — Juan D.". */
 export function activityTitle(item: ActivityItem): string {
   const action = ACTIVITY_LABELS[item.action] ?? item.action;
   const who = item.actor ?? "System";
@@ -191,78 +203,77 @@ export function formatRelativeTime(date: Date | string): string {
 /*  Aggregate loader — every number below comes from the database             */
 /* -------------------------------------------------------------------------- */
 
-const scopedCount = (scope: ReturnType<typeof childScope>, extra?: ReturnType<typeof eq>) =>
-  db
-    .select({ n: count() })
-    .from(children)
-    .where(extra ? and(scope ?? sql`1 = 1`, extra) : (scope ?? sql`1 = 1`))
-    .then((rows) => rows[0]?.n ?? 0);
-
-/**
- * Active, non-duplicate records — the same basis as `dashboardStats().total` so
- * every chart and distribution on the dashboard reconciles with the KPI grid.
- */
-const activeNonDuplicate: SQL = sql`${children.status} = 'active' AND ${children.recordStatus} != 'marked_duplicate'`;
-
 export async function dashboardData(user: SessionUser): Promise<DashboardData> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
-  // Scope + active/non-duplicate basis, used by every children-derived chart.
-  const scopedActive = and(scopeSql, activeNonDuplicate) as SQL;
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  // Scope + active/non-duplicate basis, used by every student-derived chart.
+  const scopedActive = and(
+    scope,
+    sql`${students.status} = 'active' AND ${students.recordStatus} != 'marked_duplicate'`,
+  ) as SQL;
 
   const [
     stats,
-    byBarangayRows,
-    eduRows,
+    byGradeRows,
+    enrollmentRows,
     recordRows,
     duplicateRows,
     needsCorrectionRow,
     activityRows,
-    monitoringByBarangayRows,
-    monitoringTypeRows,
+    coverageRows,
+    concernRows,
     activeRow,
-    openMonitoringRow,
+    openInterventionsRow,
   ] = await Promise.all([
     dashboardStats(user),
 
-    // Children per barangay (barangay-scope users only see their own rows).
-    // Basis: active, non-duplicate records — matches the KPI total.
+    // Students per grade level (active enrollments).
     db
-      .select({ name: barangays.name, value: count() })
-      .from(children)
-      .innerJoin(barangays, eq(barangays.id, children.barangayId))
+      .select({ name: gradeLevels.name, value: count() })
+      .from(students)
+      .innerJoin(
+        studentEnrollments,
+        and(
+          eq(studentEnrollments.studentId, students.id),
+          eq(studentEnrollments.status, "active"),
+        ),
+      )
+      .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
       .where(scopedActive)
-      .groupBy(children.barangayId)
-      .orderBy(desc(count())),
+      .groupBy(gradeLevels.id)
+      .orderBy(gradeLevels.orderIndex),
 
-    // Current education status distribution.
+    // Enrollment status distribution.
     db
-      .select({ key: childEducation.educationStatus, value: count() })
-      .from(childEducation)
-      .innerJoin(children, eq(children.id, childEducation.childId))
-      .where(and(scopeSql, eq(childEducation.isCurrent, true)))
-      .groupBy(childEducation.educationStatus)
+      .select({ key: studentEnrollments.status, value: count() })
+      .from(studentEnrollments)
+      .innerJoin(students, eq(students.id, studentEnrollments.studentId))
+      .where(scopedActive)
+      .groupBy(studentEnrollments.status)
       .orderBy(desc(count())),
 
     // Record status distribution (active, non-duplicate records).
     db
-      .select({ key: children.recordStatus, value: count() })
-      .from(children)
+      .select({ key: students.recordStatus, value: count() })
+      .from(students)
       .where(scopedActive)
-      .groupBy(children.recordStatus)
+      .groupBy(students.recordStatus)
       .orderBy(desc(count())),
 
     // Open duplicate flags.
     db
       .select({ n: count() })
-      .from(childDuplicateCandidates)
-      .where(eq(childDuplicateCandidates.status, "pending"))
+      .from(duplicateCandidates)
+      .where(eq(duplicateCandidates.status, "pending"))
       .then((rows) => rows[0]?.n ?? 0),
 
-    // Needs-correction count for the validation panel.
-    scopedCount(scope, eq(children.recordStatus, "needs_correction")),
+    // Needs-correction count for the verification panel.
+    db
+      .select({ n: count() })
+      .from(students)
+      .where(and(scope, eq(students.recordStatus, "needs_correction")))
+      .then((rows) => rows[0]?.n ?? 0),
 
-    // Recent audit trail (scope: all — it is an operational log, not child data).
+    // Recent audit trail (scope: all — it is an operational log, not student data).
     db
       .select({
         id: auditLogs.id,
@@ -277,53 +288,59 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       .orderBy(desc(auditLogs.createdAt))
       .limit(8),
 
-    // Per-barangay enrollment coverage for the monitoring table.
-    // Basis: active, non-duplicate records — matches the KPI total.
+    // Per-grade-level coverage: students with grades recorded this year.
     db
       .select({
-        barangay: barangays.name,
+        gradeLevel: gradeLevels.name,
         registered: count(),
-        enrolled: sql<number>`sum(case when exists (
-          select 1 from ${childEducation}
-          where ${childEducation.childId} = ${children.id}
-            and ${childEducation.isCurrent} = 1
-            and ${childEducation.educationStatus} = 'enrolled'
-        ) then 1 else 0 end)`,
-        outOfSchool: sql<number>`sum(case when exists (
-          select 1 from ${childEducation}
-          where ${childEducation.childId} = ${children.id}
-            and ${childEducation.isCurrent} = 1
-            and ${childEducation.educationStatus} = 'out_of_school'
-        ) then 1 else 0 end)`,
+        withGrades:
+          sql<number>`sum(case when exists (
+            select 1 from student_grades sg
+            join student_enrollments se on se.id = sg.enrollment_id
+            where se.student_id = ${students.id}
+          ) then 1 else 0 end)`,
+        activeEnrollments:
+          sql<number>`sum(case when exists (
+            select 1 from student_enrollments se2
+            where se2.student_id = ${students.id} and se2.status = 'active'
+          ) then 1 else 0 end)`,
       })
-      .from(children)
-      .innerJoin(barangays, eq(barangays.id, children.barangayId))
+      .from(students)
+      .innerJoin(
+        studentEnrollments,
+        and(
+          eq(studentEnrollments.studentId, students.id),
+          eq(studentEnrollments.status, "active"),
+        ),
+      )
+      .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
       .where(scopedActive)
-      .groupBy(children.barangayId)
-      .orderBy(desc(count())),
+      .groupBy(gradeLevels.id)
+      .orderBy(gradeLevels.orderIndex),
 
-    // Open monitoring casework by type.
+    // Open behavior concerns by category.
     db
-      .select({ type: childMonitoring.monitoringType, value: count() })
-      .from(childMonitoring)
-      .innerJoin(children, eq(children.id, childMonitoring.childId))
-      .where(and(scopeSql, inArray(childMonitoring.status, ["open", "in_progress"])))
-      .groupBy(childMonitoring.monitoringType)
+      .select({ label: behaviorCategories.name, value: count() })
+      .from(behaviorRecords)
+      .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+      .where(and(scope, inArray(behaviorRecords.status, ["open", "monitored"])))
+      .groupBy(behaviorCategories.id)
       .orderBy(desc(count())),
 
     // Active (non-archived) records for system status.
     db
       .select({ n: count() })
-      .from(children)
-      .where(and(scopeSql, eq(children.status, "active")))
+      .from(students)
+      .where(and(scope, eq(students.status, "active")))
       .then((rows) => rows[0]?.n ?? 0),
 
-    // Open monitoring cases for system status.
+    // Open interventions for system status.
     db
       .select({ n: count() })
-      .from(childMonitoring)
-      .innerJoin(children, eq(children.id, childMonitoring.childId))
-      .where(and(scopeSql, inArray(childMonitoring.status, ["open", "in_progress"])))
+      .from(interventions)
+      .innerJoin(students, eq(students.id, interventions.studentId))
+      .where(and(scope, inArray(interventions.status, ["planned", "active"])))
       .then((rows) => rows[0]?.n ?? 0),
   ]);
 
@@ -332,9 +349,9 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
   const kpis: Kpi[] = [
     {
       key: "total",
-      label: "Total Children",
+      label: "Total Students",
       value: stats.total,
-      description: "Registered records",
+      description: "Active student records",
       icon: "users",
       tone: "navy",
       progress: Math.round((stats.verified / total) * 100),
@@ -343,55 +360,37 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       key: "verified",
       label: "Verified Records",
       value: stats.verified,
-      description: "Passed validation",
+      description: "Passed verification",
       icon: "validation",
       tone: "green",
       progress: Math.round((stats.verified / total) * 100),
     },
     {
       key: "pending",
-      label: "Pending Validation",
-      value: stats.pendingValidation,
+      label: "Pending Verification",
+      value: stats.pendingVerification,
       description: "Awaiting review",
       icon: "clock",
       tone: "amber",
-      progress: Math.round((stats.pendingValidation / total) * 100),
+      progress: Math.round((stats.pendingVerification / total) * 100),
     },
     {
       key: "enrolled",
       label: "Enrolled",
       value: stats.enrolled,
-      description: `${stats.osy} out-of-school`,
+      description: "Active enrollment this year",
       icon: "bookOpen",
       tone: "blue",
       progress: Math.round((stats.enrolled / total) * 100),
     },
     {
-      key: "osy",
-      label: "Out-of-School",
-      value: stats.osy,
-      description: "Priority for intervention",
-      icon: "alert",
-      tone: "red",
-      progress: Math.round((stats.osy / total) * 100),
-    },
-    {
-      key: "eccd",
-      label: "ECCD Non-Participation",
-      value: stats.eccdNonParticipation,
-      description: "Not in ECCD programs",
+      key: "behavior",
+      label: "Behavior Concerns",
+      value: stats.openBehaviorConcerns,
+      description: "Open concern records",
       icon: "monitoring",
-      tone: "slate",
-      progress: Math.round((stats.eccdNonParticipation / total) * 100),
-    },
-    {
-      key: "disability",
-      label: "With Disability",
-      value: stats.withDisability,
-      description: "Requires targeted support",
-      icon: "help",
-      tone: "slate",
-      progress: Math.round((stats.withDisability / total) * 100),
+      tone: "red",
+      progress: null,
     },
     {
       key: "interventions",
@@ -404,29 +403,23 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
     },
   ];
 
-  const duplicateFlags = duplicateRows;
-
-  const validation: ValidationCounts = {
+  const verification: VerificationCounts = {
     verified: stats.verified,
-    pending: stats.pendingValidation,
+    pending: stats.pendingVerification,
     needsCorrection: needsCorrectionRow,
-    duplicateFlags,
+    duplicateFlags: duplicateRows,
   };
 
-  const byBarangay = byBarangayRows.map((r) => ({ name: r.name, value: r.value }));
+  const byGradeLevel = byGradeRows.map((r) => ({ name: r.name, value: r.value }));
 
   // Full label set in canonical order so empty categories still render.
-  const educationTotals = new Map(eduRows.map((r) => [r.key, r.value]));
-  const educationOrder: EducationStatus[] = [
-    "enrolled",
-    "out_of_school",
-    "not_yet_in_school",
-    "graduated",
-    "unknown",
-  ];
-  const education: DistributionRow[] = educationOrder.map((key) => ({
-    label: EDUCATION_STATUS_LABELS[key],
-    value: educationTotals.get(key) ?? 0,
+  const enrollmentTotals = new Map(
+    enrollmentRows.map((r) => [r.key as EnrollmentStatus, r.value]),
+  );
+  const enrollmentOrder: EnrollmentStatus[] = ["active", "completed", "transferred", "withdrawn"];
+  const enrollment: DistributionRow[] = enrollmentOrder.map((key) => ({
+    label: ENROLLMENT_STATUS_LABELS[key],
+    value: enrollmentTotals.get(key) ?? 0,
   }));
 
   const recordTotals = new Map(recordRows.map((r) => [r.key as RecordStatus, r.value]));
@@ -441,25 +434,13 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
     value: recordTotals.get(key) ?? 0,
   }));
 
-  const monitoringByBarangay = monitoringByBarangayRows.map((r) => ({
-    barangay: r.barangay,
-    registered: r.registered,
-    enrolled: Number(r.enrolled ?? 0),
-    outOfSchool: Number(r.outOfSchool ?? 0),
-  }));
-
-  const monitoringTypeCounts = monitoringTypeRows.map((r) => ({
-    label: MONITORING_TYPE_LABELS[r.type as keyof typeof MONITORING_TYPE_LABELS] ?? r.type,
-    value: r.value,
-  }));
-
   return {
     kpis,
-    byBarangay,
-    education,
+    byGradeLevel,
+    enrollment,
     recordStatus,
-    validation,
-    duplicateFlags,
+    verification,
+    duplicateFlags: duplicateRows,
     activity: activityRows.map((r) => ({
       id: r.id,
       action: r.action,
@@ -470,13 +451,18 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
           : null,
       createdAt: r.createdAt,
     })),
-    monitoringByBarangay,
-    monitoringTypeCounts,
+    sectionCoverage: coverageRows.map((r) => ({
+      gradeLevel: r.gradeLevel,
+      registered: r.registered,
+      withGrades: Number(r.withGrades ?? 0),
+      activeEnrollments: Number(r.activeEnrollments ?? 0),
+    })),
+    openConcerns: concernRows,
     system: {
       databaseOnline: true, // the page could not render otherwise
       activeRecords: activeRow,
       totalRecords: stats.total,
-      openMonitoring: openMonitoringRow,
+      openInterventions: openInterventionsRow,
     },
   };
 }

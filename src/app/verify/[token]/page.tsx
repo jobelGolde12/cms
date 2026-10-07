@@ -2,11 +2,11 @@ import Link from "next/link";
 import { ShieldCheck, ShieldX, Clock } from "lucide-react";
 import { resolveQrToken, registerQrScan } from "@/lib/qr";
 import { db } from "@/db";
-import { children } from "@/db/schema";
+import { students } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { buttonStyles } from "@/components/ui/button";
 
-export const metadata = { title: "Record Verification — Sta. Magdalena CMS" };
+export const metadata = { title: "Record Verification — Sta. Magdalena NHS" };
 
 export default async function VerifyTokenPage({
   params,
@@ -17,27 +17,31 @@ export default async function VerifyTokenPage({
 
   const resolved = await resolveQrToken(token).catch(() => null);
 
-  let child: { childCode: string; firstName: string; recordStatus: string } | null = null;
+  let student: { studentNumber: string; firstName: string; recordStatus: string } | null = null;
   if (resolved && !resolved.expired) {
     const rows = await db
       .select({
-        childCode: children.childCode,
-        firstName: children.firstName,
-        lastName: children.lastName,
-        recordStatus: children.recordStatus,
+        studentNumber: students.studentNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        recordStatus: students.recordStatus,
       })
-      .from(children)
-      .where(eq(children.id, resolved.childId))
+      .from(students)
+      .where(eq(students.id, resolved.studentId))
       .limit(1);
     const row = rows[0];
     if (row && row.recordStatus === "verified") {
-      child = { childCode: row.childCode, firstName: row.firstName, recordStatus: row.recordStatus };
+      student = {
+        studentNumber: row.studentNumber,
+        firstName: row.firstName,
+        recordStatus: row.recordStatus,
+      };
     }
     // Record the scan event (no personal data in logs beyond token reference).
     await registerQrScan(token).catch(() => undefined);
   }
 
-  const invalid = !resolved || (!child && !resolved.expired);
+  const invalid = !resolved || (!student && !resolved.expired);
 
   const banner = invalid
     ? { icon: ShieldX, bg: "bg-status-error-bg", ring: "border-red-200", fg: "text-status-error" }
@@ -61,27 +65,27 @@ export default async function VerifyTokenPage({
             <h1 className="text-xl font-bold tracking-tight text-brand-900">Record not found</h1>
             <p className="mt-2 text-sm leading-relaxed text-brand-500">
               This verification link is invalid or has been revoked. Please check with the
-              Municipal Social Welfare Office.
+              school registrar.
             </p>
           </>
         ) : resolved?.expired ? (
           <>
             <h1 className="text-xl font-bold tracking-tight text-brand-900">Verification link expired</h1>
             <p className="mt-2 text-sm leading-relaxed text-brand-500">
-              This QR code has expired. Request a new one from the municipal office.
+              This QR code has expired. Request a new one from the school registrar.
             </p>
           </>
         ) : (
           <>
             <h1 className="text-xl font-bold tracking-tight text-brand-900">Record verified</h1>
             <p className="mt-2 text-sm leading-relaxed text-brand-600">
-              This child record is <strong>registered and verified</strong> in the Municipal
-              Child Mapping System of Sta. Magdalena, Sorsogon.
+              This student record is <strong>registered and verified</strong> in the Records
+              Management System of Sta. Magdalena National High School.
             </p>
             <dl className="mt-5 space-y-2 rounded-[3px] border border-brand-100 bg-brand-50 p-4 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-brand-500">Reference code</dt>
-                <dd className="numeric font-medium text-brand-900">{child!.childCode}</dd>
+                <dt className="text-brand-500">Student number</dt>
+                <dd className="numeric font-medium text-brand-900">{student!.studentNumber}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-brand-500">Record status</dt>
@@ -89,7 +93,7 @@ export default async function VerifyTokenPage({
               </div>
             </dl>
             <p className="mt-4 text-xs text-brand-400">
-              For privacy, only the reference code and status are shown. Personal details are
+              For privacy, only the student number and status are shown. Personal details are
               never encoded in QR codes.
             </p>
           </>

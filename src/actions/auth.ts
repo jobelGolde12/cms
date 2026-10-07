@@ -176,7 +176,7 @@ export async function changePassword(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await getAuthorizedUser("children.view");
+  const user = await getAuthorizedUser("dashboard.view");
   const { ip, userAgent } = await sessionMetadata();
   if (!user) return fail("You must be signed in.");
 
@@ -238,7 +238,7 @@ export async function updateProfile(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await getAuthorizedUser("children.view");
+  const user = await getAuthorizedUser("dashboard.view");
   if (!user) return fail("You must be signed in.");
 
   const firstName = String(formData.get("firstName") ?? "").trim();

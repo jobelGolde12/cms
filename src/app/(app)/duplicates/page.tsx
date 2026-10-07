@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, GitCompare, ScanSearch, Search } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { listDuplicates, validationStats } from "@/lib/queries";
+import { listDuplicates, verificationStats } from "@/lib/queries";
 import { reviewDuplicate } from "@/actions/duplicates";
 import { hasPermission } from "@/lib/permissions";
 import {
@@ -54,7 +54,7 @@ export default async function DuplicatesPage({
 
   const [items, stats] = await Promise.all([
     listDuplicates(status, { q, band: band as "high" | "moderate" | "review" | undefined }),
-    validationStats(user),
+    verificationStats(user),
   ]);
   const canReview = hasPermission(user.role, "duplicates.review");
 
@@ -116,7 +116,7 @@ export default async function DuplicatesPage({
             <form action="/duplicates" method="GET" className="mt-2.5">
               <input type="hidden" name="status" value={status} />
               <label htmlFor="conflict-search" className="sr-only">
-                Search conflicts by child name or mapping ID
+                Search conflicts by student name or number
               </label>
               <div className="relative">
                 <Search
@@ -128,7 +128,7 @@ export default async function DuplicatesPage({
                   type="search"
                   name="q"
                   defaultValue={q}
-                  placeholder="Search child name or mapping ID…"
+                  placeholder="Search student name or number…"
                   className="h-8 w-full rounded-md border border-brand-200 bg-[#f8fafc] pl-8 pr-3 text-xs text-brand-800 placeholder:text-brand-400 focus:border-action-500 focus:bg-white focus:outline-none"
                 />
               </div>
@@ -180,17 +180,13 @@ export default async function DuplicatesPage({
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="text-[11px] font-semibold text-brand-500">
-                              {item.childCode} vs {item.possibleCode}
+                              {item.studentNumber} vs {item.possibleNumber}
                             </div>
                             <div className="mt-0.5 truncate text-[13px] font-semibold text-brand-900">
-                              {item.childLast}, {item.childFirst}
-                            </div>
-                            <div className="mt-0.5 truncate text-[11px] text-brand-500">
-                              {item.childBarangayName ?? "—"} vs {item.possibleBarangayName ?? "—"}
+                              {item.studentLast}, {item.studentFirst}
                             </div>
                             <div className="mt-0.5 text-[11px] text-brand-400">
-                              DOB {formatDate(item.childBirth)}
-                              {item.childGrade ? ` · ${item.childGrade}` : ""}
+                              DOB {formatDate(item.studentBirth)}
                             </div>
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-1">
@@ -298,8 +294,8 @@ export default async function DuplicatesPage({
                     )
                   ) : (
                     <p className="mt-3 text-xs text-brand-500">
-                      You do not have permission to resolve duplicate conflicts. Contact an
-                      LGU administrator.
+                      You do not have permission to resolve duplicate conflicts. Contact the
+                      school administrator.
                     </p>
                   )}
                 </div>

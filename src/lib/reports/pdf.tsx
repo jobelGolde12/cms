@@ -1,6 +1,6 @@
 import { Document, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import type { BuiltReport } from "./report-data";
-import { MUNI_HEADER } from "./report-data";
+import { SCHOOL_HEADER } from "./report-data";
 import { formatDateTime } from "../utils";
 
 const styles = StyleSheet.create({
@@ -79,9 +79,9 @@ const reportDoc = (report: BuiltReport) => (
   <Document title={report.title}>
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.hMuni}>{MUNI_HEADER.name}</Text>
+        <Text style={styles.hMuni}>{SCHOOL_HEADER.name}</Text>
         <Text style={styles.hSub}>
-          {MUNI_HEADER.province} · {MUNI_HEADER.region}
+          {SCHOOL_HEADER.address} · {SCHOOL_HEADER.region}
         </Text>
         <Text style={styles.hTitle}>{report.title}</Text>
         <Text style={styles.meta}>
@@ -107,7 +107,7 @@ const reportDoc = (report: BuiltReport) => (
       <ReportTable report={report} />
 
       <View style={styles.footer}>
-        <Text>{`${MUNI_HEADER.name} — Child Mapping Information System`}</Text>
+        <Text>{`${SCHOOL_HEADER.name} — Records Management System`}</Text>
         <Text
           render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
           fixed

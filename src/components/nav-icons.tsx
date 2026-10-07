@@ -1,12 +1,15 @@
 import {
   LayoutDashboard,
-  ClipboardCheck,
+  Users,
+  GraduationCap,
+  TrendingUp,
+  HeartHandshake,
   ShieldCheck,
   ScanSearch,
   BarChart3,
   FileText,
   QrCode,
-  Users,
+  Users2,
   Activity,
   Bell,
   Settings,
@@ -21,16 +24,20 @@ import {
  */
 export const NAV_ICONS = {
   dashboard: LayoutDashboard,
-  children: ClipboardCheck,
+  students: Users,
+  performance: TrendingUp,
+  development: HeartHandshake,
   validation: ShieldCheck,
+  verification: ShieldCheck,
   duplicates: ScanSearch,
-  monitoring: BarChart3,
+  grades: GraduationCap,
   reports: FileText,
   qr: QrCode,
-  users: Users,
+  users: Users2,
   activity: Activity,
   notifications: Bell,
   settings: Settings,
+  monitoring: BarChart3,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIconName = keyof typeof NAV_ICONS;

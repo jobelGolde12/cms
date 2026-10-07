@@ -12,7 +12,6 @@ export type DefaultCredential = {
   firstName: string;
   lastName: string;
   role: Role;
-  barangayId: string | null;
 };
 
 function requireEnv(name: string): string {
@@ -27,45 +26,27 @@ function requireEnv(name: string): string {
   return value;
 }
 
-function optionalEnv(name: string): string | null {
-  const value = process.env[name];
-  return value && value.trim().length > 0 ? value.trim() : null;
-}
-
-function buildCredential(id: string, envPrefix: string): DefaultCredential {
-  const email = requireEnv(`${envPrefix}_EMAIL`);
-  const passwordHash = requireEnv(`${envPrefix}_PASSWORD_HASH`);
-  const firstName = requireEnv(`${envPrefix}_FIRST_NAME`);
-  const lastName = requireEnv(`${envPrefix}_LAST_NAME`);
-  const roleValue = requireEnv(`${envPrefix}_ROLE`);
-
-  const allowed: Role[] = ["admin", "lgu", "barangay"];
-  if (!allowed.includes(roleValue as Role)) {
-    throw new Error(
-      `Invalid role for default credential ${envPrefix}: ${roleValue}. ` +
-        `Expected one of: ${allowed.join(", ")}. There is NO school role.`
-    );
-  }
-
+function buildCredential(id: string, envPrefix: string, role: Role): DefaultCredential {
   return {
     id,
-    email,
-    passwordHash,
-    firstName,
-    lastName,
-    role: roleValue as Role,
-    barangayId: optionalEnv(`${envPrefix}_BARANGAY_ID`),
+    email: requireEnv(`${envPrefix}_EMAIL`),
+    passwordHash: requireEnv(`${envPrefix}_PASSWORD_HASH`),
+    firstName: requireEnv(`${envPrefix}_FIRST_NAME`),
+    lastName: requireEnv(`${envPrefix}_LAST_NAME`),
+    role,
   };
 }
 
 /**
  * Development-only accounts. The seed script also inserts these rows into the
- * users table (upsert by email) so barangay scoping works out of the box.
+ * users table (upsert by email) so role scoping works out of the box.
  */
 export const DEFAULT_CREDENTIALS: readonly DefaultCredential[] = [
-  buildCredential("default-admin", "DEFAULT_ADMIN"),
-  buildCredential("default-lgu", "DEFAULT_LGU"),
-  buildCredential("default-barangay", "DEFAULT_BARANGAY"),
+  buildCredential("default-admin", "DEFAULT_ADMIN", "admin"),
+  buildCredential("default-school-admin", "DEFAULT_SCHOOL_ADMIN", "school_admin"),
+  buildCredential("default-teacher", "DEFAULT_TEACHER", "teacher"),
+  buildCredential("default-records", "DEFAULT_RECORDS", "records"),
+  buildCredential("default-guidance", "DEFAULT_GUIDANCE", "guidance"),
 ];
 
 export function findDefaultCredential(email: string): DefaultCredential | undefined {

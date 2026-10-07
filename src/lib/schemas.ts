@@ -1,9 +1,13 @@
 import { z } from "zod";
 import {
-  ASSISTANCE_STATUSES,
-  DISABILITY_TYPES,
-  ECCD_STATUSES,
-  EDUCATION_STATUSES,
+  ASSESSMENT_DOMAINS,
+  ATTENDANCE_STATUSES,
+  BEHAVIOR_RECORD_STATUSES,
+  BEHAVIOR_SEVERITIES,
+  ENROLLMENT_STATUSES,
+  FOLLOWUP_STATUSES,
+  INTERVENTION_STATUSES,
+  ROLES,
   SEXES,
 } from "./constants";
 
@@ -11,69 +15,66 @@ const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date");
 
+/**
+ * Birth dates of high-school students. The school serves Grades 7–12, so a
+ * realistic window is ~10–25 years old at entry; anything before 1990 is a
+ * data-entry error and anything in the future is impossible.
+ */
 const notTooOld = (date: string): boolean => {
   const year = Number(date.slice(0, 4));
   return year >= 1990 && year <= new Date().getFullYear() + 1;
 };
 
+const optionalText = (max: number) => z.string().trim().max(max).optional().or(z.literal(""));
+
+/* -------------------------------------------------------------------------- */
+/*  Student form (client + server)                                            */
+/* -------------------------------------------------------------------------- */
+
 /**
- * Shared child form schema (client + server).
- *
- * A single form feeds the normalized tables: `children` (identity) plus
- * `child_addresses`, `child_education`, `child_eccd` and `child_disabilities`
- * (created in the same transaction on the server).
+ * Core student record. Academic placement (enrollment in a grade level /
+ * section for a school year) is a separate flow recorded in
+ * `student_enrollments`; guardians are created alongside the student.
  */
-export const childFormSchema = z.object({
-  // Identity
+export const studentFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(60),
-  middleName: z.string().trim().max(60).optional().or(z.literal("")),
+  middleName: optionalText(60),
   lastName: z.string().trim().min(1, "Last name is required").max(60),
-  suffix: z.string().trim().max(10).optional().or(z.literal("")),
+  suffix: optionalText(10),
   birthDate: isoDate.refine(notTooOld, "Enter a realistic birth date"),
   sex: z.enum(SEXES, { message: "Select a sex" }),
-  civilStatus: z.string().trim().max(20).optional().or(z.literal("")),
-  birthPlace: z.string().trim().max(200).optional().or(z.literal("")),
-
-  // Address
-  barangayId: z.string().min(1, "Select a barangay"),
-  householdAddress: z.string().trim().min(1, "Household address is required").max(300),
-  sitio: z.string().trim().max(120).optional().or(z.literal("")),
-
-  // Education
-  educationStatus: z.enum(EDUCATION_STATUSES, { message: "Select an educational status" }),
-  schoolId: z.string().optional().or(z.literal("")),
-  gradeLevel: z.string().trim().max(30).optional().or(z.literal("")),
-  schoolYear: z
+  contactNumber: z
     .string()
     .trim()
-    .max(9)
-    .regex(/^\d{4}-\d{4}$/, "School year must look like 2026-2027")
+    .max(30)
+    .regex(/^[0-9+()\- ]*$/, "Contact number may only contain digits and + ( ) -")
     .optional()
     .or(z.literal("")),
-  enrollmentStatus: z.string().trim().max(30).optional().or(z.literal("")),
+  address: optionalText(300),
 
-  // ECCD
-  eccdStatus: z.enum(ECCD_STATUSES, { message: "Select ECCD participation status" }),
-  eccdProgramName: z.string().trim().max(120).optional().or(z.literal("")),
-  eccdProvider: z.string().trim().max(120).optional().or(z.literal("")),
-  eccdRemarks: z.string().trim().max(300).optional().or(z.literal("")),
-
-  // Disability (sensitive)
-  hasDisability: z
+  // Primary guardian (created with the student; can be updated later)
+  guardianFirstName: optionalText(60),
+  guardianMiddleName: optionalText(60),
+  guardianLastName: optionalText(60),
+  guardianRelationship: z
+    .enum(["mother", "father", "guardian"], { message: "Select a relationship" })
+    .optional()
+    .or(z.literal("")),
+  guardianContactNumber: z
     .string()
-    .optional()
-    .or(z.literal(""))
-    .transform((v) => v === "on" || v === "true"),
-  disabilityType: z
-    .enum(DISABILITY_TYPES, { message: "Select a disability type" })
+    .trim()
+    .max(30)
+    .regex(/^[0-9+()\- ]*$/, "Contact number may only contain digits and + ( ) -")
     .optional()
     .or(z.literal("")),
-  disabilityDescription: z.string().trim().max(300).optional().or(z.literal("")),
-  disabilitySupportNeeded: z.string().trim().max(300).optional().or(z.literal("")),
-  assistanceStatus: z.enum(ASSISTANCE_STATUSES).optional().or(z.literal("")),
+  guardianEmail: z.email("Enter a valid email address").max(120).optional().or(z.literal("")),
 });
 
-export type ChildFormValues = z.infer<typeof childFormSchema>;
+export type StudentFormValues = z.infer<typeof studentFormSchema>;
+
+/* -------------------------------------------------------------------------- */
+/*  Auth & users                                                              */
+/* -------------------------------------------------------------------------- */
 
 export const loginSchema = z.object({
   email: z.email("Enter a valid email address").max(120),
@@ -82,13 +83,13 @@ export const loginSchema = z.object({
 
 export const userFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(60),
-  middleName: z.string().trim().max(60).optional().or(z.literal("")),
+  middleName: optionalText(60),
   lastName: z.string().trim().min(1, "Last name is required").max(60),
   email: z.email("Enter a valid email address").max(120),
-  roleId: z.enum(["role-admin", "role-lgu", "role-barangay"], {
-    message: "Select a role",
-  }),
-  barangayId: z.string().optional().or(z.literal("")),
+  roleId: z.enum(
+    ["role-admin", "role-school-admin", "role-teacher", "role-records", "role-guidance"],
+    { message: "Select a role" },
+  ),
   phone: z
     .string()
     .trim()
@@ -112,51 +113,111 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8, "New password must be at least 8 characters").max(128),
 });
 
-export const validationReviewSchema = z.object({
-  childId: z.string().min(1),
+/* -------------------------------------------------------------------------- */
+/*  Verification & duplicates                                                 */
+/* -------------------------------------------------------------------------- */
+
+export const verificationReviewSchema = z.object({
+  studentId: z.string().min(1),
   decision: z.enum(["approved", "needs_correction", "rejected"]),
-  remarks: z.string().trim().max(500).optional().or(z.literal("")),
+  remarks: optionalText(500),
 });
 
 export const duplicateReviewSchema = z.object({
   id: z.string().min(1),
   decision: z.enum(["confirmed_duplicate", "not_duplicate", "dismissed"]),
-  notes: z.string().trim().max(500).optional().or(z.literal("")),
+  notes: optionalText(500),
 });
 
-export const monitoringFormSchema = z.object({
-  childId: z.string().min(1),
-  monitoringType: z.enum(["education", "out_of_school_youth", "eccd", "disability", "general"]),
-  status: z.enum(["open", "in_progress", "resolved", "closed"]),
-  observedAt: isoDate,
-  remarks: z.string().trim().max(500).optional().or(z.literal("")),
+/* -------------------------------------------------------------------------- */
+/*  Student development (assessments, behavior, interventions)                 */
+/* -------------------------------------------------------------------------- */
+
+export const assessmentFormSchema = z.object({
+  studentId: z.string().min(1),
+  domain: z.enum(ASSESSMENT_DOMAINS, { message: "Select a domain" }),
+  assessmentType: optionalText(60),
+  skillArea: optionalText(60),
+  date: isoDate,
+  level: optionalText(40),
+  score: z.coerce.number().min(0).max(100).optional(),
+  notes: optionalText(300),
+});
+
+export const behaviorFormSchema = z.object({
+  studentId: z.string().min(1),
+  categoryId: z.string().min(1, "Select a category"),
+  date: isoDate,
+  description: z.string().trim().min(1, "Description is required").max(500),
+  severity: z.enum(BEHAVIOR_SEVERITIES).optional().or(z.literal("")),
+  followUp: optionalText(300),
+  status: z.enum(BEHAVIOR_RECORD_STATUSES).default("open"),
 });
 
 export const interventionFormSchema = z.object({
-  childId: z.string().min(1),
+  studentId: z.string().min(1),
   interventionType: z.string().trim().min(1, "Intervention type is required").max(60),
   description: z.string().trim().min(1, "Description is required").max(500),
-  status: z.enum(["planned", "ongoing", "completed", "cancelled"]),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional().or(z.literal("")),
+  status: z.enum(INTERVENTION_STATUSES).default("planned"),
   startDate: isoDate.optional().or(z.literal("")),
   targetDate: isoDate.optional().or(z.literal("")),
+  outcome: optionalText(500),
 });
 
 export const followupFormSchema = z.object({
   interventionId: z.string().min(1),
   followUpDate: isoDate,
-  status: z.enum(["scheduled", "done", "missed", "cancelled"]),
-  notes: z.string().trim().max(500).optional().or(z.literal("")),
+  status: z.enum(FOLLOWUP_STATUSES),
+  notes: optionalText(500),
 });
 
-export const childQuerySchema = z.object({
+/* -------------------------------------------------------------------------- */
+/*  Enrollment, grades, attendance                                            */
+/* -------------------------------------------------------------------------- */
+
+export const enrollmentFormSchema = z.object({
+  studentId: z.string().min(1),
+  schoolYearId: z.string().min(1, "Select a school year"),
+  gradeLevelId: z.string().min(1, "Select a grade level"),
+  sectionId: z.string().min(1, "Select a section"),
+  status: z.enum(ENROLLMENT_STATUSES).default("active"),
+  enrollmentDate: isoDate.optional().or(z.literal("")),
+});
+
+export const gradeFormSchema = z.object({
+  enrollmentId: z.string().min(1),
+  subjectId: z.string().min(1, "Select a subject"),
+  gradingPeriodId: z.string().min(1, "Select a grading period"),
+  grade: z.coerce
+    .number()
+    .min(60, "Grades below 60 are invalid")
+    .max(100, "Grades above 100 are invalid"),
+  remarks: optionalText(200),
+});
+
+export const attendanceFormSchema = z.object({
+  enrollmentId: z.string().min(1),
+  date: isoDate,
+  status: z.enum(ATTENDANCE_STATUSES, { message: "Select an attendance status" }),
+  remarks: optionalText(200),
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Registry query (server-side parsing of search params)                      */
+/* -------------------------------------------------------------------------- */
+
+export const studentQuerySchema = z.object({
   q: z.string().trim().max(100).optional().or(z.literal("")),
-  barangay: z.string().optional().or(z.literal("")),
   status: z.string().optional().or(z.literal("")),
-  recordStatus: z.string().optional().or(z.literal("")),
+  lifecycle: z.string().optional().or(z.literal("")),
   sex: z.string().optional().or(z.literal("")),
-  ageMin: z.coerce.number().int().min(0).max(25).optional(),
-  ageMax: z.coerce.number().int().min(0).max(25).optional(),
+  gradeLevel: z.string().optional().or(z.literal("")),
+  sectionId: z.string().optional().or(z.literal("")),
   sort: z.enum(["name", "recent", "oldest"]).default("recent"),
   page: z.coerce.number().int().min(1).max(10000).default(1),
 });
+
+export type StudentQueryParsed = z.infer<typeof studentQuerySchema>;
+
+/** All valid roles, re-exported for form components. */
+export const VALID_ROLE_IDS = ROLES;

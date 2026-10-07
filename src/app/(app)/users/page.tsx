@@ -21,7 +21,7 @@ export default async function UsersPage() {
       <PageHeader
         eyebrow="Access Control"
         title="User Management"
-        description="Barangay User, LGU User and System Administrator accounts. There is no school login — schools are reference data only. New accounts are provisioned by a System Administrator."
+        description="School personnel accounts — System Administrator, School Administrator, Teacher/Adviser, Records and Guidance personnel. New accounts are provisioned by a System Administrator."
       />
 
       <Card>
@@ -36,7 +36,6 @@ export default async function UsersPage() {
               <Th>Name</Th>
               <Th>Email</Th>
               <Th>Role</Th>
-              <Th>Barangay</Th>
               <Th>Status</Th>
               <Th>Last login</Th>
             </tr>
@@ -44,7 +43,7 @@ export default async function UsersPage() {
           <tbody className="divide-y divide-brand-100">
             {rows.length === 0 ? (
               <TableEmptyState
-                colSpan={6}
+                colSpan={5}
                 icon={<Users className="h-10 w-10" />}
                 title="No user accounts"
                 description="User accounts will appear here once created."
@@ -57,7 +56,6 @@ export default async function UsersPage() {
                   </Td>
                   <Td className="text-brand-600">{r.email}</Td>
                   <Td className="text-xs text-brand-700">{r.roleLabel}</Td>
-                  <Td className="text-xs text-brand-500">{r.barangayName ?? "—"}</Td>
                   <Td>
                     <Badge tone={r.isActive ? "verified" : "error"}>
                       {r.isActive ? "Active" : "Disabled"}

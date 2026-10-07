@@ -1,9 +1,9 @@
 import type { RecordStatus, ValidationStatus } from "./constants";
 
 /**
- * Mapping between the child's `record_status` (single current state on the
- * `children` row) and the validation workflow records in
- * `child_validations` (full history, statuses pending/approved/…).
+ * Mapping between the student's `record_status` (single current state on the
+ * `students` row) and the verification workflow records (full history,
+ * statuses pending/approved/…).
  *
  * Workflow:
  *   draft → pending_validation → verified
@@ -31,20 +31,19 @@ export const RECORD_STATUS_TRANSITIONS: Record<RecordStatus, RecordStatus[]> = {
   pending_validation: ["verified", "needs_correction", "marked_duplicate"],
   needs_correction: ["pending_validation"],
   // Re-opening a verified record is admin-only — enforced by the role check in
-  // canTransition (and re-checked in the reopenChild action).
+  // canTransition (and re-checked in the reopen action).
   verified: [],
   marked_duplicate: [], // terminal; restored only by duplicate review
 };
 
 /**
- * Reviewer decision (from `validationReviewSchema`) → the resulting
- * `children.record_status`.
+ * Reviewer decision (from `verificationReviewSchema`) → the resulting
+ * `students.record_status`.
  *
- * `rejected` is a `child_validations.status` value only — it is NOT a legal
- * `children.record_status`. A hard reject of a queued record marks it
+ * `rejected` is a verification-history status only — it is NOT a legal
+ * `students.record_status`. A hard reject of a queued record marks it
  * `marked_duplicate` (the terminal status allowed by RECORD_STATUS_TRANSITIONS),
- * while the validation history row keeps `rejected` to preserve the reviewer's
- * intent.
+ * while the history row keeps `rejected` to preserve the reviewer's intent.
  */
 export const REVIEW_DECISION_TO_RECORD_STATUS: Record<
   "approved" | "needs_correction" | "rejected",
@@ -61,12 +60,12 @@ export function canTransition(from: RecordStatus, to: RecordStatus, role?: strin
   return RECORD_STATUS_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
-/** Whether a record may be edited by its collector right now. */
+/** Whether a record may be edited by its creator right now. */
 export function isEditable(status: RecordStatus): boolean {
   return status === "draft" || status === "needs_correction";
 }
 
-/** Whether a record is in the validation queue. */
-export function isAwaitingValidation(status: RecordStatus): boolean {
+/** Whether a record is in the verification queue. */
+export function isAwaitingVerification(status: RecordStatus): boolean {
   return status === "pending_validation";
 }

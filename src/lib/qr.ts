@@ -8,20 +8,20 @@ export const QR_TOKEN_TTL_DAYS = 365; // tokens last a year by default
 
 /**
  * QR tokens are opaque random references. The QR payload never contains the
- * child's name, birth date, address, disability data or any other personal
+ * student's name, birth date, address, disability data or any other personal
  * information — the backend resolves the token to authorized fields only.
  */
 
-/** Issue a new active verification token for a child record. */
+/** Issue a new active verification token for a student record. */
 export async function createQrToken(
-  childId: string,
+  studentId: string,
   verifiedBy: string,
   meta: { ipAddress?: string | null; userAgent?: string | null } = {},
 ): Promise<string> {
   const token = randomToken(QR_TOKEN_BYTES);
   await db.insert(qrVerifications).values({
     id: crypto.randomUUID(),
-    childId,
+    studentId,
     verificationToken: token,
     verifiedBy,
     verificationType: "generate",
@@ -34,11 +34,11 @@ export async function createQrToken(
 }
 
 /**
- * The most recent valid (generated, not revoked/expired) token for a child.
+ * The most recent valid (generated, not revoked/expired) token for a student.
  * A token is revoked by a later `revoke` event row for the same token.
  */
 export async function currentQrToken(
-  childId: string,
+  studentId: string,
 ): Promise<{ token: string; verifiedAt: Date } | null> {
   const rows = await db
     .select({
@@ -47,7 +47,7 @@ export async function currentQrToken(
       verifiedAt: qrVerifications.verifiedAt,
     })
     .from(qrVerifications)
-    .where(eq(qrVerifications.childId, childId))
+    .where(eq(qrVerifications.studentId, studentId))
     .orderBy(desc(qrVerifications.verifiedAt));
 
   // Newest event per token decides its state.
@@ -65,17 +65,17 @@ export async function currentQrToken(
 }
 
 /**
- * Resolve a public QR token to its child. Returns null for unknown or
+ * Resolve a public QR token to its student. Returns null for unknown or
  * revoked tokens. Expiry checks are surfaced via `expired` so the public
  * page can show a friendly message.
  */
 export async function resolveQrToken(
   token: string,
-): Promise<{ childId: string; tokenId: string; expired: boolean } | null> {
+): Promise<{ studentId: string; tokenId: string; expired: boolean } | null> {
   const rows = await db
     .select({
       id: qrVerifications.id,
-      childId: qrVerifications.childId,
+      studentId: qrVerifications.studentId,
       type: qrVerifications.verificationType,
       verifiedAt: qrVerifications.verifiedAt,
     })
@@ -88,7 +88,7 @@ export async function resolveQrToken(
   if (!row || row.type === "revoke") return null;
 
   const expired = row.verifiedAt.getTime() + QR_TOKEN_TTL_DAYS * 86400_000 < Date.now();
-  return { childId: row.childId, tokenId: row.id, expired };
+  return { studentId: row.studentId, tokenId: row.id, expired };
 }
 
 /** Record a public verification (scan) event against the token. */
@@ -96,18 +96,18 @@ export async function registerQrScan(
   token: string,
   meta: { ipAddress?: string | null; userAgent?: string | null; expired?: boolean } = {},
 ): Promise<void> {
-  // Find the child this token belongs to (token is unique across events).
+  // Find the student this token belongs to (token is unique across events).
   const rows = await db
-    .select({ childId: qrVerifications.childId })
+    .select({ studentId: qrVerifications.studentId })
     .from(qrVerifications)
     .where(eq(qrVerifications.verificationToken, token))
     .limit(1);
-  const childId = rows[0]?.childId;
-  if (!childId) return;
+  const studentId = rows[0]?.studentId;
+  if (!studentId) return;
 
   await db.insert(qrVerifications).values({
     id: crypto.randomUUID(),
-    childId,
+    studentId,
     verificationToken: token,
     verificationType: "scan",
     result: meta.expired ? "expired" : "valid",
@@ -117,9 +117,9 @@ export async function registerQrScan(
   });
 }
 
-/** Revoke all active tokens of a child (e.g. on record edit / data dispute). */
-export async function deactivateChildTokens(
-  childId: string,
+/** Revoke all active tokens of a student (e.g. on record edit / data dispute). */
+export async function deactivateStudentTokens(
+  studentId: string,
   revokedBy: string,
 ): Promise<void> {
   // Active tokens = tokens whose newest event is a "generate".
@@ -131,7 +131,7 @@ export async function deactivateChildTokens(
       id: qrVerifications.id,
     })
     .from(qrVerifications)
-    .where(eq(qrVerifications.childId, childId))
+    .where(eq(qrVerifications.studentId, studentId))
     .orderBy(desc(qrVerifications.verifiedAt));
 
   const state = new Map<string, boolean>(); // token → revoked
@@ -145,7 +145,7 @@ export async function deactivateChildTokens(
   await db.insert(qrVerifications).values(
     activeTokens.map((token) => ({
       id: crypto.randomUUID(),
-      childId,
+      studentId,
       verificationToken: token,
       verifiedBy: revokedBy,
       verificationType: "revoke" as const,
@@ -155,11 +155,11 @@ export async function deactivateChildTokens(
   );
 }
 
-/** Count of scan events for a child (for the profile page). */
-export async function countQrScans(childId: string): Promise<number> {
+/** Count of scan events for a student (for the profile page). */
+export async function countQrScans(studentId: string): Promise<number> {
   const rows = await db
     .select({ n: sql<number>`count(*)` })
     .from(qrVerifications)
-    .where(and(eq(qrVerifications.childId, childId), eq(qrVerifications.verificationType, "scan")));
+    .where(and(eq(qrVerifications.studentId, studentId), eq(qrVerifications.verificationType, "scan")));
   return rows[0]?.n ?? 0;
 }

@@ -1,764 +1,609 @@
 /**
- * Development seed script — Municipal Child Mapping System.
+ * Development seed script — Records Management System of Sta. Magdalena
+ * National High School.
  *
- * Creates realistic FICTIONAL data (never real child information):
- *   - 1 municipality (Sta. Magdalena, Sorsogon) + 14 barangays
- *   - 13 schools (reference entities — NOT accounts)
- *   - roles (Barangay User / LGU User / System Administrator — NO school role)
- *   - permissions + role_permissions
+ * Creates realistic FICTIONAL data (never real student information):
+ *   - roles (5 school roles) + permissions + role_permissions
  *   - default users (from DEFAULT_* env vars)
- *   - ~60 fictional children across record statuses with addresses,
- *     education, ECCD, disability records
- *   - validation history, duplicate candidates (pending + not_duplicate),
- *     monitoring records, interventions, follow-ups, QR events,
- *     notifications, audit entries, system settings
+ *   - current school year, grade levels (7–10), sections with advisers
+ *   - subjects + grading periods
+ *   - behavior categories, intervention types, assessment level settings
+ *   - ~48 fictional students with guardians, enrollments, grades,
+ *     attendance, assessments (reading/literacy/numeracy), behavior
+ *     records, interventions, QR events, notifications, audit entries
  *
- * Idempotency: reference data is upserted by natural keys; transactional
- * demo data is cleared and re-created deterministically (seeded RNG), so
- * re-running produces the same records without duplicating reference rows.
- *
- * Reset: `npm run db:reset` drops all data (see package.json / docs).
+ * Idempotency: reference data is upserted by natural keys; demo data is
+ * cleared and re-created deterministically (seeded RNG), so re-running
+ * produces the same records without duplicating reference rows.
  */
 
 import "dotenv/config";
-import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import {
+  assessments,
+  attendanceRecords,
   auditLogs,
-  barangays,
-  childAddresses,
-  childDisabilities,
-  childDuplicateCandidates,
-  childEducation,
-  childEccd,
-  childMonitoring,
-  childValidations,
-  children,
-  interventions,
+  behaviorCategories,
+  behaviorRecords,
+  duplicateCandidates,
+  gradeLevels,
+  gradingPeriods,
+  guardians,
   interventionFollowups,
-  municipalities,
+  interventions,
   notifications,
   permissions,
   qrVerifications,
+  recordVerifications,
   reportExports,
   reports,
   rolePermissions,
   roles,
-  schools,
-  sessions,
+  schoolYears,
+  sections,
+  studentEnrollments,
+  studentGrades,
+  studentGuardians,
+  students,
+  subjects,
   systemSettings,
   users,
 } from "../src/db/schema";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "../src/lib/permissions";
-import type { Role } from "../src/lib/constants";
+import { hashPassword } from "../src/lib/auth";
+import {
+  BEHAVIOR_SEED_CATEGORIES,
+  DEFAULT_ASSESSMENT_LEVELS,
+  GRADING_PERIOD_NAMES,
+  type Role,
+} from "../src/lib/constants";
 import { randomToken } from "../src/lib/utils";
 
-const now = new Date();
-
-/* -------------------------------------------------------------------------- */
-/*  Fictional name pools (FILIPINO-SOUNDING, COMPLETELY FICTIONAL)            */
-/* -------------------------------------------------------------------------- */
-
-const FIRST_NAMES = [
-  "Maria", "Juan", "Ana", "Miguel", "Kyla", "Joshua", "Andrea", "Paolo",
-  "Angelica", "Rafael", "Bea", "Carlo", "Diana", "Emmanuel", "Fiona", "Gabriel",
-  "Hannah", "Ian", "Julia", "Kevin", "Liza", "Marco", "Nina", "Oscar",
-  "Pia", "Quinn", "Rhea", "Samuel", "Trisha", "Vince", "Wendy", "Xavier",
-  "Yna", "Zach", "Alyssa", "Brylle", "Camille", "Denise", "Elijah", "Faith",
-];
-
-const LAST_NAMES = [
-  "Santos", "Dela Cruz", "Reyes", "Bautista", "Garcia", "Mendoza", "Torres",
-  "Flores", "Ramos", "Aquino", "Villar", "Navarro", "Domingo", "Cruz",
-  "Lopez", "Aguilar", "Salazar", "Romero", "Castillo", "Padilla", "Bermudez",
-  "Alonzo", "Miranda", "Sison", "Lacson",
-];
-
-const MIDDLE_NAMES = [
-  "Alonzo", "Bautista", "Cruz", "Domingo", "Enriquez", "Flores", "Garcia",
-  "Hernandez", "Ignacio", "Jimenez", "Lumibao", "Mendoza", "Navarro", "Ortega",
-];
-
-/** The 14 barangays of Sta. Magdalena, Sorsogon. */
-const BARANGAY_NAMES = [
-  "Barangay I Poblacion (San Francisco)",
-  "Barangay II Poblacion (Mother of Perpetual Help)",
-  "Barangay III Poblacion (Del Rosario)",
-  "Barangay IV Poblacion (Santo Niño)",
-  "La Esperanza (Manangkas)",
-  "Peñafrancia (Uson)",
-  "Salvacion (Taberna)",
-  "San Antonio (Kaburihan)",
-  "San Bartolome (Talaongan)",
-  "San Eugenio (Alig-igan)",
-  "San Isidro (Bilaoyon)",
-  "San Rafael (Bil-og)",
-  "San Roque (Alamre)",
-  "San Sebastian (Bigo)",
-];
-
-/* school, referencing the barangay index (0-based) used above */
-const SCHOOLS: { name: string; barangay: number; code: string; type: string }[] = [
-  { name: "Alig-igan Elementary School", barangay: 9, code: "SM-ES-001", type: "elementary" },
-  { name: "Bigo Elementary School", barangay: 13, code: "SM-ES-002", type: "elementary" },
-  { name: "Bilaoyon Elementary School", barangay: 10, code: "SM-ES-003", type: "elementary" },
-  { name: "Manangkas Elementary School", barangay: 4, code: "SM-ES-004", type: "elementary" },
-  { name: "Salvacion Elementary School", barangay: 6, code: "SM-ES-005", type: "elementary" },
-  { name: "San Antonio Elementary School", barangay: 7, code: "SM-ES-006", type: "elementary" },
-  { name: "San Rafael Elementary School", barangay: 11, code: "SM-ES-007", type: "elementary" },
-  { name: "San Sebastian Elementary School", barangay: 13, code: "SM-ES-008", type: "elementary" },
-  { name: "Sta. Magdalena Central School", barangay: 1, code: "SM-ES-009", type: "elementary" },
-  { name: "Talaonga Elementary School", barangay: 8, code: "SM-ES-010", type: "elementary" },
-  { name: "Uson Elementary School", barangay: 5, code: "SM-ES-011", type: "elementary" },
-  { name: "Sta. Magdalena National High School", barangay: 2, code: "SM-NHS-001", type: "high_school" },
-  { name: "Talaonga National High School", barangay: 8, code: "SM-NHS-002", type: "high_school" },
-];
-
-const GRADE_LEVELS = ["Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
-const SCHOOL_YEAR = "2026-2027";
-
-/* -------------------------------------------------------------------------- */
-/*  Helpers                                                                    */
-/* -------------------------------------------------------------------------- */
-
-function mulberry32(seed: number) {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+/* Deterministic RNG so re-seeds produce identical demo data. */
+let seedState = 42;
+function rand(): number {
+  seedState = (seedState * 1103515245 + 12345) % 2147483648;
+  return seedState / 2147483648;
 }
-
-const rng = mulberry32(20260925);
-
 function pick<T>(arr: readonly T[]): T {
-  return arr[Math.floor(rng() * arr.length)];
+  return arr[Math.floor(rand() * arr.length)];
+}
+function randInt(min: number, max: number): number {
+  return min + Math.floor(rand() * (max - min + 1));
+}
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
 }
 
-function rand(min: number, max: number): number {
-  return Math.floor(rng() * (max - min + 1)) + min;
-}
+const now = new Date();
+const CURRENT_YEAR = `${now.getFullYear()}-${now.getFullYear() + 1}`;
 
-/** ISO date for a child of the given age in years. */
-function birthForAge(age: number): string {
-  const year = now.getFullYear() - age;
-  const month = String(rand(1, 12)).padStart(2, "0");
-  const day = String(rand(1, 28)).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+/* ------------------------------ names (fictional) ------------------------ */
 
-function isoDaysAgo(days: number): Date {
-  return new Date(Date.now() - days * 86400_000);
-}
-
-/* -------------------------------------------------------------------------- */
-/*  1. Reference data (upserts — safe to re-run)                               */
-/* -------------------------------------------------------------------------- */
-
-const [muni] = await db
-  .insert(municipalities)
-  .values({
-    id: "muni-sta-magdalena",
-    name: "Municipality of Sta. Magdalena",
-    province: "Province of Sorsogon",
-    region: "Region V — Bicol",
-    shortName: "Sta. Magdalena",
-  })
-  .onConflictDoUpdate({
-    target: municipalities.id,
-    set: { name: "Municipality of Sta. Magdalena", updatedAt: now },
-  })
-  .returning();
-
-// Barangays upserted by unique name.
-const barangayRows = await db
-  .insert(barangays)
-  .values(
-    BARANGAY_NAMES.map((name, i) => ({
-      id: `brg-${i + 1}`,
-      municipalityId: muni.id,
-      name,
-      code: `SM-BRGY-${String(i + 1).padStart(2, "0")}`,
-      isActive: true,
-    })),
-  )
-  .onConflictDoUpdate({
-    target: barangays.id,
-    set: { municipalityId: muni.id, isActive: true, updatedAt: now },
-  })
-  .returning();
-
-const schoolRows = await db
-  .insert(schools)
-  .values(
-    SCHOOLS.map((s, i) => ({
-      id: `sch-${i + 1}`,
-      barangayId: barangayRows[s.barangay]?.id ?? null,
-      name: s.name,
-      schoolCode: s.code,
-      schoolType: s.type,
-      isActive: true,
-    })),
-  )
-  .onConflictDoUpdate({
-    target: schools.id,
-    set: { isActive: true, updatedAt: now },
-  })
-  .returning();
-
-/* -------------------------------------------------------------------------- */
-/*  2. Roles, permissions, role_permissions                                    */
-/* -------------------------------------------------------------------------- */
-
-const ROLE_DEFS: { id: string; name: string; description: string }[] = [
-  { id: "role-barangay", name: "Barangay User", description: "Encodes and submits child records for their barangay." },
-  { id: "role-lgu", name: "LGU User", description: "Municipality-wide validation, duplicate review and reporting." },
-  { id: "role-admin", name: "System Administrator", description: "Full system administration, users and settings." },
+const FIRST_M = [
+  "Jose", "Juan", "Miguel", "Rafael", "Carlo", "Paolo", "Marco", "Enzo",
+  "Diego", "Nico", "Gabriel", "Rico", "Emil", "Arnel", "Dante", "Felix",
+];
+const FIRST_F = [
+  "Maria", "Ana", "Jasmine", "Liezl", "Karen", "Grace", "Angel", "Riza",
+  "Cielo", "Mira", "Jona", "Liza", "Ella", "Nina", "Tessa", "Marian",
+];
+const LAST = [
+  "Santos", "Reyes", "Cruz", "Bautista", "Ocampo", "Garcia", "Mendoza",
+  "Villanueva", "Aquino", "Rivera", "Domingo", "Ramos", "Castillo", "Navarro",
+];
+const GUARDIAN_FIRST = [
+  "Roberto", "Lourdes", "Eduardo", "Teresita", "Ramon", "Cristina",
+  "Alfredo", "Marilou", "Danilo", "Rowena",
 ];
 
-await db
-  .insert(roles)
-  .values(ROLE_DEFS)
-  .onConflictDoUpdate({
-    target: roles.id,
-    set: { updatedAt: now },
-  });
+/* ------------------------------- reference data --------------------------- */
 
-const permissionRows = await db
-  .insert(permissions)
-  .values(
-    PERMISSIONS.map((name) => {
-      const [module, action] = name.split(".");
-      return {
-        id: `perm-${name.replace(/\./g, "-")}`,
-        name,
-        description: `${module} · ${action}`,
-        module,
-        action,
-      };
-    }),
-  )
-  .onConflictDoNothing()
-  .returning();
+async function seedRolesAndPermissions() {
+  const roleRows: { id: string; name: string; description: string }[] = [
+    { id: "role-admin", name: "System Administrator", description: "Full system access including users, settings, and audit logs." },
+    { id: "role-school-admin", name: "School Administrator", description: "School-wide records, academics, analytics, and reports." },
+    { id: "role-teacher", name: "Teacher / Adviser", description: "Assigned sections: grades, attendance, assessments, behavior." },
+    { id: "role-records", name: "Records Personnel", description: "Student records, enrollment, verification, historical records." },
+    { id: "role-guidance", name: "Guidance Personnel", description: "Behavior, interventions, and student support information." },
+  ];
+  for (const r of roleRows) {
+    await db
+      .insert(roles)
+      .values(r)
+      .onConflictDoUpdate({ target: roles.id, set: { name: r.name, description: r.description, updatedAt: new Date() } });
+  }
 
-// role_permissions composite-PK upsert
-await db
-  .insert(rolePermissions)
-  .values(
-    (Object.keys(ROLE_PERMISSIONS) as Role[]).flatMap((role) =>
-      ROLE_PERMISSIONS[role].map((perm) => ({
-        roleId: `role-${role}`,
-        permissionId: `perm-${perm.replace(/\./g, "-")}`,
-      })),
-    ),
-  )
-  .onConflictDoNothing();
+  const MODULE_OF: Record<string, string> = {};
+  for (const p of PERMISSIONS) {
+    MODULE_OF[p] = p.split(".")[0];
+  }
+  for (const p of PERMISSIONS) {
+    await db
+      .insert(permissions)
+      .values({
+        id: `perm-${p.replace(/\./g, "-")}`,
+        name: p,
+        description: `Permission ${p}`,
+        module: MODULE_OF[p] ?? "system",
+        action: p.split(".")[1] ?? "access",
+      })
+      .onConflictDoUpdate({
+        target: permissions.id,
+        set: { name: p, description: `Permission ${p}`, module: MODULE_OF[p] ?? "system" },
+      });
+  }
 
-/* -------------------------------------------------------------------------- */
-/*  3. Default users (from DEFAULT_* env vars)                                 */
-/* -------------------------------------------------------------------------- */
-
-const { DEFAULT_CREDENTIALS } = await import("../src/lib/default-credentials");
-
-const barangayOf = (id: string | null): string | null =>
-  id && id.startsWith("brg-") ? id : null;
-
-const userRows = await db
-  .insert(users)
-  .values(
-    DEFAULT_CREDENTIALS.map((c) => ({
-      id: `user-${c.role}`,
-      email: c.email,
-      passwordHash: c.passwordHash,
-      firstName: c.firstName,
-      lastName: c.lastName,
-      roleId: `role-${c.role}`,
-      barangayId: c.role === "barangay" ? barangayOf(c.barangayId) ?? "brg-9" : null,
-      isActive: true,
-    })),
-  )
-  .onConflictDoUpdate({
-    target: users.id,
-    set: { isActive: true, updatedAt: now },
-  })
-  .returning();
-
-const userByRole = (role: Role): string => `user-${role}`;
-
-/* -------------------------------------------------------------------------- */
-/*  4. System settings (non-secret)                                            */
-/* -------------------------------------------------------------------------- */
-
-await db
-  .insert(systemSettings)
-  .values([
-    { id: "set-system-name", key: "system_name", value: "Child Mapping Information System", description: "Display name of the system" },
-    { id: "set-child-code-prefix", key: "child_code_prefix", value: "CM", description: "Prefix for generated child codes" },
-    { id: "set-default-school-year", key: "default_school_year", value: SCHOOL_YEAR, description: "Default school year for education records" },
-    { id: "set-maintenance-mode", key: "maintenance_mode", value: "false", description: "When true, non-admin sign-ins are blocked" },
-  ])
-  .onConflictDoNothing();
-
-/* -------------------------------------------------------------------------- */
-/*  5. Transactional demo data (cleared + regenerated deterministically)       */
-/* -------------------------------------------------------------------------- */
-
-// Children first clear dependents (order matters for FKs).
-await db.delete(auditLogs);
-await db.delete(notifications);
-await db.delete(reportExports);
-await db.delete(reports);
-await db.delete(interventionFollowups);
-await db.delete(interventions);
-await db.delete(childMonitoring);
-await db.delete(qrVerifications);
-await db.delete(childDuplicateCandidates);
-await db.delete(childValidations);
-await db.delete(childDisabilities);
-await db.delete(childEccd);
-await db.delete(childEducation);
-await db.delete(childAddresses);
-await db.delete(sessions);
-await db.delete(children);
-
-type SeedChild = {
-  code: string;
-  firstName: string;
-  middleName: string | null;
-  lastName: string;
-  suffix: string | null;
-  birthDate: string;
-  sex: "male" | "female";
-  barangayIdx: number;
-  recordStatus: string;
-  educationStatus: string;
-  gradeLevel: string | null;
-  eccdStatus: string;
-  hasDisability: boolean;
-  createdBy: Role;
-  createdDaysAgo: number;
-};
-
-const usedNames = new Set<string>();
-function makeName(): { first: string; last: string } {
-  while (true) {
-    const first = pick(FIRST_NAMES);
-    const last = pick(LAST_NAMES);
-    const key = `${first} ${last}`;
-    if (!usedNames.has(key)) {
-      usedNames.add(key);
-      return { first, last };
+  for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {
+    const roleId = `role-${role.replace(/_/g, "-")}`;
+    await db.delete(rolePermissions).where(eq_(roleId));
+    for (const p of perms) {
+      await db
+        .insert(rolePermissions)
+        .values({ roleId, permissionId: `perm-${p.replace(/\./g, "-")}` })
+        .onConflictDoNothing();
     }
   }
 }
 
-const seedChildren: SeedChild[] = [];
-
-for (let i = 1; i <= 60; i += 1) {
-  const { first, last } = makeName();
-  const age = rand(3, 17);
-  const brgyIdx = rand(1, 14) - 1;
-  const roll = rng();
-  const recordStatus =
-    roll < 0.12 ? "draft" : roll < 0.3 ? "pending_validation" : roll < 0.38 ? "needs_correction" : "verified";
-
-  const educationStatus =
-    age >= 6 && age <= 12
-      ? rng() < 0.12 ? "out_of_school" : "enrolled"
-      : age >= 13
-        ? rng() < 0.18 ? "out_of_school" : rng() < 0.1 ? "graduated" : "enrolled"
-        : rng() < 0.3 ? "enrolled" : "not_yet_in_school";
-
-  seedChildren.push({
-    code: `CM-${now.getFullYear()}-${String(i).padStart(6, "0")}`,
-    firstName: first,
-    middleName: rng() < 0.9 ? pick(MIDDLE_NAMES) : null,
-    lastName: last,
-    suffix: rng() < 0.04 ? "Jr." : null,
-    birthDate: birthForAge(age),
-    sex: rng() < 0.5 ? "male" : "female",
-    barangayIdx: brgyIdx,
-    recordStatus,
-    educationStatus,
-    gradeLevel: educationStatus === "enrolled" ? pick(GRADE_LEVELS) : null,
-    eccdStatus: age <= 5 ? (rng() < 0.55 ? "participating" : "not_participating") : rng() < 0.1 ? "participating" : "unknown",
-    hasDisability: rng() < 0.08,
-    createdBy: pick(["barangay", "lgu"] as const),
-    createdDaysAgo: rand(1, 120),
-  });
+/** eq helper for role_permissions delete (kept local to avoid extra imports). */
+import { eq } from "drizzle-orm";
+function eq_(roleId: string) {
+  return eq(rolePermissions.roleId, roleId);
 }
 
-// One pending duplicate pair (human review required — NOT auto-marked).
-const dupPairIdx = 14; // San Antonio (Kaburihan)
-seedChildren.push({
-  code: `CM-${now.getFullYear()}-000061`,
-  firstName: "Maria", middleName: null, lastName: "Santos", suffix: null,
-  birthDate: "2018-03-14", sex: "female", barangayIdx: dupPairIdx,
-  recordStatus: "pending_validation", educationStatus: "enrolled",
-  gradeLevel: "Grade 2", eccdStatus: "unknown", hasDisability: false,
-  createdBy: "barangay", createdDaysAgo: 30,
-});
-seedChildren.push({
-  code: `CM-${now.getFullYear()}-000062`,
-  firstName: "Maria", middleName: null, lastName: "Santos", suffix: null,
-  birthDate: "2018-03-14", sex: "female", barangayIdx: dupPairIdx,
-  recordStatus: "verified", educationStatus: "enrolled",
-  gradeLevel: "Grade 2", eccdStatus: "unknown", hasDisability: false,
-  createdBy: "barangay", createdDaysAgo: 20,
-});
+async function seedUsers() {
+  const defaults: { role: Role; emailEnv: string; hashEnv: string; firstEnv: string; lastEnv: string; id: string; name: string }[] = [
+    { role: "admin", emailEnv: "DEFAULT_ADMIN_EMAIL", hashEnv: "DEFAULT_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_LAST_NAME", id: "user-admin", name: "Admin" },
+    { role: "school_admin", emailEnv: "DEFAULT_SCHOOL_ADMIN_EMAIL", hashEnv: "DEFAULT_SCHOOL_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_SCHOOL_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_SCHOOL_ADMIN_LAST_NAME", id: "user-school-admin", name: "SchoolAdmin" },
+    { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_TEACHER_LAST_NAME", id: "user-teacher", name: "Teacher" },
+    { role: "records", emailEnv: "DEFAULT_RECORDS_EMAIL", hashEnv: "DEFAULT_RECORDS_PASSWORD_HASH", firstEnv: "DEFAULT_RECORDS_FIRST_NAME", lastEnv: "DEFAULT_RECORDS_LAST_NAME", id: "user-records", name: "Records" },
+    { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", firstEnv: "DEFAULT_GUIDANCE_FIRST_NAME", lastEnv: "DEFAULT_GUIDANCE_LAST_NAME", id: "user-guidance", name: "Guidance" },
+  ];
 
-let dupAId = "";
-let dupBId = "";
+  const fallbackHash = await hashPassword("password123");
+  const out: { id: string; role: Role }[] = [];
 
-for (const c of seedChildren) {
-  const id = crypto.randomUUID();
-  if (c.code.endsWith("000061")) dupAId = id;
-  if (c.code.endsWith("000062")) dupBId = id;
+  for (const d of defaults) {
+    const email = process.env[d.emailEnv] ?? `${d.role}@local.dev`;
+    const hash = process.env[d.hashEnv] ?? fallbackHash;
+    const first = process.env[d.firstEnv] ?? d.name;
+    const last = process.env[d.lastEnv] ?? "Demo";
+    await db
+      .insert(users)
+      .values({
+        id: d.id,
+        roleId: `role-${d.role.replace(/_/g, "-")}`,
+        firstName: first,
+        lastName: last,
+        email,
+        passwordHash: hash,
+        isActive: true,
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: { email, roleId: `role-${d.role.replace(/_/g, "-")}`, firstName: first, lastName: last, updatedAt: new Date() },
+      });
+    out.push({ id: d.id, role: d.role });
+  }
+  return out;
+}
 
-  const creatorId = userByRole(c.createdBy);
-  const brgyId = barangayRows[c.barangayIdx]?.id ?? barangayRows[0].id;
-  const schoolForBrgy = schoolRows.find((s) => s.barangayId === brgyId) ?? schoolRows[0];
+async function seedAcademicStructure(teacherId: string) {
+  const yearId = `sy-${CURRENT_YEAR}`;
+  await db
+    .insert(schoolYears)
+    .values({ id: yearId, year: CURRENT_YEAR, isCurrent: true })
+    .onConflictDoUpdate({ target: schoolYears.id, set: { isCurrent: true, updatedAt: new Date() } });
 
-  const submitted = c.recordStatus !== "draft";
-  const verified = c.recordStatus === "verified";
-
-  await db.insert(children).values({
-    id,
-    childCode: c.code,
-    firstName: c.firstName,
-    middleName: c.middleName,
-    lastName: c.lastName,
-    suffix: c.suffix,
-    birthDate: c.birthDate,
-    sex: c.sex,
-    civilStatus: "single",
-    birthPlace: `Barangay ${c.barangayIdx + 1}, Sta. Magdalena, Sorsogon`,
-    barangayId: brgyId,
-    status: "active",
-    recordStatus: c.recordStatus,
-    createdBy: creatorId,
-    updatedBy: creatorId,
-    createdAt: isoDaysAgo(c.createdDaysAgo),
-    updatedAt: isoDaysAgo(c.createdDaysAgo - 2 > 0 ? c.createdDaysAgo - 2 : 0),
-  });
-
-  await db.insert(childAddresses).values({
-    id: crypto.randomUUID(),
-    childId: id,
-    barangayId: brgyId,
-    householdAddress: `Purok ${rand(1, 7)}, ${pick(LAST_NAMES)} Street`,
-    sitio: rng() < 0.5 ? `Sitio ${pick(["Maligaya", "Bagong Silang", "Masagana", "Kalayaan"])}` : null,
-    isCurrent: true,
-  });
-
-  await db.insert(childEducation).values({
-    id: crypto.randomUUID(),
-    childId: id,
-    schoolId: c.educationStatus === "enrolled" ? schoolForBrgy.id : null,
-    educationStatus: c.educationStatus,
-    gradeLevel: c.gradeLevel,
-    schoolYear: c.educationStatus === "enrolled" ? SCHOOL_YEAR : null,
-    enrollmentStatus: c.educationStatus === "enrolled" ? "regular" : null,
-    isCurrent: true,
-  });
-
-  await db.insert(childEccd).values({
-    id: crypto.randomUUID(),
-    childId: id,
-    participationStatus: c.eccdStatus,
-    programName: c.eccdStatus === "participating" ? "Barangay Child Development Center" : null,
-    provider: c.eccdStatus === "participating" ? "Barangay LGU" : null,
-    remarks: c.eccdStatus === "not_participating" ? pick(["No center nearby", "Family opted to defer", "Scheduling conflict"]) : null,
-  });
-
-  if (c.hasDisability) {
-    await db.insert(childDisabilities).values({
-      id: crypto.randomUUID(),
-      childId: id,
-      hasDisability: true,
-      disabilityType: pick(["learning", "speech", "physical", "visual"]),
-      description: "Identified during household survey (seed data — fictional).",
-      supportNeeded: pick(["SPED assessment", "Learning materials", "Therapy sessions"]),
-      assistanceStatus: pick(["assessment", "referred", "ongoing"]),
-      verified: rng() < 0.4,
-    });
+  const gradeNames = ["Grade 7", "Grade 8", "Grade 9", "Grade 10"];
+  for (let i = 0; i < gradeNames.length; i++) {
+    await db
+      .insert(gradeLevels)
+      .values({ id: `gl-${i + 7}`, name: gradeNames[i], orderIndex: i + 1 })
+      .onConflictDoUpdate({ target: gradeLevels.id, set: { name: gradeNames[i], orderIndex: i + 1, updatedAt: new Date() } });
   }
 
-  if (submitted) {
-    await db.insert(childValidations).values({
-      id: crypto.randomUUID(),
-      childId: id,
-      submittedBy: creatorId,
-      status: verified ? "approved" : c.recordStatus === "needs_correction" ? "needs_correction" : "pending",
-      remarks: verified ? "All details verified with household survey." : null,
-      submittedAt: isoDaysAgo(Math.max(c.createdDaysAgo - 2, 1)),
-      reviewedBy: verified ? userByRole("lgu") : null,
-      reviewedAt: verified ? isoDaysAgo(Math.max(c.createdDaysAgo - 5, 1)) : null,
-    });
+  const sectionNames = ["Sampaguita", "Ilang-Ilang", "Molave"];
+  let sIdx = 0;
+  const sectionIds: string[] = [];
+  for (let g = 0; g < gradeNames.length; g++) {
+    for (const name of sectionNames) {
+      const id = `sec-${g + 7}-${sIdx++}`;
+      await db
+        .insert(sections)
+        .values({
+          id,
+          schoolYearId: yearId,
+          gradeLevelId: `gl-${g + 7}`,
+          name,
+          adviserId: teacherId,
+          isActive: true,
+        })
+        .onConflictDoUpdate({
+          target: sections.id,
+          set: { adviserId: teacherId, isActive: true, updatedAt: new Date() },
+        });
+      sectionIds.push(id);
+    }
+  }
+
+  const subjectSeed = [
+    { code: "FIL", name: "Filipino" },
+    { code: "ENG", name: "English" },
+    { code: "MATH", name: "Mathematics" },
+    { code: "SCI", name: "Science" },
+    { code: "AP", name: "Araling Panlipunan" },
+    { code: "ESP", name: "Edukasyon sa Pagpapakatao" },
+    { code: "TLE", name: "Technology and Livelihood Education" },
+    { code: "MAPEH", name: "MAPEH" },
+  ];
+  for (const s of subjectSeed) {
+    await db
+      .insert(subjects)
+      .values({ id: `sub-${s.code}`, code: s.code, name: s.name, isActive: true })
+      .onConflictDoUpdate({ target: subjects.id, set: { name: s.name, isActive: true, updatedAt: new Date() } });
+  }
+
+  for (let i = 0; i < GRADING_PERIOD_NAMES.length; i++) {
+    await db
+      .insert(gradingPeriods)
+      .values({
+        id: `gp-${yearId}-${i + 1}`,
+        schoolYearId: yearId,
+        name: GRADING_PERIOD_NAMES[i],
+        orderIndex: i + 1,
+        isCurrent: i === 0,
+      })
+      .onConflictDoUpdate({
+        target: gradingPeriods.id,
+        set: { name: GRADING_PERIOD_NAMES[i], orderIndex: i + 1, isCurrent: i === 0, updatedAt: new Date() },
+      });
+  }
+
+  return { yearId, sectionIds };
+}
+
+async function seedCategoriesAndSettings() {
+  for (const c of BEHAVIOR_SEED_CATEGORIES) {
+    await db
+      .insert(behaviorCategories)
+      .values({ id: `bc-${c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, name: c.name, kind: c.kind })
+      .onConflictDoUpdate({ target: behaviorCategories.id, set: { name: c.name, kind: c.kind, updatedAt: new Date() } });
+  }
+
+  const settings: { key: string; value: string; description: string }[] = [
+    { key: "system_name", value: "Records Management System — Sta. Magdalena National High School", description: "Display name of the system." },
+    { key: "student_number_prefix", value: "SM", description: "Prefix for generated student numbers." },
+    { key: "default_school_year", value: CURRENT_YEAR, description: "Current school year." },
+    { key: "assessment_levels", value: JSON.stringify(DEFAULT_ASSESSMENT_LEVELS), description: "Configurable proficiency levels per assessment domain (placeholders — school-adjustable)." },
+    { key: "monitoring_rules", value: JSON.stringify({ failingGrade: 75, absenceCount: 5, lateCount: 5, behaviorConcerns: 3 }), description: "Requires-attention indicator thresholds (documented placeholders)." },
+    { key: "maintenance_mode", value: "false", description: "Maintenance mode flag." },
+  ];
+  for (const s of settings) {
+    await db
+      .insert(systemSettings)
+      .values({ id: `set-${s.key}`, key: s.key, value: s.value, description: s.description })
+      .onConflictDoUpdate({ target: systemSettings.id, set: { value: s.value, description: s.description, updatedAt: new Date() } });
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*  6. Duplicate candidates — pending AND reviewed states                      */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- demo data ------------------------------ */
 
-await db.insert(childDuplicateCandidates).values({
-  id: crypto.randomUUID(),
-  childId: dupAId,
-  possibleChildId: dupBId,
-  matchScore: 90,
-  matchReason: JSON.stringify(["name", "birth_date", "barangay"]),
-  status: "pending",
-}).onConflictDoNothing();
+async function seedDemoData(people: { id: string; role: Role }[], structure: { yearId: string; sectionIds: string[] }) {
+  // Clear previous demo rows (deterministic re-seed).
+  await db.delete(auditLogs);
+  await db.delete(notifications);
+  await db.delete(qrVerifications);
+  await db.delete(reportExports);
+  await db.delete(reports);
+  await db.delete(interventionFollowups);
+  await db.delete(interventions);
+  await db.delete(duplicateCandidates);
+  await db.delete(recordVerifications);
+  await db.delete(assessments);
+  await db.delete(behaviorRecords);
+  await db.delete(attendanceRecords);
+  await db.delete(studentGrades);
+  await db.delete(studentGuardians);
+  await db.delete(guardians);
+  await db.delete(studentEnrollments);
+  await db.delete(students);
 
-// A reviewed "not duplicate" pair between two other seeded children.
-const childIds = await db.select({ id: children.id, code: children.childCode }).from(children);
-const idOf = (code: string) => childIds.find((c) => c.code === code)?.id;
-const codeA = `CM-${now.getFullYear()}-000004`;
-const codeB = `CM-${now.getFullYear()}-000010`;
-if (idOf(codeA) && idOf(codeB)) {
-  await db.insert(childDuplicateCandidates).values({
-    id: crypto.randomUUID(),
-    childId: idOf(codeA)!,
-    possibleChildId: idOf(codeB)!,
-    matchScore: 60,
-    matchReason: JSON.stringify(["name", "barangay"]),
-    status: "not_duplicate",
-    reviewedBy: userByRole("lgu"),
-    reviewNotes: "Confirmed different children after household verification.",
-    reviewedAt: isoDaysAgo(35),
-  }).onConflictDoNothing();
-}
+  const creator = people[0]!.id;
+  const teacherId = people.find((p) => p.role === "teacher")!.id;
+  const guidanceId = people.find((p) => p.role === "guidance")!.id;
 
-/* -------------------------------------------------------------------------- */
-/*  7. Monitoring, interventions, follow-ups                                   */
-/* -------------------------------------------------------------------------- */
+  const subjectRows = await db.select({ id: subjects.id }).from(subjects);
+  const periodRows = await db
+    .select({ id: gradingPeriods.id })
+    .from(gradingPeriods)
+    .orderBy(gradingPeriods.orderIndex);
+  const categoryRows = await db.select({ id: behaviorCategories.id, kind: behaviorCategories.kind }).from(behaviorCategories);
+  const concerns = categoryRows.filter((c) => c.kind === "concern");
+  const positives = categoryRows.filter((c) => c.kind === "positive");
 
-// Out-of-school children via the education side table.
-const osyIds = await db
-  .select({ id: childEducation.childId })
-  .from(childEducation)
-  .where(eq(childEducation.educationStatus, "out_of_school"))
-  .limit(5);
+  const N = 48;
+  const usedNumbers = new Set<string>();
+  const studentIds: string[] = [];
 
-for (const { id } of osyIds) {
-  await db.insert(childMonitoring).values({
-    id: crypto.randomUUID(),
-    childId: id,
-    monitoringType: "out_of_school_youth",
-    status: pick(["open", "in_progress"] as const),
-    observedAt: isoDaysAgo(rand(3, 30)),
-    recordedBy: userByRole("barangay"),
-    remarks: "Household visit scheduled to discuss re-enrollment options.",
-  });
-}
+  for (let i = 0; i < N; i++) {
+    const sex = rand() < 0.5 ? "male" : "female";
+    const firstName = pick(sex === "male" ? FIRST_M : FIRST_F);
+    const lastName = pick(LAST);
+    const birthYear = now.getFullYear() - randInt(12, 16);
+    const birthDate = `${birthYear}-${String(randInt(1, 12)).padStart(2, "0")}-${String(randInt(1, 28)).padStart(2, "0")}`;
 
-const eccdNonIds = await db
-  .select({ id: childEccd.childId })
-  .from(childEccd)
-  .where(eq(childEccd.participationStatus, "not_participating"))
-  .limit(4);
+    let seq = i + 1;
+    let studentNumber = `SM-${now.getFullYear()}-${String(seq).padStart(6, "0")}`;
+    while (usedNumbers.has(studentNumber)) studentNumber = `SM-${now.getFullYear()}-${String(++seq).padStart(6, "0")}`;
+    usedNumbers.add(studentNumber);
 
-for (const { id } of eccdNonIds) {
-  await db.insert(childMonitoring).values({
-    id: crypto.randomUUID(),
-    childId: id,
-    monitoringType: "eccd",
-    status: "open",
-    observedAt: isoDaysAgo(rand(3, 20)),
-    recordedBy: userByRole("barangay"),
-    remarks: "Encourage enrolment at the nearest child development center.",
-  });
-}
+    const id = crypto.randomUUID();
+    studentIds.push(id);
 
-const disabilityIds = await db
-  .select({ id: childDisabilities.childId })
-  .from(childDisabilities)
-  .limit(3);
+    const recordStatus = rand() < 0.85 ? "verified" : rand() < 0.5 ? "pending_validation" : "draft";
 
-for (const { id } of disabilityIds) {
-  await db.insert(childMonitoring).values({
-    id: crypto.randomUUID(),
-    childId: id,
-    monitoringType: "disability",
-    status: "in_progress",
-    observedAt: isoDaysAgo(rand(2, 15)),
-    recordedBy: userByRole("lgu"),
-    remarks: "Awaiting SPED assessment results.",
-  });
-}
-
-// Interventions for OSY/disability children + follow-ups.
-const interventionTargets = await db
-  .select({ id: children.id })
-  .from(children)
-  .where(eq(children.recordStatus, "verified"))
-  .limit(6);
-
-for (let i = 0; i < interventionTargets.length; i += 1) {
-  const child = interventionTargets[i];
-  const interventionId = crypto.randomUUID();
-  const status = i % 3 === 0 ? "completed" : i % 3 === 1 ? "ongoing" : "planned";
-
-  await db.insert(interventions).values({
-    id: interventionId,
-    childId: child.id,
-    interventionType: pick(["Educational assistance", "Re-enrollment counseling", "SPED referral", "ECCD enrollment drive"]),
-    description: "Coordinated with barangay officials and school (seed data — fictional).",
-    status,
-    priority: pick(["low", "medium", "high"] as const),
-    startDate: isoDaysAgo(rand(20, 60)).toISOString().slice(0, 10),
-    targetDate: new Date(Date.now() + rand(10, 60) * 86400_000).toISOString().slice(0, 10),
-    completedDate: status === "completed" ? isoDaysAgo(rand(1, 10)).toISOString().slice(0, 10) : null,
-    assignedTo: userByRole(i % 2 === 0 ? "barangay" : "lgu"),
-    createdBy: userByRole("lgu"),
-    createdAt: isoDaysAgo(rand(20, 60)),
-  });
-
-  // Follow-ups for the ongoing/planned interventions.
-  if (status !== "completed") {
-    await db.insert(interventionFollowups).values({
-      id: crypto.randomUUID(),
-      interventionId,
-      followUpDate: new Date(Date.now() + rand(3, 30) * 86400_000).toISOString().slice(0, 10),
-      status: "scheduled",
-      notes: "Coordinate with household and school for progress check.",
-      recordedBy: userByRole("barangay"),
+    await db.insert(students).values({
+      id,
+      studentNumber,
+      firstName,
+      middleName: pick(FIRST_M),
+      lastName,
+      birthDate,
+      sex,
+      contactNumber: rand() < 0.6 ? `09${randInt(100000000, 999999999)}` : null,
+      address: `Purok ${randInt(1, 6)}, Sta. Magdalena, Sorsogon`,
+      status: "active",
+      recordStatus,
+      createdBy: creator,
+      updatedBy: creator,
     });
-  } else {
-    await db.insert(interventionFollowups).values({
+
+    // Guardians (1–2 per student).
+    const guardianCount = rand() < 0.7 ? 1 : 2;
+    for (let g = 0; g < guardianCount; g++) {
+      const gid = crypto.randomUUID();
+      await db.insert(guardians).values({
+        id: gid,
+        firstName: pick(GUARDIAN_FIRST),
+        lastName,
+        relationship: g === 0 ? pick(["mother", "father"]) : "guardian",
+        contactNumber: `09${randInt(100000000, 999999999)}`,
+      });
+      await db.insert(studentGuardians).values({
+        studentId: id,
+        guardianId: gid,
+        isPrimary: g === 0,
+      });
+    }
+
+    // Enrollment in the current year, distributed across sections.
+    const sectionId = structure.sectionIds[i % structure.sectionIds.length]!;
+    const gradeLevelId = `gl-${7 + Math.floor(i % structure.sectionIds.length / 3)}`;
+    const enrollmentId = crypto.randomUUID();
+    await db.insert(studentEnrollments).values({
+      id: enrollmentId,
+      studentId: id,
+      schoolYearId: structure.yearId,
+      gradeLevelId,
+      sectionId,
+      status: "active",
+      enrollmentDate: isoDate(new Date(now.getFullYear(), 5, randInt(1, 28))),
+      recordedBy: creator,
+    });
+
+    // Grades for Q1 (all subjects) for verified/draft students.
+    if (recordStatus !== "pending_validation") {
+      for (const sub of subjectRows) {
+        await db.insert(studentGrades).values({
+          id: crypto.randomUUID(),
+          enrollmentId,
+          subjectId: sub.id,
+          gradingPeriodId: periodRows[0]!.id,
+          grade: randInt(70, 98),
+          recordedBy: teacherId,
+        });
+      }
+    }
+
+    // Attendance for the last ~20 school days.
+    for (let d = 1; d <= 20; d++) {
+      const day = new Date(now.getTime() - d * 86400000);
+      if (day.getDay() === 0 || day.getDay() === 6) continue;
+      const roll = rand();
+      const status = roll < 0.88 ? "present" : roll < 0.93 ? "late" : roll < 0.97 ? "absent_excused" : "absent_unexcused";
+      await db.insert(attendanceRecords).values({
+        id: crypto.randomUUID(),
+        enrollmentId,
+        date: isoDate(day),
+        status,
+        recordedBy: teacherId,
+      });
+    }
+
+    // Assessments: reading + numeracy for most, literacy for some.
+    const domains = ["reading", "numeracy"] as const;
+    for (const domain of domains) {
+      if (rand() < 0.85) {
+        const levels = DEFAULT_ASSESSMENT_LEVELS[domain];
+        await db.insert(assessments).values({
+          id: crypto.randomUUID(),
+          studentId: id,
+          domain,
+          assessmentType: `${domain === "reading" ? "Phil-IRI-style" : "School numeracy"} screener (demo)`,
+          date: isoDate(new Date(now.getTime() - randInt(10, 60) * 86400000)),
+          level: pick(levels),
+          score: randInt(40, 98),
+          assessorId: rand() < 0.5 ? teacherId : guidanceId,
+        });
+      }
+    }
+    if (rand() < 0.5) {
+      const levels = DEFAULT_ASSESSMENT_LEVELS.literacy;
+      await db.insert(assessments).values({
+        id: crypto.randomUUID(),
+        studentId: id,
+        domain: "literacy",
+        assessmentType: "School literacy checklist (demo)",
+        date: isoDate(new Date(now.getTime() - randInt(10, 60) * 86400000)),
+        level: pick(levels),
+        assessorId: teacherId,
+      });
+    }
+
+    // Behavior: mostly positive, occasional concern.
+    if (rand() < 0.4 && positives.length > 0) {
+      await db.insert(behaviorRecords).values({
+        id: crypto.randomUUID(),
+        studentId: id,
+        categoryId: pick(positives).id,
+        date: isoDate(new Date(now.getTime() - randInt(1, 40) * 86400000)),
+        description: "Demonstrated helpfulness during group activity (demo note).",
+        status: pick(["open", "monitored", "resolved"]),
+        recordedBy: teacherId,
+      });
+    }
+    if (rand() < 0.2 && concerns.length > 0) {
+      await db.insert(behaviorRecords).values({
+        id: crypto.randomUUID(),
+        studentId: id,
+        categoryId: pick(concerns).id,
+        date: isoDate(new Date(now.getTime() - randInt(1, 40) * 86400000)),
+        description: "Observed difficulty following classroom routines (demo note).",
+        severity: pick(["low", "medium"]),
+        status: "open",
+        recordedBy: teacherId,
+      });
+    }
+
+    // Interventions for a few students.
+    if (rand() < 0.18) {
+      const iid = crypto.randomUUID();
+      const status = pick(["planned", "active", "completed"]);
+      await db.insert(interventions).values({
+        id: iid,
+        studentId: id,
+        interventionType: pick(["Academic Remediation", "Reading Support", "Attendance Follow-Up"]),
+        description: "Support plan documented during faculty meeting (demo).",
+        status,
+        outcome: status === "completed" ? "Attendance improved over the follow-up period." : null,
+        startDate: isoDate(new Date(now.getTime() - randInt(20, 50) * 86400000)),
+        targetDate: isoDate(new Date(now.getTime() + randInt(10, 40) * 86400000)),
+        assignedTo: rand() < 0.5 ? teacherId : guidanceId,
+        createdBy: creator,
+      });
+      if (status !== "planned") {
+        await db.insert(interventionFollowups).values({
+          id: crypto.randomUUID(),
+          interventionId: iid,
+          followUpDate: isoDate(new Date(now.getTime() + randInt(1, 15) * 86400000)),
+          status: "scheduled",
+          recordedBy: guidanceId,
+        });
+      }
+    }
+
+    // Verification history for submitted records.
+    if (recordStatus === "verified") {
+      await db.insert(recordVerifications).values({
+        id: crypto.randomUUID(),
+        studentId: id,
+        submittedBy: creator,
+        reviewedBy: creator,
+        status: "approved",
+        remarks: "Complete profile verified (demo).",
+        submittedAt: new Date(now.getTime() - randInt(5, 30) * 86400000),
+        reviewedAt: new Date(now.getTime() - randInt(1, 4) * 86400000),
+      });
+    }
+
+    // QR tokens for verified students.
+    if (recordStatus === "verified" && rand() < 0.6) {
+      await db.insert(qrVerifications).values({
+        id: crypto.randomUUID(),
+        studentId: id,
+        verificationToken: randomToken(24),
+        verifiedBy: creator,
+        verificationType: "generate",
+        result: "valid",
+        verifiedAt: new Date(now.getTime() - randInt(1, 20) * 86400000),
+      });
+    }
+  }
+
+  // A couple of duplicate candidates for the review queue.
+  if (studentIds.length >= 4) {
+    await db.insert(duplicateCandidates).values([
+      {
+        id: crypto.randomUUID(),
+        studentId: studentIds[0]!,
+        possibleStudentId: studentIds[1]!,
+        matchScore: 75,
+        matchReason: JSON.stringify(["last_name", "birth_date"]),
+        status: "pending",
+      },
+      {
+        id: crypto.randomUUID(),
+        studentId: studentIds[2]!,
+        possibleStudentId: studentIds[3]!,
+        matchScore: 40,
+        matchReason: JSON.stringify(["last_name"]),
+        status: "not_duplicate",
+      },
+    ]);
+  }
+
+  // Seed the audit trail with a few demo entries.
+  for (let i = 0; i < 10; i++) {
+    await db.insert(auditLogs).values({
       id: crypto.randomUUID(),
-      interventionId,
-      followUpDate: isoDaysAgo(rand(5, 20)).toISOString().slice(0, 10),
-      status: "done",
-      notes: "Completed — learner confirmed enrolled.",
-      recordedBy: userByRole("lgu"),
+      userId: creator,
+      action: "student.create",
+      entityType: "student",
+      entityId: studentIds[i % studentIds.length]!,
+      newValuesJson: JSON.stringify({ demo: true }),
+      createdAt: new Date(now.getTime() - i * 3600000),
     });
   }
-}
 
-/* -------------------------------------------------------------------------- */
-/*  8. QR verification events (safe opaque tokens — no personal data)          */
-/* -------------------------------------------------------------------------- */
-
-const verifiedChildren = await db
-  .select({ id: children.id })
-  .from(children)
-  .where(eq(children.recordStatus, "verified"))
-  .limit(14);
-
-for (const child of verifiedChildren) {
-  await db.insert(qrVerifications).values({
+  await db.insert(notifications).values({
     id: crypto.randomUUID(),
-    childId: child.id,
-    verificationToken: randomToken(24),
-    verifiedBy: userByRole("lgu"),
-    verificationType: "generate",
-    result: "valid",
-    verifiedAt: isoDaysAgo(rand(1, 10)),
+    userId: creator,
+    type: "verification",
+    title: "Records awaiting verification",
+    message: "There are student records pending verification (demo).",
+    link: "/verification",
   });
-}
 
-/* -------------------------------------------------------------------------- */
-/*  9. Reports + export metadata                                               */
-/* -------------------------------------------------------------------------- */
-
-const [report1] = await db
-  .insert(reports)
-  .values({
+  await db.insert(reports).values({
     id: crypto.randomUUID(),
-    name: "Municipal summary (seed)",
-    reportType: "municipal_summary",
-    generatedBy: userByRole("lgu"),
-    scope: "municipality",
+    name: "Enrollment Report (demo)",
+    reportType: "enrollment_report",
+    generatedBy: creator,
+    scope: "school",
     filtersJson: "{}",
-    createdAt: isoDaysAgo(2),
-  })
-  .returning();
+  });
 
-await db.insert(reportExports).values({
-  id: crypto.randomUUID(),
-  reportId: report1.id,
-  format: "XLSX",
-  fileReference: `exports/municipal-summary-${now.toISOString().slice(0, 10)}.xlsx`,
-  generatedBy: userByRole("lgu"),
-  createdAt: isoDaysAgo(2),
-});
+  console.log(
+    `Seed complete: ${N} students, ${subjectRows.length} subjects, ${structure.sectionIds.length} sections, school year ${CURRENT_YEAR} (all data fictional).`,
+  );
+}
 
-/* -------------------------------------------------------------------------- */
-/*  10. Notifications + audit entries                                          */
-/* -------------------------------------------------------------------------- */
+/* ----------------------------------- run ---------------------------------- */
 
-await db.insert(notifications).values([
-  {
-    id: crypto.randomUUID(),
-    userId: userByRole("admin"),
-    type: "validation",
-    title: "Records awaiting validation",
-    message: "Several child records are pending validation from the latest survey batch.",
-    link: "/validation",
-    createdAt: isoDaysAgo(1),
-  },
-  {
-    id: crypto.randomUUID(),
-    userId: userByRole("admin"),
-    type: "duplicate",
-    title: "Duplicate review required",
-    message: "A potential duplicate pair is awaiting human review.",
-    link: "/validation/duplicates",
-    createdAt: isoDaysAgo(2),
-  },
-  {
-    id: crypto.randomUUID(),
-    userId: userByRole("lgu"),
-    type: "report",
-    title: "Municipal summary ready",
-    message: "The municipal summary report has been generated.",
-    link: "/reports",
-    createdAt: isoDaysAgo(1),
-  },
-  {
-    id: crypto.randomUUID(),
-    userId: userByRole("barangay"),
-    type: "followup",
-    title: "Follow-up due",
-    message: "You have open monitoring follow-ups this month.",
-    link: "/monitoring",
-    createdAt: isoDaysAgo(1),
-  },
-]);
+async function main() {
+  await seedRolesAndPermissions();
+  const people = await seedUsers();
+  const teacher = people.find((p) => p.role === "teacher")!;
+  const structure = await seedAcademicStructure(teacher.id);
+  await seedCategoriesAndSettings();
+  await seedDemoData(people, structure);
+}
 
-await db.insert(auditLogs).values([
-  {
-    id: crypto.randomUUID(),
-    userId: userByRole("admin"),
-    action: "SEED_RUN",
-    entityType: "system",
-    newValuesJson: JSON.stringify({ note: "seed executed" }),
-    ipAddress: "127.0.0.1",
-    userAgent: "seed-script",
-    createdAt: now,
-  },
-  {
-    id: crypto.randomUUID(),
-    userId: userByRole("lgu"),
-    action: "APPROVE_VALIDATION",
-    entityType: "child",
-    entityId: childIds[0]?.id ?? null,
-    ipAddress: "127.0.0.1",
-    userAgent: "seed-script",
-    createdAt: isoDaysAgo(2),
-  },
-]);
-
-console.log("Seed complete (idempotent upsert + deterministic demo data).");
-console.log(`  municipality: ${muni.name}`);
-console.log(`  barangays:    ${barangayRows.length}`);
-console.log(`  schools:      ${schoolRows.length}`);
-console.log(`  roles:        3 (Barangay User, LGU User, System Administrator — NO school role)`);
-console.log(`  permissions:  ${permissionRows.length}`);
-console.log(`  users:        ${userRows.length} (from DEFAULT_* env vars)`);
-console.log(`  children:     ${seedChildren.length}`);
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error("Seed failed:", e);
+    process.exit(1);
+  });

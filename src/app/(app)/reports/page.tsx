@@ -32,7 +32,7 @@ export default async function ReportsPage() {
       <PageHeader
         eyebrow="Reports & Exports"
         title="Reports"
-        description="Generate and export municipal and barangay reports as PDF or Excel."
+        description="Generate and export school, grade-level and section reports as PDF or Excel."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">

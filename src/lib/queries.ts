@@ -2,149 +2,191 @@ import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/db";
 import {
+  assessments,
+  attendanceRecords,
   auditLogs,
-  barangays,
-  childAddresses,
-  childDisabilities,
-  childDuplicateCandidates,
-  childEducation,
-  childEccd,
-  childMonitoring,
-  childValidations,
-  children,
+  behaviorCategories,
+  behaviorRecords,
+  duplicateCandidates,
+  gradeLevels,
+  gradingPeriods,
+  guardians,
   interventions,
   interventionFollowups,
   notifications,
   qrVerifications,
-  roles,
-  schools,
+  recordVerifications,
+  schoolYears,
+  sections,
+  studentEnrollments,
+  studentGrades,
+  studentGuardians,
+  students,
+  subjects,
   users,
+  roles,
 } from "@/db/schema";
 import {
-  type MonitoringType,
-  type Sex,
   type RecordStatus,
-  type ChildStatus,
+  type Sex,
+  type StudentStatus,
+  type AssessmentDomain,
 } from "./constants";
 import type { SessionUser } from "./auth";
-import { childScope } from "./scope";
+import { userSectionScope } from "./scope";
 import { ageFromBirthDate } from "./utils";
 
 export const PAGE_SIZE = 10;
 
 const pendingRecordStatuses: RecordStatus[] = ["pending_validation"];
 
-const possibleChild = alias(children, "possible_child");
-const possibleBarangay = alias(barangays, "possible_barangay");
-const possibleEdu = alias(childEducation, "possible_education");
-const possibleSchool = alias(schools, "possible_school");
+const possibleStudent = alias(students, "possible_student");
 
 /* -------------------------------------------------------------------------- */
 /*  Reference data                                                            */
 /* -------------------------------------------------------------------------- */
 
-export async function listBarangays() {
+export async function listGradeLevels() {
   return db
-    .select({ id: barangays.id, name: barangays.name })
-    .from(barangays)
-    .where(eq(barangays.isActive, true))
-    .orderBy(asc(barangays.name));
+    .select({ id: gradeLevels.id, name: gradeLevels.name })
+    .from(gradeLevels)
+    .orderBy(asc(gradeLevels.orderIndex));
 }
 
-export async function listSchools() {
+/** Sections (current school year by default) with grade level + adviser. */
+export async function listSections(schoolYearId?: string) {
+  const yearId =
+    schoolYearId ?? (await getCurrentSchoolYear())?.id ?? "";
   return db
     .select({
-      id: schools.id,
-      name: schools.name,
-      schoolType: schools.schoolType,
-      barangayId: schools.barangayId,
+      id: sections.id,
+      name: sections.name,
+      gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+      adviserFirst: users.firstName,
+      adviserLast: users.lastName,
     })
-    .from(schools)
-    .where(eq(schools.isActive, true))
-    .orderBy(asc(schools.name));
+    .from(sections)
+    .innerJoin(gradeLevels, eq(gradeLevels.id, sections.gradeLevelId))
+    .leftJoin(users, eq(users.id, sections.adviserId))
+    .where(and(eq(sections.schoolYearId, yearId), eq(sections.isActive, true)))
+    .orderBy(asc(gradeLevels.orderIndex), asc(sections.name));
+}
+
+export async function listSubjects() {
+  return db
+    .select({ id: subjects.id, code: subjects.code, name: subjects.name })
+    .from(subjects)
+    .where(eq(subjects.isActive, true))
+    .orderBy(asc(subjects.code));
+}
+
+export async function listGradingPeriods(schoolYearId?: string) {
+  const yearId =
+    schoolYearId ?? (await getCurrentSchoolYear())?.id ?? "";
+  return db
+    .select({
+      id: gradingPeriods.id,
+      name: gradingPeriods.name,
+      isCurrent: gradingPeriods.isCurrent,
+    })
+    .from(gradingPeriods)
+    .where(eq(gradingPeriods.schoolYearId, yearId))
+    .orderBy(asc(gradingPeriods.orderIndex));
+}
+
+export async function listSchoolYears() {
+  return db
+    .select({
+      id: schoolYears.id,
+      year: schoolYears.year,
+      isCurrent: schoolYears.isCurrent,
+    })
+    .from(schoolYears)
+    .orderBy(desc(schoolYears.year));
+}
+
+export async function getCurrentSchoolYear() {
+  const rows = await db
+    .select({
+      id: schoolYears.id,
+      year: schoolYears.year,
+    })
+    .from(schoolYears)
+    .where(eq(schoolYears.isCurrent, true))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 /* -------------------------------------------------------------------------- */
 /*  Registry                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type ChildQuery = {
+export type StudentQuery = {
   q?: string;
-  barangay?: string;
   status?: string; // record_status filter
-  active?: string; // child status filter
+  lifecycle?: string; // student status filter (active/inactive/archived)
   sex?: string;
-  ageMin?: number;
-  ageMax?: number;
-  education?: string; // current education_status filter
-  school?: string; // current school filter
+  gradeLevel?: string; // current enrollment grade level id
+  sectionId?: string; // current enrollment section id
   sort?: "name" | "recent" | "oldest";
   page?: number;
   pageSize?: number;
 };
 
-const year = new Date().getFullYear();
-
 /**
- * Build the WHERE clause for registry listing. Exported for unit testing —
- * pure SQL composition, no database access.
+ * Build the WHERE clause for the registry listing. Exported for unit testing —
+ * pure SQL composition, no database access. Applied to every list *and* write
+ * path so scope cannot be bypassed by calling an action directly.
  */
-export function childFilters(user: SessionUser, q: ChildQuery): SQL | undefined {
+export async function studentFilters(user: SessionUser, q: StudentQuery): Promise<SQL | undefined> {
   const conditions: SQL[] = [];
-  const scope = childScope(user);
+  const scope = await userSectionScope(user);
   if (scope) conditions.push(scope);
 
   // Never show records marked as duplicates in the main registry.
-  conditions.push(sql`${children.recordStatus} != 'marked_duplicate'`);
+  conditions.push(sql`${students.recordStatus} != 'marked_duplicate'`);
 
   if (q.q) {
     const needle = `%${q.q}%`;
     conditions.push(
-      sql`(${children.firstName} LIKE ${needle} OR ${children.lastName} LIKE ${needle} OR ${children.childCode} LIKE ${needle})`,
+      sql`(${students.firstName} LIKE ${needle} OR ${students.lastName} LIKE ${needle} OR ${students.studentNumber} LIKE ${needle})`,
     );
   }
-  if (q.barangay) conditions.push(eq(children.barangayId, q.barangay));
-  if (q.status) conditions.push(eq(children.recordStatus, q.status as RecordStatus));
+  if (q.status) conditions.push(eq(students.recordStatus, q.status as RecordStatus));
   // "all" is a UI escape hatch meaning "no lifecycle filter".
-  if (q.active && q.active !== "all") conditions.push(eq(children.status, q.active as ChildStatus));
-  if (q.sex) conditions.push(eq(children.sex, q.sex as Sex));
-  if (q.education)
+  if (q.lifecycle && q.lifecycle !== "all")
+    conditions.push(eq(students.status, q.lifecycle as StudentStatus));
+  if (q.sex) conditions.push(eq(students.sex, q.sex as Sex));
+  if (q.gradeLevel)
     conditions.push(sql`exists (
-      select 1 from ${childEducation}
-      where ${childEducation.childId} = ${children.id}
-        and ${childEducation.isCurrent} = 1
-        and ${childEducation.educationStatus} = ${q.education}
+      select 1 from ${studentEnrollments}
+      where ${studentEnrollments.studentId} = ${students.id}
+        and ${studentEnrollments.gradeLevelId} = ${q.gradeLevel}
+        and ${studentEnrollments.status} = 'active'
     )`);
-  if (q.school)
+  if (q.sectionId)
     conditions.push(sql`exists (
-      select 1 from ${childEducation}
-      where ${childEducation.childId} = ${children.id}
-        and ${childEducation.isCurrent} = 1
-        and ${childEducation.schoolId} = ${q.school}
+      select 1 from ${studentEnrollments}
+      where ${studentEnrollments.studentId} = ${students.id}
+        and ${studentEnrollments.sectionId} = ${q.sectionId}
+        and ${studentEnrollments.status} = 'active'
     )`);
-  if (q.ageMin != null)
-    conditions.push(sql`${children.birthDate} <= ${`${year - q.ageMin}-12-31`}`);
-  if (q.ageMax != null)
-    conditions.push(sql`${children.birthDate} >= ${`${year - q.ageMax}-01-01`}`);
 
   return conditions.length ? and(...conditions) : undefined;
 }
 
-export type ChildRow = {
+export type StudentRow = {
   id: string;
-  childCode: string;
+  studentNumber: string;
   firstName: string;
   lastName: string;
   suffix: string | null;
   sex: string;
   birthDate: string;
   age: number | null;
-  barangayName: string;
-  sitio: string | null;
-  schoolName: string | null;
-  schoolType: string | null;
-  gradeLevel: string | null;
-  educationStatus: string | null;
+  gradeLevelName: string | null;
+  sectionName: string | null;
   recordStatus: string;
   status: string;
   createdAt: Date;
@@ -152,56 +194,48 @@ export type ChildRow = {
 
 const ALLOWED_PAGE_SIZES = [10, 25, 50, 100] as const;
 
-export async function listChildren(
+export async function listStudents(
   user: SessionUser,
-  query: ChildQuery,
-): Promise<{ rows: ChildRow[]; total: number; page: number; pageSize: number }> {
+  query: StudentQuery,
+): Promise<{ rows: StudentRow[]; total: number; page: number; pageSize: number }> {
   const page = Math.max(1, query.page ?? 1);
   const pageSize = ALLOWED_PAGE_SIZES.includes(query.pageSize as (typeof ALLOWED_PAGE_SIZES)[number])
     ? (query.pageSize as number)
     : PAGE_SIZE;
-  const where = childFilters(user, query) ?? sql`1 = 1`;
+  const where = (await studentFilters(user, query)) ?? sql`1 = 1`;
 
-  const totalRow = await db.select({ n: count() }).from(children).where(where);
+  const totalRow = await db.select({ n: count() }).from(students).where(where);
   const total = totalRow[0]?.n ?? 0;
 
   const orderBy: SQL[] =
     query.sort === "name"
-      ? [asc(children.lastName), asc(children.firstName)]
+      ? [asc(students.lastName), asc(students.firstName)]
       : query.sort === "oldest"
-        ? [asc(children.createdAt)]
-        : [desc(children.createdAt)];
+        ? [asc(students.createdAt)]
+        : [desc(students.createdAt)];
 
   const rows = await db
     .select({
-      id: children.id,
-      childCode: children.childCode,
-      firstName: children.firstName,
-      lastName: children.lastName,
-      suffix: children.suffix,
-      sex: children.sex,
-      birthDate: children.birthDate,
-      barangayName: barangays.name,
-      sitio: childAddresses.sitio,
-      schoolName: schools.name,
-      schoolType: schools.schoolType,
-      gradeLevel: childEducation.gradeLevel,
-      educationStatus: childEducation.educationStatus,
-      recordStatus: children.recordStatus,
-      status: children.status,
-      createdAt: children.createdAt,
+      id: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      suffix: students.suffix,
+      sex: students.sex,
+      birthDate: students.birthDate,
+      gradeLevelName: gradeLevels.name,
+      sectionName: sections.name,
+      recordStatus: students.recordStatus,
+      status: students.status,
+      createdAt: students.createdAt,
     })
-    .from(children)
-    .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .from(students)
     .leftJoin(
-      childAddresses,
-      and(eq(childAddresses.childId, children.id), eq(childAddresses.isCurrent, true)),
+      studentEnrollments,
+      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
     )
-    .leftJoin(
-      childEducation,
-      and(eq(childEducation.childId, children.id), eq(childEducation.isCurrent, true)),
-    )
-    .leftJoin(schools, eq(schools.id, childEducation.schoolId))
+    .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
     .where(where)
     .orderBy(...orderBy)
     .limit(pageSize)
@@ -218,23 +252,46 @@ export async function listChildren(
   };
 }
 
+/**
+ * Per-grade-level totals for the registry chip row (active, non-duplicate,
+ * in-scope students with an active enrollment). Replaces N listStudents calls.
+ */
+export async function gradeLevelCounts(): Promise<Record<string, number>> {
+  const rows = await db
+    .select({
+      key: gradeLevels.name,
+      n: count(),
+    })
+    .from(students)
+    .innerJoin(
+      studentEnrollments,
+      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+    )
+    .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .where(and(sql`${students.status} = 'active'`, sql`${students.recordStatus} != 'marked_duplicate'`))
+    .groupBy(gradeLevels.name)
+    .orderBy(asc(gradeLevels.orderIndex));
+
+  const out: Record<string, number> = {};
+  for (const r of rows) out[r.key] = r.n;
+  return out;
+}
+
 /* -------------------------------------------------------------------------- */
-/*  Single child (profile)                                                    */
+/*  Single student (profile)                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type ChildProfile = {
+export type StudentProfile = {
   id: string;
-  childCode: string;
+  studentNumber: string;
   firstName: string;
   middleName: string | null;
   lastName: string;
   suffix: string | null;
   birthDate: string;
   sex: string;
-  civilStatus: string | null;
-  birthPlace: string | null;
-  barangayId: string;
-  barangayName: string;
+  contactNumber: string | null;
+  address: string | null;
   status: string;
   recordStatus: string;
   createdBy: string;
@@ -244,37 +301,34 @@ export type ChildProfile = {
   updatedAt: Date;
 };
 
-export async function getChildProfile(childId: string): Promise<ChildProfile | null> {
+export async function getStudentProfile(studentId: string): Promise<StudentProfile | null> {
   const updater = alias(users, "updater");
   const rows = await db
     .select({
-      id: children.id,
-      childCode: children.childCode,
-      firstName: children.firstName,
-      middleName: children.middleName,
-      lastName: children.lastName,
-      suffix: children.suffix,
-      birthDate: children.birthDate,
-      sex: children.sex,
-      civilStatus: children.civilStatus,
-      birthPlace: children.birthPlace,
-      barangayId: children.barangayId,
-      barangayName: barangays.name,
-      status: children.status,
-      recordStatus: children.recordStatus,
-      createdBy: children.createdBy,
+      id: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      middleName: students.middleName,
+      lastName: students.lastName,
+      suffix: students.suffix,
+      birthDate: students.birthDate,
+      sex: students.sex,
+      contactNumber: students.contactNumber,
+      address: students.address,
+      status: students.status,
+      recordStatus: students.recordStatus,
+      createdBy: students.createdBy,
       createdByName: users.firstName,
       creatorLast: users.lastName,
       updatedByName: updater.firstName,
       updaterLast: updater.lastName,
-      createdAt: children.createdAt,
-      updatedAt: children.updatedAt,
+      createdAt: students.createdAt,
+      updatedAt: students.updatedAt,
     })
-    .from(children)
-    .innerJoin(barangays, eq(barangays.id, children.barangayId))
-    .leftJoin(users, eq(users.id, children.createdBy))
-    .leftJoin(updater, eq(updater.id, children.updatedBy))
-    .where(eq(children.id, childId))
+    .from(students)
+    .leftJoin(users, eq(users.id, students.createdBy))
+    .leftJoin(updater, eq(updater.id, students.updatedBy))
+    .where(eq(students.id, studentId))
     .limit(1);
 
   const row = rows[0];
@@ -283,139 +337,236 @@ export async function getChildProfile(childId: string): Promise<ChildProfile | n
     ...row,
     createdByName: row.createdByName ? `${row.createdByName} ${row.creatorLast}` : null,
     updatedByName: row.updatedByName ? `${row.updatedByName} ${row.updaterLast}` : null,
-  } as ChildProfile;
+  } as StudentProfile;
 }
 
-export async function getCurrentAddress(childId: string) {
+export async function getGuardiansForStudent(studentId: string) {
+  return db
+    .select({
+      id: guardians.id,
+      firstName: guardians.firstName,
+      middleName: guardians.middleName,
+      lastName: guardians.lastName,
+      relationship: guardians.relationship,
+      contactNumber: guardians.contactNumber,
+      email: guardians.email,
+      isPrimary: studentGuardians.isPrimary,
+    })
+    .from(studentGuardians)
+    .innerJoin(guardians, eq(guardians.id, studentGuardians.guardianId))
+    .where(eq(studentGuardians.studentId, studentId))
+    .orderBy(desc(studentGuardians.isPrimary), asc(guardians.lastName));
+}
+
+export async function getEnrollmentHistory(studentId: string) {
+  return db
+    .select({
+      id: studentEnrollments.id,
+      status: studentEnrollments.status,
+      enrollmentDate: studentEnrollments.enrollmentDate,
+      schoolYear: schoolYears.year,
+      gradeLevelName: gradeLevels.name,
+      sectionName: sections.name,
+    })
+    .from(studentEnrollments)
+    .innerJoin(schoolYears, eq(schoolYears.id, studentEnrollments.schoolYearId))
+    .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .innerJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+    .where(eq(studentEnrollments.studentId, studentId))
+    .orderBy(desc(schoolYears.year));
+}
+
+/** The active enrollment row for the student, if any (joined for display). */
+export async function getCurrentEnrollment(studentId: string) {
   const rows = await db
     .select({
-      id: childAddresses.id,
-      householdAddress: childAddresses.householdAddress,
-      sitio: childAddresses.sitio,
-      isCurrent: childAddresses.isCurrent,
-      barangayName: barangays.name,
+      id: studentEnrollments.id,
+      status: studentEnrollments.status,
+      schoolYearId: studentEnrollments.schoolYearId,
+      schoolYear: schoolYears.year,
+      gradeLevelId: studentEnrollments.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+      sectionId: studentEnrollments.sectionId,
+      sectionName: sections.name,
     })
-    .from(childAddresses)
-    .innerJoin(barangays, eq(barangays.id, childAddresses.barangayId))
-    .where(eq(childAddresses.childId, childId))
-    .orderBy(desc(childAddresses.isCurrent), desc(childAddresses.createdAt));
-  return rows;
+    .from(studentEnrollments)
+    .innerJoin(schoolYears, eq(schoolYears.id, studentEnrollments.schoolYearId))
+    .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .innerJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+    .where(
+      and(
+        eq(studentEnrollments.studentId, studentId),
+        eq(studentEnrollments.status, "active"),
+      ),
+    )
+    .orderBy(desc(schoolYears.year))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
-export async function getEducationHistory(childId: string) {
+/** All recorded grades for a student, most recent school year first. */
+export async function getStudentGrades(studentId: string) {
   return db
     .select({
-      id: childEducation.id,
-      educationStatus: childEducation.educationStatus,
-      gradeLevel: childEducation.gradeLevel,
-      schoolYear: childEducation.schoolYear,
-      enrollmentStatus: childEducation.enrollmentStatus,
-      isCurrent: childEducation.isCurrent,
-      schoolId: childEducation.schoolId,
-      schoolName: schools.name,
+      id: studentGrades.id,
+      grade: studentGrades.grade,
+      remarks: studentGrades.remarks,
+      subjectName: subjects.name,
+      subjectCode: subjects.code,
+      periodName: gradingPeriods.name,
+      schoolYear: schoolYears.year,
+      enrollmentId: studentGrades.enrollmentId,
     })
-    .from(childEducation)
-    .leftJoin(schools, eq(schools.id, childEducation.schoolId))
-    .where(eq(childEducation.childId, childId))
-    .orderBy(desc(childEducation.isCurrent), desc(childEducation.createdAt));
+    .from(studentGrades)
+    .innerJoin(studentEnrollments, eq(studentEnrollments.id, studentGrades.enrollmentId))
+    .innerJoin(subjects, eq(subjects.id, studentGrades.subjectId))
+    .innerJoin(gradingPeriods, eq(gradingPeriods.id, studentGrades.gradingPeriodId))
+    .innerJoin(schoolYears, eq(schoolYears.id, studentEnrollments.schoolYearId))
+    .where(eq(studentEnrollments.studentId, studentId))
+    .orderBy(desc(schoolYears.year), asc(gradingPeriods.orderIndex), asc(subjects.code));
 }
 
-export async function getEccdHistory(childId: string) {
-  return db
-    .select()
-    .from(childEccd)
-    .where(eq(childEccd.childId, childId))
-    .orderBy(desc(childEccd.createdAt));
-}
-
-/** Sensitive — callers must check `children.view`/scope before use. */
-export async function getDisabilityRecords(childId: string) {
-  return db
-    .select()
-    .from(childDisabilities)
-    .where(eq(childDisabilities.childId, childId))
-    .orderBy(desc(childDisabilities.createdAt));
-}
-
-export async function getValidationHistory(childId: string) {
-  const submitter = alias(users, "submitter");
+/** Recent attendance rows for a student (across enrollments). */
+export async function getAttendanceForStudent(studentId: string, limit = 30) {
   return db
     .select({
-      id: childValidations.id,
-      status: childValidations.status,
-      remarks: childValidations.remarks,
-      submittedAt: childValidations.submittedAt,
-      reviewedAt: childValidations.reviewedAt,
-      submitterFirst: submitter.firstName,
-      submitterLast: submitter.lastName,
-      reviewerFirst: users.firstName,
-      reviewerLast: users.lastName,
+      id: attendanceRecords.id,
+      date: attendanceRecords.date,
+      status: attendanceRecords.status,
+      remarks: attendanceRecords.remarks,
+      schoolYear: schoolYears.year,
     })
-    .from(childValidations)
-    .innerJoin(submitter, eq(submitter.id, childValidations.submittedBy))
-    .leftJoin(users, eq(users.id, childValidations.reviewedBy))
-    .where(eq(childValidations.childId, childId))
-    .orderBy(desc(childValidations.submittedAt));
+    .from(attendanceRecords)
+    .innerJoin(studentEnrollments, eq(studentEnrollments.id, attendanceRecords.enrollmentId))
+    .innerJoin(schoolYears, eq(schoolYears.id, studentEnrollments.schoolYearId))
+    .where(eq(studentEnrollments.studentId, studentId))
+    .orderBy(desc(attendanceRecords.date))
+    .limit(limit);
 }
 
-export async function getChildDuplicates(childId: string) {
+export async function getAssessmentsForStudent(studentId: string) {
+  const assessor = alias(users, "assessor");
   return db
     .select({
-      id: childDuplicateCandidates.id,
-      possibleChildId: childDuplicateCandidates.possibleChildId,
-      status: childDuplicateCandidates.status,
-      matchScore: childDuplicateCandidates.matchScore,
-      matchReason: childDuplicateCandidates.matchReason,
-      reviewNotes: childDuplicateCandidates.reviewNotes,
-      possibleCode: possibleChild.childCode,
-      possibleFirst: possibleChild.firstName,
-      possibleLast: possibleChild.lastName,
-      possibleBirth: possibleChild.birthDate,
+      id: assessments.id,
+      domain: assessments.domain,
+      assessmentType: assessments.assessmentType,
+      skillArea: assessments.skillArea,
+      date: assessments.date,
+      level: assessments.level,
+      score: assessments.score,
+      notes: assessments.notes,
+      assessorFirst: assessor.firstName,
+      assessorLast: assessor.lastName,
     })
-    .from(childDuplicateCandidates)
-    .innerJoin(possibleChild, eq(possibleChild.id, childDuplicateCandidates.possibleChildId))
-    .where(eq(childDuplicateCandidates.childId, childId))
-    .orderBy(desc(childDuplicateCandidates.createdAt));
+    .from(assessments)
+    .leftJoin(assessor, eq(assessor.id, assessments.assessorId))
+    .where(eq(assessments.studentId, studentId))
+    .orderBy(desc(assessments.date));
 }
 
-export async function getMonitoringRecords(childId: string) {
+export async function getBehaviorForStudent(studentId: string) {
+  const recorder = alias(users, "recorder");
   return db
     .select({
-      id: childMonitoring.id,
-      monitoringType: childMonitoring.monitoringType,
-      status: childMonitoring.status,
-      observedAt: childMonitoring.observedAt,
-      remarks: childMonitoring.remarks,
-      recorderFirst: users.firstName,
-      recorderLast: users.lastName,
+      id: behaviorRecords.id,
+      date: behaviorRecords.date,
+      description: behaviorRecords.description,
+      severity: behaviorRecords.severity,
+      followUp: behaviorRecords.followUp,
+      status: behaviorRecords.status,
+      categoryName: behaviorCategories.name,
+      categoryKind: behaviorCategories.kind,
+      recorderFirst: recorder.firstName,
+      recorderLast: recorder.lastName,
     })
-    .from(childMonitoring)
-    .leftJoin(users, eq(users.id, childMonitoring.recordedBy))
-    .where(eq(childMonitoring.childId, childId))
-    .orderBy(desc(childMonitoring.observedAt));
+    .from(behaviorRecords)
+    .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+    .leftJoin(recorder, eq(recorder.id, behaviorRecords.recordedBy))
+    .where(eq(behaviorRecords.studentId, studentId))
+    .orderBy(desc(behaviorRecords.date));
 }
 
-export async function getInterventionsForChild(childId: string) {
+export async function getInterventionsForStudent(studentId: string) {
+  const assignee = alias(users, "assignee");
   return db
     .select({
       id: interventions.id,
       interventionType: interventions.interventionType,
       description: interventions.description,
       status: interventions.status,
-      priority: interventions.priority,
+      outcome: interventions.outcome,
       startDate: interventions.startDate,
       targetDate: interventions.targetDate,
       completedDate: interventions.completedDate,
-      assigneeFirst: users.firstName,
-      assigneeLast: users.lastName,
+      assigneeFirst: assignee.firstName,
+      assigneeLast: assignee.lastName,
     })
     .from(interventions)
-    .leftJoin(users, eq(users.id, interventions.assignedTo))
-    .where(eq(interventions.childId, childId))
+    .leftJoin(assignee, eq(assignee.id, interventions.assignedTo))
+    .where(eq(interventions.studentId, studentId))
     .orderBy(desc(interventions.createdAt));
 }
 
-export async function getQrEvents(childId: string) {
+export async function getFollowupsForIntervention(interventionId: string) {
+  return db
+    .select({
+      id: interventionFollowups.id,
+      followUpDate: interventionFollowups.followUpDate,
+      status: interventionFollowups.status,
+      notes: interventionFollowups.notes,
+      recorderFirst: users.firstName,
+      recorderLast: users.lastName,
+      createdAt: interventionFollowups.createdAt,
+    })
+    .from(interventionFollowups)
+    .leftJoin(users, eq(users.id, interventionFollowups.recordedBy))
+    .where(eq(interventionFollowups.interventionId, interventionId))
+    .orderBy(desc(interventionFollowups.followUpDate));
+}
+
+export async function getVerificationHistory(studentId: string) {
+  const submitter = alias(users, "submitter");
+  return db
+    .select({
+      id: recordVerifications.id,
+      status: recordVerifications.status,
+      remarks: recordVerifications.remarks,
+      submittedAt: recordVerifications.submittedAt,
+      reviewedAt: recordVerifications.reviewedAt,
+      submitterFirst: submitter.firstName,
+      submitterLast: submitter.lastName,
+      reviewerFirst: users.firstName,
+      reviewerLast: users.lastName,
+    })
+    .from(recordVerifications)
+    .innerJoin(submitter, eq(submitter.id, recordVerifications.submittedBy))
+    .leftJoin(users, eq(users.id, recordVerifications.reviewedBy))
+    .where(eq(recordVerifications.studentId, studentId))
+    .orderBy(desc(recordVerifications.submittedAt));
+}
+
+export async function getStudentDuplicates(studentId: string) {
+  return db
+    .select({
+      id: duplicateCandidates.id,
+      possibleStudentId: duplicateCandidates.possibleStudentId,
+      status: duplicateCandidates.status,
+      matchScore: duplicateCandidates.matchScore,
+      matchReason: duplicateCandidates.matchReason,
+      reviewNotes: duplicateCandidates.reviewNotes,
+      possibleNumber: possibleStudent.studentNumber,
+      possibleFirst: possibleStudent.firstName,
+      possibleLast: possibleStudent.lastName,
+      possibleBirth: possibleStudent.birthDate,
+    })
+    .from(duplicateCandidates)
+    .innerJoin(possibleStudent, eq(possibleStudent.id, duplicateCandidates.possibleStudentId))
+    .where(eq(duplicateCandidates.studentId, studentId))
+    .orderBy(desc(duplicateCandidates.createdAt));
+}
+
+export async function getQrEvents(studentId: string) {
   return db
     .select({
       id: qrVerifications.id,
@@ -425,132 +576,69 @@ export async function getQrEvents(childId: string) {
       verifiedAt: qrVerifications.verifiedAt,
     })
     .from(qrVerifications)
-    .where(eq(qrVerifications.childId, childId))
+    .where(eq(qrVerifications.studentId, studentId))
     .orderBy(desc(qrVerifications.verifiedAt))
     .limit(10);
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Dashboard                                                                 */
+/*  Dashboard & registry stats                                                */
 /* -------------------------------------------------------------------------- */
 
 export type DashboardStats = {
   total: number;
   verified: number;
-  pendingValidation: number;
+  pendingVerification: number;
   enrolled: number;
-  osy: number;
-  eccdNonParticipation: number;
-  withDisability: number;
   openInterventions: number;
+  openBehaviorConcerns: number;
 };
 
 export async function dashboardStats(user: SessionUser): Promise<DashboardStats> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
 
   const countWith = async (extra: SQL): Promise<number> => {
     const rows = await db
       .select({ n: count() })
-      .from(children)
-      .where(and(scopeSql, extra));
+      .from(students)
+      .where(and(scope, extra));
     return rows[0]?.n ?? 0;
   };
 
-  const [total, verified, pendingValidation, enrolled, osy, eccdNon, disability, openInterventions] =
+  const [total, verified, pendingVerification, enrolled, openInterventions, openBehavior] =
     await Promise.all([
-      countWith(sql`${children.recordStatus} != 'marked_duplicate' AND ${children.status} = 'active'`),
-      countWith(eq(children.recordStatus, "verified")),
-      countWith(eq(children.recordStatus, "pending_validation")),
+      countWith(sql`${students.recordStatus} != 'marked_duplicate' AND ${students.status} = 'active'`),
+      countWith(eq(students.recordStatus, "verified")),
+      countWith(eq(students.recordStatus, "pending_validation")),
       countWith(sql`
         exists (
-          select 1 from ${childEducation}
-          where ${childEducation.childId} = ${children.id}
-            and ${childEducation.isCurrent} = 1
-            and ${childEducation.educationStatus} = 'enrolled'
-        )`),
-      countWith(sql`
-        exists (
-          select 1 from ${childEducation}
-          where ${childEducation.childId} = ${children.id}
-            and ${childEducation.isCurrent} = 1
-            and ${childEducation.educationStatus} = 'out_of_school'
-        )`),
-      countWith(sql`
-        exists (
-          select 1 from ${childEccd}
-          where ${childEccd.childId} = ${children.id}
-            and ${childEccd.participationStatus} = 'not_participating'
-        )`),
-      countWith(sql`
-        exists (
-          select 1 from ${childDisabilities}
-          where ${childDisabilities.childId} = ${children.id}
-            and ${childDisabilities.hasDisability} = 1
+          select 1 from ${studentEnrollments}
+          where ${studentEnrollments.studentId} = ${students.id}
+            and ${studentEnrollments.status} = 'active'
         )`),
       countWith(sql`
         exists (
           select 1 from ${interventions}
-          where ${interventions.childId} = ${children.id}
-            and ${interventions.status} in ('planned', 'ongoing')
+          where ${interventions.studentId} = ${students.id}
+            and ${interventions.status} in ('planned', 'active')
+        )`),
+      countWith(sql`
+        exists (
+          select 1 from ${behaviorRecords}
+          where ${behaviorRecords.studentId} = ${students.id}
+            and ${behaviorRecords.status} != 'resolved'
+            and ${behaviorCategories.kind} = 'concern'
+            and ${behaviorRecords.categoryId} = ${behaviorCategories.id}
         )`),
     ]);
 
   return {
     total,
     verified,
-    pendingValidation,
+    pendingVerification,
     enrolled,
-    osy,
-    eccdNonParticipation: eccdNon,
-    withDisability: disability,
     openInterventions,
-  };
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Registry stats (Child Registry KPI cards — same conventions as dashboard)  */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Count-only age-cohort totals for the registry chip row (active, non-duplicate
- * records in scope). Replaces four full `listChildren` calls per page render.
- */
-export async function cohortCounts(user: SessionUser): Promise<Record<string, number>> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
-  const basis = and(
-    scopeSql,
-    sql`${children.status} = 'active'`,
-    sql`${children.recordStatus} != 'marked_duplicate'`,
-  ) as SQL;
-  const year = new Date().getFullYear();
-
-  const ranges: [number, number][] = [
-    [0, 4],
-    [5, 11],
-    [12, 15],
-    [16, 17],
-  ];
-
-  const counts = await Promise.all(
-    ranges.map(([min, max]) =>
-      db
-        .select({ n: count() })
-        .from(children)
-        .where(and(basis, sql`${children.birthDate} <= ${`${year - min}-12-31`}`, sql`${children.birthDate} >= ${`${year - max}-01-01`}`))
-        .then((rows) => rows[0]?.n ?? 0),
-    ),
-  );
-
-  const total = await db.select({ n: count() }).from(children).where(basis).then((rows) => rows[0]?.n ?? 0);
-
-  return {
-    "": total,
-    "0-4": counts[0],
-    "5-11": counts[1],
-    "12-15": counts[2],
-    "16-17": counts[3],
+    openBehaviorConcerns: openBehavior,
   };
 }
 
@@ -558,71 +646,61 @@ export type RegistryStats = {
   total: number;
   verified: number;
   verificationRate: number; // verified / total, percent
-  pendingValidation: number;
+  pendingVerification: number;
   enrolled: number;
-  notYetInSchool: number;
-  withDisability: number;
   openInterventions: number;
 };
 
 export async function registryStats(user: SessionUser): Promise<RegistryStats> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
-  // Same basis as listChildren: active lifecycle AND never marked_duplicate —
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  // Same basis as listStudents: active lifecycle AND never marked_duplicate —
   // keeps the KPI cards reconciled with the table totals.
   const basis = and(
-    scopeSql,
-    sql`${children.status} = 'active'`,
-    sql`${children.recordStatus} != 'marked_duplicate'`,
+    scope,
+    sql`${students.status} = 'active'`,
+    sql`${students.recordStatus} != 'marked_duplicate'`,
   ) as SQL;
 
-  const [total, verified, pendingValidation, enrolled, notYetInSchool, withDisability, openInterventions] =
-    await Promise.all([
-      countWith(basis, sql`1 = 1`),
-      countWith(basis, sql`${children.recordStatus} = 'verified'`),
-      countWith(basis, sql`${children.recordStatus} = 'pending_validation'`),
-      countWith(basis, sql`exists (
-        select 1 from ${childEducation}
-        where ${childEducation.childId} = ${children.id}
-          and ${childEducation.isCurrent} = 1
-          and ${childEducation.educationStatus} = 'enrolled'
+  const countWith = (extra: SQL): Promise<number> =>
+    db
+      .select({ n: count() })
+      .from(students)
+      .where(and(basis, extra))
+      .then((rows) => rows[0]?.n ?? 0);
+
+  const [total, verified, pendingVerification, enrolled, openInterventions] = await Promise.all([
+    countWith(sql`1 = 1`),
+    countWith(sql`${students.recordStatus} = 'verified'`),
+    countWith(sql`${students.recordStatus} = 'pending_validation'`),
+    countWith(sql`
+      exists (
+        select 1 from ${studentEnrollments}
+        where ${studentEnrollments.studentId} = ${students.id}
+          and ${studentEnrollments.status} = 'active'
       )`),
-      countWith(basis, sql`exists (
-        select 1 from ${childEducation}
-        where ${childEducation.childId} = ${children.id}
-          and ${childEducation.isCurrent} = 1
-          and ${childEducation.educationStatus} = 'not_yet_in_school'
-      )`),
-      countWith(basis, sql`exists (
-        select 1 from ${childDisabilities}
-        where ${childDisabilities.childId} = ${children.id}
-          and ${childDisabilities.hasDisability} = 1
-      )`),
-      countWith(basis, sql`exists (
+    countWith(sql`
+      exists (
         select 1 from ${interventions}
-        where ${interventions.childId} = ${children.id}
-          and ${interventions.status} in ('planned', 'ongoing')
+        where ${interventions.studentId} = ${students.id}
+          and ${interventions.status} in ('planned', 'active')
       )`),
-    ]);
+  ]);
 
   return {
     total,
     verified,
     verificationRate: total > 0 ? Math.round((verified / total) * 1000) / 10 : 0,
-    pendingValidation,
+    pendingVerification,
     enrolled,
-    notYetInSchool,
-    withDisability,
     openInterventions,
   };
 }
 
-export type ValidationStats = {
+export type VerificationStats = {
   pendingReview: number;
   returnedForCorrection: number;
   verified: number;
   duplicateFlags: number;
-  needsCorrection: number;
   highConfidence: number;
   moderate: number;
   reviewBand: number;
@@ -630,36 +708,46 @@ export type ValidationStats = {
 };
 
 /**
- * Control-center counts for the Validation module. Duplicate bands use the
- * detector's actual scoring (name 40 + middle 10 + birth_date 35 + barangay 15;
- * a candidate needs ≥2 identifiers), so bands derive from real match scores.
+ * Control-center counts for the Verification module. Duplicate bands use the
+ * detector's actual scoring (name 40 + middle 10 + birth_date 35 + sex 15),
+ * so bands derive from real match scores.
  */
-export async function validationStats(user: SessionUser): Promise<ValidationStats> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
+export async function verificationStats(user: SessionUser): Promise<VerificationStats> {
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
 
-  const [pendingReview, returnedForCorrection, verified, dupRows] = await Promise.all([
-    countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'pending_validation'`),
-    countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'needs_correction'`),
-    countWith(scopeSql, sql`${children.status} = 'active' AND ${children.recordStatus} = 'verified'`),
+  const countWith = (extra: SQL): Promise<number> =>
     db
       .select({ n: count() })
-      .from(childDuplicateCandidates)
-      .where(eq(childDuplicateCandidates.status, "pending"))
-      .then((rows) => rows[0]?.n ?? 0),
-  ]);
+      .from(students)
+      .where(and(scope, extra))
+      .then((rows) => rows[0]?.n ?? 0);
 
-  // Score bands across pending candidates (pair rows are not child-scoped).
+  const [pendingReview, returnedForCorrection, verified, duplicateFlags, totalActive] =
+    await Promise.all([
+      countWith(sql`${students.status} = 'active' AND ${students.recordStatus} = 'pending_validation'`),
+      countWith(sql`${students.status} = 'active' AND ${students.recordStatus} = 'needs_correction'`),
+      countWith(sql`${students.status} = 'active' AND ${students.recordStatus} = 'verified'`),
+      db
+        .select({ n: count() })
+        .from(duplicateCandidates)
+        .where(eq(duplicateCandidates.status, "pending"))
+        .then((rows) => rows[0]?.n ?? 0),
+      countWith(sql`${students.status} = 'active'`),
+    ]);
+
+  // Score bands across pending candidates (pair rows are not student-scoped).
   const bandRows = await db
-    .select({ band:
-      sql`case
-        when ${childDuplicateCandidates.matchScore} >= 90 then 'high'
-        when ${childDuplicateCandidates.matchScore} >= 65 then 'moderate'
-        else 'review'
-      end`,
-      n: count() })
-    .from(childDuplicateCandidates)
-    .where(eq(childDuplicateCandidates.status, "pending"))
+    .select({
+      band:
+        sql`case
+          when ${duplicateCandidates.matchScore} >= 90 then 'high'
+          when ${duplicateCandidates.matchScore} >= 65 then 'moderate'
+          else 'review'
+        end`,
+      n: count(),
+    })
+    .from(duplicateCandidates)
+    .where(eq(duplicateCandidates.status, "pending"))
     .groupBy(sql`1`);
 
   const getBand = (k: string) => Number(bandRows.find((r) => String(r.band) === k)?.n ?? 0);
@@ -668,76 +756,58 @@ export async function validationStats(user: SessionUser): Promise<ValidationStat
     pendingReview,
     returnedForCorrection,
     verified,
-    duplicateFlags: dupRows,
-    needsCorrection: returnedForCorrection,
+    duplicateFlags,
     highConfidence: getBand("high"),
     moderate: getBand("moderate"),
     reviewBand: getBand("review"),
-    totalActive: await countWith(scopeSql, sql`${children.status} = 'active'`),
+    totalActive,
   };
 }
 
-function countWith(scopeSql: SQL, extra: SQL): Promise<number> {
-  return db
-    .select({ n: count() })
-    .from(children)
-    .where(and(scopeSql, extra))
-    .then((rows) => rows[0]?.n ?? 0);
-}
-
 /* -------------------------------------------------------------------------- */
-/*  Validation queue                                                          */
+/*  Verification queue                                                        */
 /* -------------------------------------------------------------------------- */
 
 export type QueueItem = {
   id: string;
-  childCode: string;
+  studentNumber: string;
   firstName: string;
   lastName: string;
   birthDate: string;
-  barangayName: string;
   submittedAt: Date | null;
   submitterFirst: string | null;
   submitterLast: string | null;
 };
 
-export async function validationQueue(user: SessionUser): Promise<QueueItem[]> {
-  const scope = childScope(user);
+export async function verificationQueue(user: SessionUser): Promise<QueueItem[]> {
+  const scope = await userSectionScope(user);
   const where = scope
-    ? and(scope, inArray(children.recordStatus, pendingRecordStatuses))
-    : inArray(children.recordStatus, pendingRecordStatuses);
+    ? and(scope, inArray(students.recordStatus, pendingRecordStatuses))
+    : inArray(students.recordStatus, pendingRecordStatuses);
 
   return db
     .select({
-      id: children.id,
-      childCode: children.childCode,
-      firstName: children.firstName,
-      lastName: children.lastName,
-      birthDate: children.birthDate,
-      barangayName: barangays.name,
-      submittedAt: childValidations.submittedAt,
+      id: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      birthDate: students.birthDate,
+      submittedAt: recordVerifications.submittedAt,
       submitterFirst: users.firstName,
       submitterLast: users.lastName,
     })
-    .from(children)
-    .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .from(students)
     .leftJoin(
-      childValidations,
+      recordVerifications,
       and(
-        eq(childValidations.childId, children.id),
-        eq(childValidations.status, "pending"),
+        eq(recordVerifications.studentId, students.id),
+        eq(recordVerifications.status, "pending"),
       ),
     )
-    .leftJoin(users, eq(users.id, childValidations.submittedBy))
+    .leftJoin(users, eq(users.id, recordVerifications.submittedBy))
     .where(where)
-    .orderBy(asc(childValidations.submittedAt))
-    .limit(100)
-    .then((rows) =>
-      rows.map((r) => ({
-        ...r,
-        barangayName: r.barangayName ?? "—",
-      })),
-    );
+    .orderBy(asc(recordVerifications.submittedAt))
+    .limit(100);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -746,32 +816,24 @@ export async function validationQueue(user: SessionUser): Promise<QueueItem[]> {
 
 export type DuplicateItem = {
   id: string;
-  childId: string;
-  possibleChildId: string;
+  studentId: string;
+  possibleStudentId: string;
   matchScore: number | null;
   matchReasons: string[];
   status: string;
   reviewNotes: string | null;
-  childCode: string;
-  childFirst: string;
-  childLast: string;
-  childBirth: string;
-  childSex: string | null;
-  childCreatedAt: Date | null;
-  childBarangayName: string | null;
-  childEduStatus: string | null;
-  childGrade: string | null;
-  childSchool: string | null;
-  possibleCode: string;
+  studentNumber: string;
+  studentFirst: string;
+  studentLast: string;
+  studentBirth: string;
+  studentSex: string;
+  studentCreatedAt: Date | null;
+  possibleNumber: string;
   possibleFirst: string;
   possibleLast: string;
   possibleBirth: string;
-  possibleSex: string | null;
+  possibleSex: string;
   possibleCreatedAt: Date | null;
-  possibleBarangayName: string | null;
-  possibleEduStatus: string | null;
-  possibleGrade: string | null;
-  possibleSchool: string | null;
 };
 
 export async function listDuplicates(
@@ -779,78 +841,58 @@ export async function listDuplicates(
   opts: { q?: string; band?: "high" | "moderate" | "review" } = {},
 ): Promise<DuplicateItem[]> {
   const conditions: SQL[] = [];
-  if (status && status !== "all") conditions.push(eq(childDuplicateCandidates.status, status));
+  if (status && status !== "all") conditions.push(eq(duplicateCandidates.status, status));
 
   // The Duplicates page search matches either side of the candidate pair.
   if (opts.q) {
     const needle = `%${opts.q}%`;
     conditions.push(
-      sql`(${children.firstName} LIKE ${needle}
-        OR ${children.lastName} LIKE ${needle}
-        OR ${children.childCode} LIKE ${needle}
-        OR ${possibleChild.firstName} LIKE ${needle}
-        OR ${possibleChild.lastName} LIKE ${needle}
-        OR ${possibleChild.childCode} LIKE ${needle})`,
+      sql`(${students.firstName} LIKE ${needle}
+        OR ${students.lastName} LIKE ${needle}
+        OR ${students.studentNumber} LIKE ${needle}
+        OR ${possibleStudent.firstName} LIKE ${needle}
+        OR ${possibleStudent.lastName} LIKE ${needle}
+        OR ${possibleStudent.studentNumber} LIKE ${needle})`,
     );
   }
   // Confidence bands mirror the detector's scoring shown in the UI.
-  if (opts.band === "high") conditions.push(sql`${childDuplicateCandidates.matchScore} >= 90`);
+  if (opts.band === "high") conditions.push(sql`${duplicateCandidates.matchScore} >= 90`);
   if (opts.band === "moderate")
     conditions.push(
-      sql`${childDuplicateCandidates.matchScore} >= 65 AND ${childDuplicateCandidates.matchScore} < 90`,
+      sql`${duplicateCandidates.matchScore} >= 65 AND ${duplicateCandidates.matchScore} < 90`,
     );
   if (opts.band === "review")
-    conditions.push(sql`${childDuplicateCandidates.matchScore} < 65`);
+    conditions.push(sql`${duplicateCandidates.matchScore} < 65`);
 
   const where = conditions.length ? and(...conditions) : undefined;
 
   const rows = await db
     .select({
-      id: childDuplicateCandidates.id,
-      childId: childDuplicateCandidates.childId,
-      possibleChildId: childDuplicateCandidates.possibleChildId,
-      matchScore: childDuplicateCandidates.matchScore,
-      matchReason: childDuplicateCandidates.matchReason,
-      status: childDuplicateCandidates.status,
-      reviewNotes: childDuplicateCandidates.reviewNotes,
-      childCode: children.childCode,
-      childFirst: children.firstName,
-      childLast: children.lastName,
-      childBirth: children.birthDate,
-      childSex: children.sex,
-      childCreatedAt: children.createdAt,
-      childBarangayName: barangays.name,
-      childEduStatus: childEducation.educationStatus,
-      childGrade: childEducation.gradeLevel,
-      childSchool: schools.name,
-      possibleCode: possibleChild.childCode,
-      possibleFirst: possibleChild.firstName,
-      possibleLast: possibleChild.lastName,
-      possibleBirth: possibleChild.birthDate,
-      possibleSex: possibleChild.sex,
-      possibleCreatedAt: possibleChild.createdAt,
-      possibleBarangayName: possibleBarangay.name,
-      possibleEduStatus: possibleEdu.educationStatus,
-      possibleGrade: possibleEdu.gradeLevel,
-      possibleSchool: possibleSchool.name,
+      id: duplicateCandidates.id,
+      studentId: duplicateCandidates.studentId,
+      possibleStudentId: duplicateCandidates.possibleStudentId,
+      matchScore: duplicateCandidates.matchScore,
+      matchReason: duplicateCandidates.matchReason,
+      status: duplicateCandidates.status,
+      reviewNotes: duplicateCandidates.reviewNotes,
+      studentNumber: students.studentNumber,
+      studentFirst: students.firstName,
+      studentLast: students.lastName,
+      studentBirth: students.birthDate,
+      studentSex: students.sex,
+      studentCreatedAt: students.createdAt,
+      possibleNumber: possibleStudent.studentNumber,
+      possibleFirst: possibleStudent.firstName,
+      possibleLast: possibleStudent.lastName,
+      possibleBirth: possibleStudent.birthDate,
+      possibleSex: possibleStudent.sex,
+      possibleCreatedAt: possibleStudent.createdAt,
     })
-    .from(childDuplicateCandidates)
-    .innerJoin(children, eq(children.id, childDuplicateCandidates.childId))
-    .innerJoin(possibleChild, eq(possibleChild.id, childDuplicateCandidates.possibleChildId))
-    .leftJoin(barangays, eq(barangays.id, children.barangayId))
-    .leftJoin(possibleBarangay, eq(possibleBarangay.id, possibleChild.barangayId))
-    .leftJoin(
-      childEducation,
-      and(eq(childEducation.childId, children.id), eq(childEducation.isCurrent, true)),
-    )
-    .leftJoin(
-      possibleEdu,
-      and(eq(possibleEdu.childId, possibleChild.id), eq(possibleEdu.isCurrent, true)),
-    )
-    .leftJoin(schools, eq(schools.id, childEducation.schoolId))
-    .leftJoin(possibleSchool, eq(possibleSchool.id, possibleEdu.schoolId))
+    .from(duplicateCandidates)
+    .innerJoin(students, eq(students.id, duplicateCandidates.studentId))
+    .innerJoin(possibleStudent, eq(possibleStudent.id, duplicateCandidates.possibleStudentId))
     .where(where)
-    .orderBy(desc(childDuplicateCandidates.createdAt))
+    .orderBy(desc(duplicateCandidates.createdAt))
     .limit(100);
 
   return rows.map((r) => {
@@ -865,97 +907,7 @@ export async function listDuplicates(
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Monitoring                                                                */
-/* -------------------------------------------------------------------------- */
-
-export type MonitoringOverview = {
-  osy: number;
-  eccd: number;
-  disability: number;
-  education: number;
-  general: number;
-  openRecords: number;
-};
-
-export async function monitoringOverview(user: SessionUser): Promise<MonitoringOverview> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
-
-  const typeCounts = await db
-    .select({ type: childMonitoring.monitoringType, value: count() })
-    .from(childMonitoring)
-    .innerJoin(children, eq(children.id, childMonitoring.childId))
-    .where(scopeSql)
-    .groupBy(childMonitoring.monitoringType);
-
-  const openRows = await db
-    .select({ value: count() })
-    .from(childMonitoring)
-    .innerJoin(children, eq(children.id, childMonitoring.childId))
-    .where(and(scopeSql, inArray(childMonitoring.status, ["open", "in_progress"])));
-
-  const get = (t: string) => typeCounts.find((r) => r.type === t)?.value ?? 0;
-
-  return {
-    osy: get("out_of_school_youth"),
-    eccd: get("eccd"),
-    disability: get("disability"),
-    education: get("education"),
-    general: get("general"),
-    openRecords: openRows[0]?.value ?? 0,
-  };
-}
-
-export type MonitorRow = {
-  id: string;
-  monitoringType: string;
-  status: string;
-  observedAt: Date;
-  remarks: string | null;
-  childId: string;
-  childCode: string;
-  firstName: string;
-  lastName: string;
-  barangayName: string;
-};
-
-export async function monitoringList(
-  user: SessionUser,
-  type?: MonitoringType,
-  page = 1,
-  pageSize = 50,
-): Promise<MonitorRow[]> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
-  const conditions: SQL[] = [scopeSql];
-  if (type) conditions.push(eq(childMonitoring.monitoringType, type));
-
-  const offset = (page - 1) * pageSize;
-
-  return db
-    .select({
-      id: childMonitoring.id,
-      monitoringType: childMonitoring.monitoringType,
-      status: childMonitoring.status,
-      observedAt: childMonitoring.observedAt,
-      remarks: childMonitoring.remarks,
-      childId: children.id,
-      childCode: children.childCode,
-      firstName: children.firstName,
-      lastName: children.lastName,
-      barangayName: barangays.name,
-    })
-    .from(childMonitoring)
-    .innerJoin(children, eq(children.id, childMonitoring.childId))
-    .innerJoin(barangays, eq(barangays.id, children.barangayId))
-    .where(and(...conditions))
-    .orderBy(desc(childMonitoring.observedAt))
-    .limit(pageSize)
-    .offset(offset);
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Interventions                                                             */
+/*  Student development lists (assessments, behavior, interventions)          */
 /* -------------------------------------------------------------------------- */
 
 export type InterventionRow = {
@@ -963,15 +915,13 @@ export type InterventionRow = {
   interventionType: string;
   description: string;
   status: string;
-  priority: string | null;
   startDate: string | null;
   targetDate: string | null;
   completedDate: string | null;
-  childId: string;
-  childCode: string;
+  studentId: string;
+  studentNumber: string;
   firstName: string;
   lastName: string;
-  barangayName: string;
   followupCount: number;
 };
 
@@ -981,9 +931,8 @@ export async function listInterventions(
   page = 1,
   pageSize = 50,
 ): Promise<InterventionRow[]> {
-  const scope = childScope(user);
-  const scopeSql = scope ?? sql`1 = 1`;
-  const conditions: SQL[] = [scopeSql];
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  const conditions: SQL[] = [scope];
   if (status && status !== "all") conditions.push(eq(interventions.status, status));
 
   const offset = (page - 1) * pageSize;
@@ -994,19 +943,16 @@ export async function listInterventions(
       interventionType: interventions.interventionType,
       description: interventions.description,
       status: interventions.status,
-      priority: interventions.priority,
       startDate: interventions.startDate,
       targetDate: interventions.targetDate,
       completedDate: interventions.completedDate,
-      childId: children.id,
-      childCode: children.childCode,
-      firstName: children.firstName,
-      lastName: children.lastName,
-      barangayName: barangays.name,
+      studentId: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
     })
     .from(interventions)
-    .innerJoin(children, eq(children.id, interventions.childId))
-    .innerJoin(barangays, eq(barangays.id, children.barangayId))
+    .innerJoin(students, eq(students.id, interventions.studentId))
     .where(and(...conditions))
     .orderBy(desc(interventions.createdAt))
     .limit(pageSize)
@@ -1029,21 +975,288 @@ export async function listInterventions(
   return rows.map((r) => ({ ...r, followupCount: countMap.get(r.id) ?? 0 }));
 }
 
-export async function getFollowupsForIntervention(interventionId: string) {
+export type AssessmentRow = {
+  id: string;
+  domain: string;
+  assessmentType: string | null;
+  date: string;
+  level: string | null;
+  score: number | null;
+  studentId: string;
+  studentNumber: string;
+  firstName: string;
+  lastName: string;
+  gradeLevelName: string | null;
+};
+
+export async function listAssessments(
+  user: SessionUser,
+  domain?: AssessmentDomain,
+  page = 1,
+  pageSize = 50,
+): Promise<AssessmentRow[]> {
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  const conditions: SQL[] = [scope];
+  if (domain) conditions.push(eq(assessments.domain, domain));
+
+  const offset = (page - 1) * pageSize;
+
   return db
     .select({
-      id: interventionFollowups.id,
-      followUpDate: interventionFollowups.followUpDate,
-      status: interventionFollowups.status,
-      notes: interventionFollowups.notes,
-      recorderFirst: users.firstName,
-      recorderLast: users.lastName,
-      createdAt: interventionFollowups.createdAt,
+      id: assessments.id,
+      domain: assessments.domain,
+      assessmentType: assessments.assessmentType,
+      date: assessments.date,
+      level: assessments.level,
+      score: assessments.score,
+      studentId: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      gradeLevelName: gradeLevels.name,
     })
-    .from(interventionFollowups)
-    .leftJoin(users, eq(users.id, interventionFollowups.recordedBy))
-    .where(eq(interventionFollowups.interventionId, interventionId))
-    .orderBy(desc(interventionFollowups.followUpDate));
+    .from(assessments)
+    .innerJoin(students, eq(students.id, assessments.studentId))
+    .leftJoin(
+      studentEnrollments,
+      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+    )
+    .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .where(and(...conditions))
+    .orderBy(desc(assessments.date))
+    .limit(pageSize)
+    .offset(offset);
+}
+
+export type BehaviorRow = {
+  id: string;
+  date: string;
+  description: string;
+  severity: string | null;
+  status: string;
+  categoryName: string;
+  categoryKind: string;
+  studentId: string;
+  studentNumber: string;
+  firstName: string;
+  lastName: string;
+};
+
+export async function listBehaviorRecords(
+  user: SessionUser,
+  kind?: string,
+  page = 1,
+  pageSize = 50,
+): Promise<BehaviorRow[]> {
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  const conditions: SQL[] = [scope];
+  if (kind && kind !== "all") conditions.push(eq(behaviorCategories.kind, kind));
+
+  const offset = (page - 1) * pageSize;
+
+  return db
+    .select({
+      id: behaviorRecords.id,
+      date: behaviorRecords.date,
+      description: behaviorRecords.description,
+      severity: behaviorRecords.severity,
+      status: behaviorRecords.status,
+      categoryName: behaviorCategories.name,
+      categoryKind: behaviorCategories.kind,
+      studentId: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+    })
+    .from(behaviorRecords)
+    .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+    .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+    .where(and(...conditions))
+    .orderBy(desc(behaviorRecords.date))
+    .limit(pageSize)
+    .offset(offset);
+}
+
+export async function listBehaviorCategories() {
+  return db
+    .select({
+      id: behaviorCategories.id,
+      name: behaviorCategories.name,
+      kind: behaviorCategories.kind,
+    })
+    .from(behaviorCategories)
+    .orderBy(asc(behaviorCategories.kind), asc(behaviorCategories.name));
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Performance analytics (grade & attendance aggregates)                     */
+/* -------------------------------------------------------------------------- */
+
+export type SubjectAverage = { subject: string; code: string; average: number; count: number };
+export type GradeLevelAverage = { gradeLevel: string; average: number; count: number };
+export type PeriodAverage = { period: string; average: number; count: number };
+export type AttendanceRate = { label: string; present: number; total: number; rate: number };
+
+export type PerformanceOverview = {
+  schoolYear: string | null;
+  subjectAverages: SubjectAverage[];
+  gradeAverages: GradeLevelAverage[];
+  periodAverages: PeriodAverage[];
+  attendanceByGrade: AttendanceRate[];
+  assessmentLevels: { domain: string; level: string; count: number }[];
+  failingCounts: { subject: string; below75: number; total: number }[];
+};
+
+/**
+ * School-wide performance aggregates for the current (or given) school year.
+ * Averages use SQLite `avg` over recorded grades; attendance rate counts
+ * present/late rows over all rows of the year.
+ */
+export async function performanceOverview(schoolYearId?: string): Promise<PerformanceOverview> {
+  const current = await getCurrentSchoolYear();
+  const yearId = schoolYearId ?? current?.id ?? "";
+  const yearLabel = current?.year ?? null;
+
+  const enrollmentScope = db
+    .select({ id: studentEnrollments.id })
+    .from(studentEnrollments)
+    .where(eq(studentEnrollments.schoolYearId, yearId))
+    .as("sy_enrollments");
+
+  const [subjectRows, gradeRows, periodRows, attendanceRows, levelRows, failingRows] =
+    await Promise.all([
+      db
+        .select({
+          subject: subjects.name,
+          code: subjects.code,
+          average: sql<number>`round(avg(${studentGrades.grade}), 1)`,
+          count: count(),
+        })
+        .from(studentGrades)
+        .innerJoin(
+          enrollmentScope,
+          sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+        )
+        .innerJoin(subjects, eq(subjects.id, studentGrades.subjectId))
+        .groupBy(subjects.id)
+        .orderBy(asc(subjects.code)),
+
+      db
+        .select({
+          gradeLevel: gradeLevels.name,
+          average: sql<number>`round(avg(${studentGrades.grade}), 1)`,
+          count: count(),
+        })
+        .from(studentGrades)
+        .innerJoin(
+          enrollmentScope,
+          sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+        )
+        .innerJoin(studentEnrollments, eq(studentEnrollments.id, studentGrades.enrollmentId))
+        .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+        .groupBy(gradeLevels.id)
+        .orderBy(asc(gradeLevels.orderIndex)),
+
+      db
+        .select({
+          period: gradingPeriods.name,
+          average: sql<number>`round(avg(${studentGrades.grade}), 1)`,
+          count: count(),
+        })
+        .from(studentGrades)
+        .innerJoin(
+          enrollmentScope,
+          sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+        )
+        .innerJoin(gradingPeriods, eq(gradingPeriods.id, studentGrades.gradingPeriodId))
+        .groupBy(gradingPeriods.id)
+        .orderBy(asc(gradingPeriods.orderIndex)),
+
+      db
+        .select({
+          gradeLevel: gradeLevels.name,
+          present:
+            sql<number>`sum(case when ${attendanceRecords.status} in ('present', 'late') then 1 else 0 end)`,
+          total: count(),
+        })
+        .from(attendanceRecords)
+        .innerJoin(
+          enrollmentScope,
+          sql`${enrollmentScope.id} = ${attendanceRecords.enrollmentId}`,
+        )
+        .innerJoin(studentEnrollments, eq(studentEnrollments.id, attendanceRecords.enrollmentId))
+        .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+        .groupBy(gradeLevels.id)
+        .orderBy(asc(gradeLevels.orderIndex)),
+
+      db
+        .select({
+          domain: assessments.domain,
+          level: assessments.level,
+          count: count(),
+        })
+        .from(assessments)
+        .groupBy(assessments.domain, assessments.level)
+        .orderBy(asc(assessments.domain)),
+
+      db
+        .select({
+          subject: subjects.name,
+          below75:
+            sql<number>`sum(case when ${studentGrades.grade} < 75 then 1 else 0 end)`,
+          total: count(),
+        })
+        .from(studentGrades)
+        .innerJoin(
+          enrollmentScope,
+          sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+        )
+        .innerJoin(subjects, eq(subjects.id, studentGrades.subjectId))
+        .groupBy(subjects.id)
+        .orderBy(asc(subjects.code)),
+    ]);
+
+  const num = (v: unknown): number => (v == null ? 0 : Number(v));
+
+  return {
+    schoolYear: yearLabel,
+    subjectAverages: subjectRows.map((r) => ({
+      subject: r.subject,
+      code: r.code,
+      average: num(r.average),
+      count: r.count,
+    })),
+    gradeAverages: gradeRows.map((r) => ({
+      gradeLevel: r.gradeLevel,
+      average: num(r.average),
+      count: r.count,
+    })),
+    periodAverages: periodRows.map((r) => ({
+      period: r.period,
+      average: num(r.average),
+      count: r.count,
+    })),
+    attendanceByGrade: attendanceRows.map((r) => {
+      const present = num(r.present);
+      const total = num(r.total);
+      return {
+        label: r.gradeLevel,
+        present,
+        total,
+        rate: total > 0 ? Math.round((present / total) * 1000) / 10 : 0,
+      };
+    }),
+    assessmentLevels: levelRows.map((r) => ({
+      domain: r.domain,
+      level: r.level ?? "Unspecified",
+      count: r.count,
+    })),
+    failingCounts: failingRows.map((r) => ({
+      subject: r.subject,
+      below75: num(r.below75),
+      total: r.total,
+    })),
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1060,14 +1273,12 @@ export async function listUsersWithRoles(page = 1, pageSize = 25) {
       lastName: users.lastName,
       roleLabel: roles.name,
       roleId: users.roleId,
-      barangayName: barangays.name,
       isActive: users.isActive,
       lastLoginAt: users.lastLoginAt,
       createdAt: users.createdAt,
     })
     .from(users)
     .innerJoin(roles, eq(roles.id, users.roleId))
-    .leftJoin(barangays, eq(barangays.id, users.barangayId))
     .orderBy(asc(users.createdAt))
     .limit(pageSize)
     .offset(offset);
@@ -1116,3 +1327,4 @@ export async function recentNotifications(userId: string, limit = 12) {
     .orderBy(desc(notifications.createdAt))
     .limit(limit);
 }
+

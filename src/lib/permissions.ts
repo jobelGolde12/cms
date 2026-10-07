@@ -1,90 +1,159 @@
 import type { Role } from "./constants";
 
 /**
- * Role-based permission map.
+ * Role-based permission map for the school system.
  *
  * Names mirror the `permissions` table seeded from this list, so DB-stored
  * role_permissions and this map stay in sync. Enforcement happens server-side
  * in `requirePermission()` / `getAuthorizedUser()`; UI checks are cosmetic.
+ * Matrix documentation: documentation/security/role-permission-matrix.md
  */
 export const PERMISSIONS = [
-  // Children
-  "children.view",
-  "children.create",
-  "children.update",
-  "children.delete",
-  // Validation
-  "validation.view",
-  "validation.review",
-  // Duplicates
-  "duplicates.view",
-  "duplicates.review",
-  // Monitoring
-  "monitoring.view",
-  "monitoring.update",
+  // Dashboard
+  "dashboard.view",
+  // Students
+  "students.view",
+  "students.create",
+  "students.update",
+  "students.archive",
+  // Guardians
+  "guardians.view",
+  "guardians.manage",
+  // Enrollment
+  "enrollment.view",
+  "enrollment.manage",
+  // Academics
+  "academics.config",
+  "grades.view",
+  "grades.write",
+  // Attendance
+  "attendance.view",
+  "attendance.write",
+  // Behavior
+  "behavior.view",
+  "behavior.write",
+  // Assessments (reading / literacy / numeracy)
+  "assessments.view",
+  "assessments.write",
   // Interventions
   "interventions.view",
-  "interventions.create",
-  "interventions.update",
+  "interventions.write",
+  // Verification & duplicates
+  "verification.review",
+  "duplicates.view",
+  "duplicates.review",
   // Reports
   "reports.view",
   "reports.generate",
   "reports.export",
   // QR
   "qr.verify",
-  // Users
+  // Users, audit, settings
   "users.view",
-  "users.create",
-  "users.update",
-  "users.disable",
-  // Audit & settings
+  "users.manage",
   "audit_logs.view",
   "settings.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
 
-const BARANGAY_USER: Permission[] = [
-  "children.view",
-  "children.create",
-  "children.update",
-  "validation.view",
-  "monitoring.view",
-  "monitoring.update",
-  "interventions.view",
-  "interventions.create",
-  "reports.view",
-  "reports.generate",
-];
+const ADMIN: Permission[] = [...PERMISSIONS];
 
-const LGU_USER: Permission[] = [
-  "children.view",
-  "children.create",
-  "children.update",
-  "children.delete",
-  "validation.view",
-  "validation.review",
+const SCHOOL_ADMIN: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "students.create",
+  "students.update",
+  "students.archive",
+  "guardians.view",
+  "guardians.manage",
+  "enrollment.view",
+  "enrollment.manage",
+  "academics.config",
+  "grades.view",
+  "grades.write",
+  "attendance.view",
+  "attendance.write",
+  "behavior.view",
+  "behavior.write",
+  "assessments.view",
+  "assessments.write",
+  "interventions.view",
+  "interventions.write",
+  "verification.review",
   "duplicates.view",
   "duplicates.review",
-  "monitoring.view",
-  "monitoring.update",
-  "interventions.view",
-  "interventions.create",
-  "interventions.update",
   "reports.view",
   "reports.generate",
   "reports.export",
   "qr.verify",
   "users.view",
   "audit_logs.view",
+  "settings.manage",
 ];
 
-const SYSTEM_ADMINISTRATOR: Permission[] = [...PERMISSIONS];
+const TEACHER: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "guardians.view",
+  "enrollment.view",
+  "grades.view",
+  "grades.write",
+  "attendance.view",
+  "attendance.write",
+  "behavior.view",
+  "behavior.write",
+  "assessments.view",
+  "assessments.write",
+  "interventions.view",
+  "reports.view",
+  "reports.generate",
+];
+
+const RECORDS: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "students.create",
+  "students.update",
+  "students.archive",
+  "guardians.view",
+  "guardians.manage",
+  "enrollment.view",
+  "enrollment.manage",
+  "grades.view",
+  "attendance.view",
+  "assessments.view",
+  "verification.review",
+  "duplicates.view",
+  "duplicates.review",
+  "reports.view",
+  "reports.generate",
+  "reports.export",
+  "qr.verify",
+];
+
+const GUIDANCE: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "guardians.view",
+  "enrollment.view",
+  "grades.view",
+  "attendance.view",
+  "behavior.view",
+  "behavior.write",
+  "assessments.view",
+  "assessments.write",
+  "interventions.view",
+  "interventions.write",
+  "reports.view",
+];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
-  barangay: BARANGAY_USER,
-  lgu: LGU_USER,
-  admin: SYSTEM_ADMINISTRATOR,
+  admin: ADMIN,
+  school_admin: SCHOOL_ADMIN,
+  teacher: TEACHER,
+  records: RECORDS,
+  guidance: GUIDANCE,
 };
 
 export function hasPermission(role: Role, permission: Permission): boolean {

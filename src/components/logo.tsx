@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MUNICIPALITY } from "@/lib/constants";
+import { SCHOOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 /**
@@ -44,7 +44,7 @@ import brandMark from "../../public/logo.png";
  */
 export const logoImage = brandMark;
 
-export const BRAND_NAME = `${MUNICIPALITY.shortName} Child Mapping System`;
+export const BRAND_NAME = `${SCHOOL.shortName} Records Management System`;
 
 /** Sizing tokens — headers, footers, sidebars, and auth pages share one scale. */
 const SIZE_STYLES = {
@@ -108,7 +108,7 @@ export function Logo({
               onDark ? "text-brand-200" : "text-brand-900",
             )}
           >
-            {MUNICIPALITY.shortName}
+            {SCHOOL.shortName}
           </span>
           <span
             className={cn(
@@ -116,7 +116,7 @@ export function Logo({
               onDark ? "text-white" : "text-brand-950",
             )}
           >
-            Child Mapping System
+            Records Management System
           </span>
         </span>
       </span>
