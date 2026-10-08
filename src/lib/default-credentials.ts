@@ -40,17 +40,29 @@ function buildCredential(id: string, envPrefix: string, role: Role): DefaultCred
 /**
  * Development-only accounts. The seed script also inserts these rows into the
  * users table (upsert by email) so role scoping works out of the box.
+ *
+ * Resolved lazily (and cached) on first use instead of at module load so that
+ * importing this module during `next build` page-data collection never throws
+ * when the variables are absent from the build environment.
  */
-export const DEFAULT_CREDENTIALS: readonly DefaultCredential[] = [
-  buildCredential("default-admin", "DEFAULT_ADMIN", "admin"),
-  buildCredential("default-school-admin", "DEFAULT_SCHOOL_ADMIN", "school_admin"),
-  buildCredential("default-teacher", "DEFAULT_TEACHER", "teacher"),
-  buildCredential("default-records", "DEFAULT_RECORDS", "records"),
-  buildCredential("default-guidance", "DEFAULT_GUIDANCE", "guidance"),
-];
+let cachedCredentials: readonly DefaultCredential[] | null = null;
+
+export function getDefaultCredentials(): readonly DefaultCredential[] {
+  if (cachedCredentials) return cachedCredentials;
+
+  cachedCredentials = [
+    buildCredential("default-admin", "DEFAULT_ADMIN", "admin"),
+    buildCredential("default-school-admin", "DEFAULT_SCHOOL_ADMIN", "school_admin"),
+    buildCredential("default-teacher", "DEFAULT_TEACHER", "teacher"),
+    buildCredential("default-records", "DEFAULT_RECORDS", "records"),
+    buildCredential("default-guidance", "DEFAULT_GUIDANCE", "guidance"),
+  ];
+
+  return cachedCredentials;
+}
 
 export function findDefaultCredential(email: string): DefaultCredential | undefined {
-  return DEFAULT_CREDENTIALS.find((credential) => credential.email === email);
+  return getDefaultCredentials().find((credential) => credential.email === email);
 }
 
 export function isDefaultUserId(userId: string): boolean {
