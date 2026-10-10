@@ -625,10 +625,10 @@ export async function dashboardStats(user: SessionUser): Promise<DashboardStats>
       countWith(sql`
         exists (
           select 1 from ${behaviorRecords}
+          inner join ${behaviorCategories} on ${behaviorCategories.id} = ${behaviorRecords.categoryId}
           where ${behaviorRecords.studentId} = ${students.id}
             and ${behaviorRecords.status} != 'resolved'
             and ${behaviorCategories.kind} = 'concern'
-            and ${behaviorRecords.categoryId} = ${behaviorCategories.id}
         )`),
     ]);
 
