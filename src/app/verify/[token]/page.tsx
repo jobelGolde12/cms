@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck, ShieldX, Clock } from "lucide-react";
 import { resolveQrToken, registerQrScan } from "@/lib/qr";
+import { verifyTokenSchema } from "@/lib/schemas";
 import { db } from "@/db";
 import { students } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -14,8 +15,28 @@ export default async function VerifyTokenPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const validatedToken = verifyTokenSchema.safeParse({ token: decodeURIComponent(token) });
+  if (!validatedToken.success) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-brand-50 px-4 py-12">
+        <div className="w-full max-w-md rounded-[3px] border border-brand-200 bg-white p-8 text-center shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <div aria-hidden="true" className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[3px] border border-red-200 bg-status-error-bg">
+            <ShieldX className="h-7 w-7 text-status-error" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-brand-900">Invalid token format</h1>
+          <p className="mt-2 text-sm leading-relaxed text-brand-500">
+            The verification token contains invalid characters or is too short. Please check the QR code and try again.
+          </p>
+          <Link href="/verify" className={`mt-6 inline-flex h-10 items-center gap-1.5 rounded-[3px] border border-brand-300 bg-white px-4 text-[13px] font-semibold text-brand-950 transition-colors hover:bg-brand-50`}>
+            Verify another code
+          </Link>
+        </div>
+      </main>
+    );
+  }
+  const cleanToken = validatedToken.data.token;
 
-  const resolved = await resolveQrToken(token).catch(() => null);
+  const resolved = await resolveQrToken(cleanToken).catch(() => null);
 
   let student: { studentNumber: string; firstName: string; recordStatus: string } | null = null;
   if (resolved && !resolved.expired) {
@@ -38,7 +59,7 @@ export default async function VerifyTokenPage({
       };
     }
     // Record the scan event (no personal data in logs beyond token reference).
-    await registerQrScan(token).catch(() => undefined);
+    await registerQrScan(cleanToken).catch(() => undefined);
   }
 
   const invalid = !resolved || (!student && !resolved.expired);
