@@ -59,7 +59,7 @@ export function MobileNavToggle({
               <div className="truncate text-xs font-bold uppercase tracking-wide text-brand-900">
                 Sta. Magdalena
               </div>
-              <div className="text-[11px] font-medium text-brand-500">Child Mapping</div>
+              <div className="text-[11px] font-medium text-brand-500">Records Management</div>
             </div>
             <button
               type="button"
@@ -74,7 +74,7 @@ export function MobileNavToggle({
           <SidebarNav sections={sections} links={links} onNavigate={() => setOpen(false)} />
 
           <div className="border-t border-[#e5e7eb] px-4 py-3 text-[11px] text-brand-400">
-            Sorsogon • LGU / DepEd
+            Sta. Magdalena NHS • School Records System
           </div>
         </div>
       </div>

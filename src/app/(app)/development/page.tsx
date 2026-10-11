@@ -61,8 +61,9 @@ export default async function DevelopmentPage() {
             description="Reading, literacy, and numeracy assessment results (latest first)."
             icon={<BookOpenCheck aria-hidden="true" className="h-4 w-4" />}
           />
-          <TableWrap minWidth={760}>
-            <thead>
+          <div className="overflow-x-auto px-4 pb-3 pt-1">
+            <table className="w-full text-sm">
+              <thead>
               <tr>
                 <Th>Student</Th>
                 <Th>Domain</Th>
@@ -103,7 +104,8 @@ export default async function DevelopmentPage() {
                 ))
               )}
             </tbody>
-          </TableWrap>
+          </table>
+          </div>
         </Card>
       ) : null}
 
@@ -181,16 +183,17 @@ export default async function DevelopmentPage() {
             description="Active and historical intervention cases with follow-up counts."
             icon={<HeartHandshake aria-hidden="true" className="h-4 w-4" />}
           />
-          <TableWrap minWidth={760}>
-            <thead>
-              <tr>
-                <Th>Student</Th>
-                <Th>Type</Th>
-                <Th>Status</Th>
-                <Th>Start</Th>
-                <Th align="right">Follow-ups</Th>
-              </tr>
-            </thead>
+          <div className="overflow-x-auto px-4 pb-4 pt-0">
+            <TableWrap minWidth={760}>
+              <thead>
+                <tr>
+                  <Th>Student</Th>
+                  <Th>Type</Th>
+                  <Th>Status</Th>
+                  <Th>Start</Th>
+                  <Th align="right">Follow-ups</Th>
+                </tr>
+              </thead>
             <tbody className="divide-y divide-brand-100">
               {interventions.length === 0 ? (
                 <TableEmptyState
@@ -228,6 +231,7 @@ export default async function DevelopmentPage() {
               )}
             </tbody>
           </TableWrap>
+          </div>
         </Card>
       ) : null}
 

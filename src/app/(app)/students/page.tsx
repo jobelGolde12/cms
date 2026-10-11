@@ -130,7 +130,7 @@ export default async function StudentsPage({
         gradeLevelCounts={gradeCounts}
       />
 
-      <section className="rounded-lg border border-brand-200 bg-white shadow-xs">
+      <section className="overflow-x-auto rounded-lg border border-brand-200 bg-white shadow-xs">
         <StudentRegistryTable
           rows={result.rows}
           canEdit={canEdit}

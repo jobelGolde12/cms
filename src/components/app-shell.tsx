@@ -78,12 +78,12 @@ export default async function AppShell({
 
       <div className="flex min-h-screen flex-col lg:pl-60">
         {/* ------------------------------ Header ------------------------------ */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[#e5e7eb] bg-white px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-[#e5e7eb] bg-white/90 backdrop-blur-sm px-3 sm:px-4 md:h-16 md:px-6">
           <MobileNavToggle sections={NAV_SECTIONS} links={visibleLinks} />
 
           <div className="flex min-w-0 items-center gap-2">
             <Logo size="md" className="lg:hidden" asLink priority />
-            <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base">Dashboard</h1>
+            <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base md:text-lg">Dashboard</h1>
           </div>
 
           {/* Search (links into the registry search) */}
@@ -168,7 +168,7 @@ export default async function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-4 md:px-6 lg:px-8">
           {children}
         </main>
 
