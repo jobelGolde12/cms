@@ -81,6 +81,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required").max(128),
 });
 
+export const profileSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required").max(60),
+  lastName: z.string().trim().min(1, "Last name is required").max(60),
+});
+
+export type ProfileFormValues = z.infer<typeof profileSchema>;
+
 export const userFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(60),
   middleName: optionalText(60),
@@ -214,10 +221,21 @@ export const studentQuerySchema = z.object({
   gradeLevel: z.string().optional().or(z.literal("")),
   sectionId: z.string().optional().or(z.literal("")),
   sort: z.enum(["name", "recent", "oldest"]).default("recent"),
-  page: z.coerce.number().int().min(1).max(10000).default(1),
+  page: z.coerce.number().int().min(1).max(500).default(1),
 });
 
 export type StudentQueryParsed = z.infer<typeof studentQuerySchema>;
+
+export const verifyTokenSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .min(8, "Token must be at least 8 characters")
+    .max(128)
+    .regex(/^[a-zA-Z0-9_\-]+$/, "Token contains invalid characters"),
+});
+
+export type VerifyTokenParsed = z.infer<typeof verifyTokenSchema>;
 
 /** All valid roles, re-exported for form components. */
 export const VALID_ROLE_IDS = ROLES;

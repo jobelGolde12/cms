@@ -14,7 +14,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { loginSchema, changePasswordSchema } from "@/lib/schemas";
+import { loginSchema, changePasswordSchema, profileSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 import { findDefaultCredential } from "@/lib/default-credentials";
@@ -243,11 +243,15 @@ export async function updateProfile(
 
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
-  if (!firstName || !lastName) return fail("Name is required.");
+  const parsed = profileSchema.safeParse({ firstName, lastName });
+  if (!parsed.success) {
+    return fail("Name is required.", zodFieldErrors(parsed.error.issues));
+  }
+  const v = parsed.data;
 
   await db
     .update(users)
-    .set({ firstName, lastName, updatedAt: new Date() })
+    .set({ firstName: v.firstName, lastName: v.lastName, updatedAt: new Date() })
     .where(eq(users.id, user.id));
 
   const { ip, userAgent } = await sessionMetadata();
