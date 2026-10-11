@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CircleCheck, GraduationCap, Search } from "lucide-react";
+import { Bell, CircleCheck, Search } from "lucide-react";
 import { unreadNotificationCount } from "@/lib/queries";
 import { hasPermission, type Permission } from "@/lib/permissions";
 import { SCHOOL, ROLE_LABELS } from "@/lib/constants";
@@ -83,13 +83,7 @@ export default async function AppShell({
 
           <div className="flex min-w-0 items-center gap-2">
             <Logo size="md" className="lg:hidden" asLink priority />
-            <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base">
-              Records Management System
-            </h1>
-            <span className="hidden items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-600 md:inline-flex">
-              <GraduationCap aria-hidden="true" className="h-3 w-3" />
-              {SCHOOL.shortName}
-            </span>
+            <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base">Dashboard</h1>
           </div>
 
           {/* Search (links into the registry search) */}
@@ -107,8 +101,18 @@ export default async function AppShell({
                 type="search"
                 name="q"
                 placeholder="Search students, numbers…"
+                autoComplete="off"
+                list="student-autocomplete"
+                aria-autocomplete="list"
+                role="combobox"
+                aria-expanded="false"
+                aria-controls="student-autocomplete"
+                aria-haspopup="listbox"
                 className="h-8 w-full rounded-md border border-brand-200 bg-[#f8fafc] pl-8 pr-3 text-xs text-brand-800 placeholder:text-brand-400 focus:border-action-500 focus:bg-white focus:outline-none"
               />
+              <datalist id="student-autocomplete">
+                <option value="Search students by name or number…" />
+              </datalist>
             </div>
           </form>
 
@@ -118,7 +122,7 @@ export default async function AppShell({
               System Online
             </span>
 
-            <Tooltip content={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}>
+            <Tooltip content={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`} className="inline-flex">
               <Link
                 href="/notifications"
                 aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
@@ -151,8 +155,10 @@ export default async function AppShell({
                 <div className="text-[11px] text-brand-500">{ROLE_LABELS[user.role]}</div>
               </div>
               <div
-                aria-hidden="true"
+                aria-label={`User avatar for ${user.firstName} ${user.lastName}`}
+                aria-hidden="false"
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-900 text-xs font-bold text-white"
+                title={`${user.firstName} ${user.lastName}`}
               >
                 {(user.firstName.charAt(0) + user.lastName.charAt(0)).toUpperCase()}
               </div>

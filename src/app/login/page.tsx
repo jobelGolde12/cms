@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   User,
-  HelpCircle,
   AlertCircle,
 } from "lucide-react";
 import { login } from "@/actions/auth";
@@ -47,29 +46,6 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
-
-          <nav
-            aria-label="Utility"
-            className="flex shrink-0 items-center gap-2 text-sm font-medium text-brand-800 sm:gap-3"
-          >
-            <a
-              href="#"
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:text-action-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-600 focus-visible:ring-offset-2"
-            >
-              <HelpCircle aria-hidden="true" className="h-4 w-4" />
-              <span className="hidden sm:inline">Support</span>
-            </a>
-            <span aria-hidden="true" className="text-brand-300">
-              |
-            </span>
-            <a
-              href="#"
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:text-action-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-600 focus-visible:ring-offset-2"
-            >
-              <User aria-hidden="true" className="h-4 w-4" />
-              <span className="hidden sm:inline">Account</span>
-            </a>
-          </nav>
         </div>
       </header>
 

@@ -23,7 +23,6 @@ import {
   sections,
   subjects,
   systemSettings,
-  users,
 } from "../src/db/schema";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "../src/lib/permissions";
 import {
