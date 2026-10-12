@@ -27,12 +27,18 @@ export function WelcomeFooter() {
             <p className="eyebrow">Quick Links</p>
             <ul className="mt-4 space-y-1 text-[13px] text-brand-600">
               <li>
-                <Link href="/login" className="-mx-2 inline-flex items-center px-2 py-2 transition-colors duration-150 hover:text-brand-950">
+                <Link
+                  href="/login"
+                  className="-mx-2 inline-flex items-center px-2 py-2 transition-colors duration-150 hover:text-brand-950"
+                >
                   Sign In
                 </Link>
               </li>
               <li>
-                <Link href="/verify" className="-mx-2 inline-flex items-center px-2 py-2 transition-colors duration-150 hover:text-brand-950">
+                <Link
+                  href="/verify"
+                  className="-mx-2 inline-flex items-center px-2 py-2 transition-colors duration-150 hover:text-brand-950"
+                >
                   Verify a Record
                 </Link>
               </li>
@@ -53,7 +59,7 @@ export function WelcomeFooter() {
                 <span className="font-medium text-brand-900">DepEd Order 8</span> — Grading &amp; Progress Reporting
               </li>
             </ul>
-           </div>
+          </div>
         </div>
 
         <div className="mt-12 flex flex-col gap-2 border-t border-brand-200 pt-6 md:flex-row md:items-center md:justify-between">

@@ -53,16 +53,16 @@ export function WelcomeHowItWorks() {
 
         <EditorialRule className="mt-12 md:mt-16" />
 
-        <div className="grid gap-x-8 gap-y-12 pt-12 md:grid-cols-3 md:pt-16">
+        <div className="grid gap-x-6 gap-y-10 pt-10 sm:grid-cols-2 md:grid-cols-3 sm:gap-y-12 sm:pt-12 md:pt-16">
           {steps.map((step) => (
             <article key={step.number} className="group">
-              <p className="numeric text-[13px] font-medium tracking-[0.08em] text-brand-300 transition-colors duration-300 group-hover:text-action-600">
+              <p className="numeric text-[12px] font-medium tracking-[0.08em] text-brand-300 transition-colors duration-300 group-hover:text-action-600">
                 {step.number}
               </p>
-              <h3 className="mt-4 text-lg font-medium tracking-[-0.01em] text-brand-950">
+              <h3 className="mt-3 text-base font-medium tracking-[-0.01em] text-brand-950">
                 {step.title}
               </h3>
-              <p className="mt-3 max-w-[36ch] text-[15px] leading-[1.55] text-brand-500">
+              <p className="mt-2 max-w-[38ch] text-[14px] leading-[1.6] text-brand-500">
                 {step.description}
               </p>
             </article>

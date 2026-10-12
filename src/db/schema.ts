@@ -728,6 +728,48 @@ export const systemSettings = sqliteTable(
 );
 
 /* -------------------------------------------------------------------------- */
+/*  Forecasts (ARIMA performance projections — additive, never source of truth)*/
+/* -------------------------------------------------------------------------- */
+
+export const forecasts = sqliteTable(
+  "forecasts",
+  {
+    id: text("id").primaryKey(),
+    /** school_wide | grade_level | subject */
+    forecastType: text("forecast_type").notNull(),
+    /** Aggregation scope: 'school', grade level id, or subject id */
+    scopeLevel: text("scope_level").notNull(),
+    /** ISO timestamp of the forecast target period (quarter end) */
+    targetPeriod: text("target_period").notNull(),
+    forecastValue: real("forecast_value").notNull(),
+    lowerBound: real("lower_bound").notNull(),
+    upperBound: real("upper_bound").notNull(),
+    /** ARIMA (default) — kept for future SARIMA/ETS models */
+    modelType: text("model_type").notNull().default("ARIMA"),
+    /** JSON: {"p":1,"d":1,"q":1} */
+    modelOrder: text("model_order").notNull().default("{}"),
+    observationCount: integer("observation_count").notNull(),
+    /** ISO timestamps of the training window */
+    trainingStart: text("training_start").notNull(),
+    trainingEnd: text("training_end").notNull(),
+    /** JSON metrics: {aic, bic, mae, rmse, mape, residStd} */
+    accuracyMetrics: text("accuracy_metrics"),
+    generatedAt: timestamp("generated_at").notNull().default(sql`(unixepoch())`),
+    generatedBy: text("generated_by").references(() => users.id, { onDelete: "set null" }),
+    /** generated | insufficient_data | failed | stale */
+    status: text("status").notNull().default("generated"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("forecasts_type_scope_target_uq").on(t.forecastType, t.scopeLevel, t.targetPeriod, t.modelType),
+    index("forecasts_type_status_idx").on(t.forecastType, t.status),
+    index("forecasts_scope_idx").on(t.scopeLevel),
+    index("forecasts_generated_idx").on(t.generatedAt),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
 /*  Relations (for typed relational queries)                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -954,4 +996,6 @@ export type Report = typeof reports.$inferSelect;
 export type ReportExport = typeof reportExports.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type Forecast = typeof forecasts.$inferSelect;
+export type NewForecast = typeof forecasts.$inferInsert;
 export type SystemSetting = typeof systemSettings.$inferSelect;

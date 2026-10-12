@@ -335,8 +335,10 @@ export async function getStudentProfile(studentId: string): Promise<StudentProfi
   if (!row) return null;
   return {
     ...row,
-    createdByName: row.createdByName ? `${row.createdByName} ${row.creatorLast}` : null,
-    updatedByName: row.updatedByName ? `${row.updatedByName} ${row.updaterLast}` : null,
+    // Empty-string joins (deleted/inactive users) render as "Unknown" rather
+    // than blank or raw placeholder text in Record Meta.
+    createdByName: row.createdByName ? `${row.createdByName} ${row.creatorLast}` : "Unknown",
+    updatedByName: row.updatedByName ? `${row.updatedByName} ${row.updaterLast}` : "Unknown",
   } as StudentProfile;
 }
 

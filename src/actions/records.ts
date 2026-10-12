@@ -22,6 +22,7 @@ import {
 } from "@/lib/schemas";
 import { canAccessStudent } from "@/lib/scope";
 import type { Permission } from "@/lib/permissions";
+import { invalidateForecasts } from "@/lib/forecasting/storage";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
 const scrub = (value: string | null | undefined): string | null =>
@@ -181,6 +182,18 @@ export async function saveGrade(_prev: ActionState, formData: FormData): Promise
     ipAddress: ip,
     userAgent,
   });
+
+  // Forecast cache invalidation (plan §19–20): grade data changed, so next
+  // forecast read for the affected scopes regenerates. Best-effort — a
+  // cache failure must never block a grade save.
+  try {
+    await invalidateForecasts([
+      { type: "school", scopeLevel: "school" },
+      { type: "subject", scopeLevel: subjectId },
+    ]);
+  } catch (error) {
+    console.error("[saveGrade] forecast invalidation failed", error);
+  }
 
   revalidatePath(`/students/${enrollment.studentId}`);
   revalidatePath("/performance");

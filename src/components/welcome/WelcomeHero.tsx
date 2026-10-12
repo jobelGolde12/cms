@@ -47,11 +47,11 @@ export function WelcomeHero() {
               </Eyebrow>
             </div>
 
-            <h1 className="rise rise-d1 mt-6 max-w-[17ch] text-balance text-[clamp(2.75rem,6.2vw,5rem)] leading-[1.02] font-normal tracking-[-0.04em] text-brand-950">
+            <h1 className="rise rise-d1 mt-6 max-w-[20ch] text-balance text-[clamp(2.75rem,6.2vw,4.5rem)] leading-[1.02] font-normal tracking-[-0.04em] text-brand-950">
               Records Management System.
             </h1>
 
-            <p className="rise rise-d2 mt-8 max-w-[38ch] text-[15px] leading-[1.55] text-brand-500 md:text-base">
+            <p className="rise rise-d2 mt-8 max-w-[42ch] text-[14px] leading-[1.6] text-brand-500 md:text-base">
               The official platform for{" "}
               <strong className="font-medium text-brand-800">
                 {SCHOOL.name}
@@ -61,21 +61,21 @@ export function WelcomeHero() {
             </p>
 
             {/* Minimal CTA pair: one compact dark button + one text link (§12). */}
-            <div className="rise rise-d3 mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+            <div className="rise rise-d3 mt-10 flex flex-col sm:flex-row items-center gap-x-4 gap-y-3 sm:gap-x-8 sm:gap-y-4">
               <Link
                 href="/login"
-                className="group inline-flex h-12 items-center gap-2.5 rounded-[3px] bg-brand-950 px-6 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-brand-800"
+                className="group inline-flex h-11 items-center gap-2 rounded-[3px] bg-brand-950 px-5 text-[12px] font-medium text-white transition-colors duration-200 hover:bg-brand-800"
               >
                 Sign In to Dashboard
-                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
               </Link>
               <Link
                 href="/verify"
-                className="group -my-2.5 inline-flex items-center gap-1.5 py-2.5 text-[13px] font-medium text-brand-900 transition-colors duration-200 hover:text-action-700"
+                className="group -my-2 inline-flex items-center gap-1 py-2 px-3 text-[12px] font-medium text-brand-900 transition-colors duration-200 hover:text-action-700"
               >
                 Verify a Record
                 <ArrowRight
-                  className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1"
+                  className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1"
                   aria-hidden="true"
                 />
               </Link>
@@ -89,7 +89,7 @@ export function WelcomeHero() {
 
           {/* ── Right: one dominant visual object (columns 8–12) ── */}
           <div className="rise rise-d2 min-w-0 lg:col-span-5">
-            <div className="relative mx-auto w-full max-w-[420px] lg:ml-auto lg:max-w-lg">
+            <div className="relative mx-auto w-full max-w-[380px] lg:ml-auto lg:max-w-md">
               <div className="relative aspect-[960/845.748]">
                 {/* `unoptimized`: next/image does not optimize SVGs; per-image
                     opt-out keeps dev/prod identical without enabling
@@ -100,14 +100,14 @@ export function WelcomeHero() {
                   fill
                   priority
                   unoptimized
-                  sizes="(min-width: 1024px) 40vw, (min-width: 640px) 448px, 90vw"
+                  sizes="(min-width: 1024px) 38vw, (min-width: 640px) 320px, 90vw"
                   className="object-contain"
                 />
               </div>
 
               {/* Editorial annotation — one small art-directed detail (§16). */}
-              <p className="mt-6 flex items-center gap-2 pl-1 text-xs text-brand-400">
-                <GraduationCap className="h-3.5 w-3.5 text-action-600" aria-hidden="true" />
+              <p className="mt-4 flex items-center gap-1.5 pl-0.5 text-[11px] leading-[1.4] text-brand-400">
+                <GraduationCap className="h-3 w-3 text-action-600" aria-hidden="true" />
                 {SCHOOL.shortName} · DepEd Sorsogon Division
               </p>
             </div>
@@ -115,17 +115,17 @@ export function WelcomeHero() {
         </div>
 
         {/* ── Metadata strip — quiet institutional anchors (§24) ── */}
-        <div className="rise rise-d3 grid grid-cols-1 gap-6 border-t border-brand-200 py-8 sm:grid-cols-3 lg:grid-cols-3">
+        <div className="rise rise-d3 grid gap-4 border-t border-brand-200 px-4 py-6 sm:px-6 sm:py-8 md:grid-cols-3 lg:px-8">
           {[
             { icon: MapPin, label: "Location", value: `${SCHOOL.address}` },
             { icon: Award, label: "Province", value: `${SCHOOL.province}` },
             { icon: CheckCircle2, label: "Coverage", value: "Grades 7–12" },
           ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="flex items-start gap-3">
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" aria-hidden="true" />
+            <div key={label} className="flex items-start gap-2">
+              <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-300" aria-hidden="true" />
               <div>
                 <p className="eyebrow">{label}</p>
-                <p className="mt-1 text-sm text-brand-700">{value}</p>
+                <p className="mt-0.5 text-xs text-brand-700">{value}</p>
               </div>
             </div>
           ))}

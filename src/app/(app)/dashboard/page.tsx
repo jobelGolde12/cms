@@ -17,6 +17,7 @@ import {
   SystemStatusCard,
   ValidationQueueCard,
 } from "@/components/dashboard/primitives";
+import ForecastPanel from "@/components/forecast/forecast-panel";
 
 export default async function AppDashboardPage() {
   const user = await getCurrentUser();
@@ -88,6 +89,9 @@ export default async function AppDashboardPage() {
               />
             </>
           ) : null}
+
+          {/* Academic performance forecast (plan §24.1 — after coverage) */}
+          <ForecastPanel />
 
           <RecentActivity items={data.activity} />
         </div>

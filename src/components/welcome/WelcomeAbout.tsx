@@ -50,7 +50,7 @@ export function WelcomeAbout() {
       <div className="border-b border-brand-200">
         <EditorialContainer className="py-24 md:py-32 lg:py-40">
           <Eyebrow>Purpose</Eyebrow>
-          <p className="mt-6 max-w-3xl text-[1.75rem] leading-[1.15] font-normal tracking-[-0.03em] text-brand-950 md:text-[2.25rem] lg:text-[2.75rem]">
+          <p className="mt-6 max-w-3xl text-[1.5rem] md:text-[2rem] lg:text-[2.5rem] leading-[1.15] font-normal tracking-[-0.03em] text-brand-950 md:leading-[1.1] lg:leading-[1.08]">
             Purpose-built for school governance — the single source of truth
             for learner records in{" "}
             <span className="text-action-700">Sta. Magdalena</span>, supporting
@@ -61,10 +61,10 @@ export function WelcomeAbout() {
 
       {/* ── Part 2: text left / detail right (design.md §19 Layout A) ── */}
       <EditorialContainer className="py-24 md:py-32 lg:py-40">
-        <div className="grid gap-16 lg:grid-cols-2 lg:gap-24">
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-24">
           <div>
             <Eyebrow>Compliance</Eyebrow>
-            <SectionTitle className="mt-4 text-[1.75rem] md:text-[2.25rem]">
+            <SectionTitle className="mt-4 text-[1.65rem] md:text-[2.1rem] lg:text-[2.5rem]">
               Built around standards, not around trends.
             </SectionTitle>
             <Lede className="mt-6 max-w-[46ch]">
@@ -81,7 +81,9 @@ export function WelcomeAbout() {
                     aria-hidden="true"
                   />
                   <div>
-                    <h3 className="text-base font-medium text-brand-950">{item.title}</h3>
+                    <h3 className="text-base font-medium text-brand-950">
+                      {item.title}
+                    </h3>
                     <p className="mt-1.5 max-w-[44ch] text-sm leading-[1.55] text-brand-500">
                       {item.desc}
                     </p>
@@ -92,18 +94,18 @@ export function WelcomeAbout() {
           </div>
 
           {/* Who uses this system — quiet definition list, no box (§49) */}
-          <div className="lg:pl-8">
+          <div className="lg:pt-0.5">
             <Eyebrow>Audience</Eyebrow>
-            <h3 className="mt-4 text-xl font-medium tracking-[-0.01em] text-brand-950 md:text-2xl">
+            <h3 className="mt-4 text-lg font-medium tracking-[-0.01em] text-brand-950 md:text-xl lg:text-2xl">
               Who uses this system
             </h3>
-            <dl className="mt-10 space-y-10">
+            <dl className="mt-10 space-y-8">
               {userRoles.map((item) => (
                 <div key={item.label} className="border-t border-brand-200 pt-5">
-                  <dt className="text-[13px] font-medium uppercase tracking-[0.12em] text-brand-950">
+                  <dt className="text-[12px] font-medium uppercase tracking-[0.12em] text-brand-950">
                     {item.label}
                   </dt>
-                  <dd className="mt-2 max-w-[42ch] text-[15px] leading-[1.55] text-brand-500">
+                  <dd className="mt-2 max-w-[42ch] text-[14px] leading-[1.6] text-brand-500">
                     {item.desc}
                   </dd>
                 </div>

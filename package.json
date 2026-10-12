@@ -18,6 +18,7 @@
     "@libsql/client": "^0.18.0",
     "@react-pdf/renderer": "^4.9.0",
     "@zxing/browser": "^0.2.1",
+    "arima": "^0.2.8",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "exceljs": "^4.4.0",

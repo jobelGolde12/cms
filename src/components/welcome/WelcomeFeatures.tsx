@@ -78,18 +78,20 @@ export const features: Feature[] = [
 export function FeatureCard({ feature }: { feature: Feature }) {
   const Icon = feature.icon;
   return (
-    <article className="group border-t border-brand-200 pt-8">
+    <article className="group border-t border-brand-200 pb-8 pt-7">
       <div className="flex items-center justify-between gap-3">
         <Icon
           className="h-5 w-5 text-brand-400 transition-colors duration-300 group-hover:text-action-600"
           aria-hidden="true"
         />
-        <span className="eyebrow">{feature.badge}</span>
+        <span className="text-[9px] font-bold tracking-[0.11em] text-brand-400">
+          {feature.badge}
+        </span>
       </div>
-      <h3 className="mt-5 text-lg font-medium tracking-[-0.01em] text-brand-950">
+      <h3 className="mt-4 text-base font-medium tracking-[-0.01em] text-brand-950">
         {feature.title}
       </h3>
-      <p className="mt-3 text-[15px] leading-[1.55] text-brand-500">
+      <p className="mt-2.5 text-[14px] leading-[1.6] text-brand-500">
         {feature.description}
       </p>
     </article>
