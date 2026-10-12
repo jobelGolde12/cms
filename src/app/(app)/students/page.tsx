@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { AddStudentModal } from "@/components/add-student-modal";
 import {
   listStudents,
   listGradeLevels,
@@ -111,15 +110,7 @@ export default async function StudentsPage({
           ]}
         />
         <div className="flex flex-wrap items-center gap-2">
-          {canCreate ? (
-            <Link
-              href="/students/new"
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-900 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-brand-800"
-            >
-              <Plus aria-hidden="true" className="h-4 w-4" />
-              Add Student Record
-            </Link>
-          ) : null}
+          {canCreate ? <AddStudentModal /> : null}
         </div>
       </div>
 

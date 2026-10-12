@@ -16,14 +16,77 @@ const isoDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date");
 
 /**
- * Birth dates of high-school students. The school serves Grades 7–12, so a
- * realistic window is ~10–25 years old at entry; anything before 1990 is a
- * data-entry error and anything in the future is impossible.
+ * Student birth-date window (Grades 7–12).
+ *
+ * - Grades 7–10 riders enter JHS at age 11–12; SHS riders at 15–16. Overage,
+ *   returnees, and late-enrollees are common in Philippine public schools, so
+ *   the upper bound is generous (24 at entry).
+ * - Anything younger than ~9 years at enrollment is not a realistic high
+ *   school date of birth (accelerated early admission is not supported).
+ * - Future dates are impossible.
  */
-const notTooOld = (date: string): boolean => {
-  const year = Number(date.slice(0, 4));
-  return year >= 1990 && year <= new Date().getFullYear() + 1;
+export const MIN_STUDENT_AGE_YEARS = 9;
+export const MAX_STUDENT_AGE_YEARS = 24;
+
+const ageFromBirthDateStrict = (date: string): number => {
+  const [y, m, d] = date.split("-").map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - y;
+  const beforeBirthday =
+    today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d);
+  if (beforeBirthday) age -= 1;
+  return age;
 };
+
+export function studentBirthDateIssues(date: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "Enter a valid date";
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  const valid =
+    dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+  if (!valid) return "Enter a real calendar date";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (dt > today) return "Birth date cannot be in the future";
+  const age = ageFromBirthDateStrict(date);
+  if (age < MIN_STUDENT_AGE_YEARS)
+    return `Student must be at least ${MIN_STUDENT_AGE_YEARS} years old for high school`;
+  if (age > MAX_STUDENT_AGE_YEARS)
+    return `Age ${age} is above the high-school record range (max ${MAX_STUDENT_AGE_YEARS})`;
+  const year = Number(date.slice(0, 4));
+  if (year < 1990) return "Enter a realistic birth date"; // belt-and-braces vs typo years
+  return null;
+}
+
+/**
+ * Philippine mobile numbers (Globe/Smart/Dito) + optional landline.
+ * Mobile: 09XXXXXXXXX (11 digits) or +63 9XXXXXXXXX (12 digits).
+ * Landline: area code + 7-digit number, 8–10 digits total.
+ * Only digits, spaces, +, -, (, ) are accepted — letters are rejected.
+ */
+const ALLOWED_PHONE_CHARS = /^[\d+\-\s()]+$/;
+
+export function isValidPHPhone(raw: string): boolean {
+  if (!ALLOWED_PHONE_CHARS.test(raw)) return false; // letters/symbols rejected
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return false;
+  if (raw.trim() !== raw) return false; // leading/trailing whitespace rejected
+  if (digits.startsWith("09")) return digits.length === 11;
+  if (digits.startsWith("639")) return digits.length === 12;
+  return digits.length >= 8 && digits.length <= 10;
+}
+
+const phPhone = (label: string) =>
+  z
+    .string()
+    .trim()
+    .max(20, "Too long")
+    .refine(
+      (v) => isValidPHPhone(v),
+      `${label} must be a valid PH mobile (0917 123 4567) or landline`,
+    )
+    .optional()
+    .or(z.literal(""));
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().or(z.literal(""));
 
@@ -36,20 +99,14 @@ const optionalText = (max: number) => z.string().trim().max(max).optional().or(z
  * section for a school year) is a separate flow recorded in
  * `student_enrollments`; guardians are created alongside the student.
  */
-export const studentFormSchema = z.object({
+export const studentFormSchemaBase = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(60),
   middleName: optionalText(60),
   lastName: z.string().trim().min(1, "Last name is required").max(60),
   suffix: optionalText(10),
-  birthDate: isoDate.refine(notTooOld, "Enter a realistic birth date"),
+  birthDate: isoDate.refine((v) => studentBirthDateIssues(v) === null, "Enter a realistic birth date"),
   sex: z.enum(SEXES, { message: "Select a sex" }),
-  contactNumber: z
-    .string()
-    .trim()
-    .max(30)
-    .regex(/^[0-9+()\- ]*$/, "Contact number may only contain digits and + ( ) -")
-    .optional()
-    .or(z.literal("")),
+  contactNumber: phPhone("Contact number"),
   address: optionalText(300),
 
   // Primary guardian (created with the student; can be updated later)
@@ -60,17 +117,38 @@ export const studentFormSchema = z.object({
     .enum(["mother", "father", "guardian"], { message: "Select a relationship" })
     .optional()
     .or(z.literal("")),
-  guardianContactNumber: z
-    .string()
-    .trim()
-    .max(30)
-    .regex(/^[0-9+()\- ]*$/, "Contact number may only contain digits and + ( ) -")
-    .optional()
-    .or(z.literal("")),
+  guardianContactNumber: phPhone("Guardian contact number"),
   guardianEmail: z.email("Enter a valid email address").max(120).optional().or(z.literal("")),
 });
 
-export type StudentFormValues = z.infer<typeof studentFormSchema>;
+/**
+ * Contingent guardian rules: if ANY guardian field is filled, the name and
+ * relationship become required so orphan half-guardians never reach the DB.
+ */
+export const studentGuardianRefinement = <T extends {
+  guardianFirstName?: string; guardianLastName?: string; guardianRelationship?: string;
+  guardianContactNumber?: string; guardianEmail?: string;
+}>(data: T): boolean => {
+  const touched = [
+    data.guardianFirstName, data.guardianLastName, data.guardianRelationship,
+    data.guardianContactNumber, data.guardianEmail,
+  ].some((v) => typeof v === "string" && v.trim().length > 0);
+  if (!touched) return true;
+  return Boolean(
+    (data.guardianFirstName ?? "").trim() &&
+    (data.guardianLastName ?? "").trim() &&
+    (data.guardianRelationship ?? "").trim(),
+  );
+};
+
+export const studentFormSchema = studentFormSchemaBase.refine(
+  studentGuardianRefinement,
+  {
+    message:
+      "Guardian first name, last name, and relationship are required once any guardian field is filled.",
+    path: ["guardianFirstName"],
+  },
+);
 
 /* -------------------------------------------------------------------------- */
 /*  Auth & users                                                              */
