@@ -128,7 +128,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
           </div>
           <p className="numeric mt-1 flex items-center gap-2 text-sm text-brand-500">
             <span>
-              {student.studentNumber} · {ageFromBirthDate(student.birthDate)} yrs ·{" "}
+              {student.studentNumber} · {ageFromBirthDate(student.birthDate) ?? "—"} yrs ·{" "}
               {student.sex === "male" ? "Male" : "Female"}
             </span>
             <CopyButton value={student.studentNumber} />
@@ -240,6 +240,9 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                       <div className="mt-0.5 text-xs text-brand-500">
                         Enrolled {formatDate(e.enrollmentDate)}
                       </div>
+                    ) : null}
+                    {e.remarks ? (
+                      <div className="mt-0.5 text-xs text-brand-500">{e.remarks}</div>
                     ) : null}
                   </li>
                 ))}

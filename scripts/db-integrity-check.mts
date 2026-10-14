@@ -231,8 +231,8 @@ async function main() {
       ...(await db
         .select({ id: behaviorRecords.id })
         .from(behaviorRecords)
-        .where(and(eq(behaviorRecords.id, "integrity-test-b1"), eq(behaviorRecords.studentId, realStudent[0].id))),
-    ));
+        .where(and(eq(behaviorRecords.id, "integrity-test-b1"), eq(behaviorRecords.studentId, realStudent[0].id)))),
+    );
   }
   check("no test artifacts left in the database", leftover.length === 0);
 

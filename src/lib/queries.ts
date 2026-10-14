@@ -186,7 +186,7 @@ export type StudentRow = {
   lastName: string;
   suffix: string | null;
   sex: string;
-  birthDate: string;
+  birthDate: string | null;
   age: number | null;
   gradeLevelName: string | null;
   sectionName: string | null;
@@ -291,7 +291,7 @@ export type StudentProfile = {
   middleName: string | null;
   lastName: string;
   suffix: string | null;
-  birthDate: string;
+  birthDate: string | null;
   sex: string;
   contactNumber: string | null;
   address: string | null;
@@ -369,6 +369,7 @@ export async function getEnrollmentHistory(studentId: string) {
       id: studentEnrollments.id,
       status: studentEnrollments.status,
       enrollmentDate: studentEnrollments.enrollmentDate,
+      remarks: studentEnrollments.remarks,
       schoolYear: schoolYears.year,
       gradeLevelName: gradeLevels.name,
       sectionName: sections.name,
@@ -864,7 +865,7 @@ export type QueueItem = {
   studentNumber: string;
   firstName: string;
   lastName: string;
-  birthDate: string;
+  birthDate: string | null;
   submittedAt: Date | null;
   submitterFirst: string | null;
   submitterLast: string | null;
@@ -916,13 +917,13 @@ export type DuplicateItem = {
   studentNumber: string;
   studentFirst: string;
   studentLast: string;
-  studentBirth: string;
+  studentBirth: string | null;
   studentSex: string;
   studentCreatedAt: Date | null;
   possibleNumber: string;
   possibleFirst: string;
   possibleLast: string;
-  possibleBirth: string;
+  possibleBirth: string | null;
   possibleSex: string;
   possibleCreatedAt: Date | null;
 };

@@ -90,7 +90,7 @@ export async function createStudent(_prev: ActionState, formData: FormData): Pro
           middleName: scrub(v.middleName),
           lastName: v.lastName,
           suffix: scrub(v.suffix),
-          birthDate: v.birthDate,
+          birthDate: scrub(v.birthDate),
           sex: v.sex,
           contactNumber: scrub(v.contactNumber),
           address: scrub(v.address),
@@ -133,7 +133,7 @@ export async function createStudent(_prev: ActionState, formData: FormData): Pro
     firstName: v.firstName,
     lastName: v.lastName,
     middleName: v.middleName || null,
-    birthDate: v.birthDate,
+    birthDate: scrub(v.birthDate),
     sex: v.sex,
   });
 
@@ -193,7 +193,7 @@ export async function updateStudent(_prev: ActionState, formData: FormData): Pro
           middleName: scrub(v.middleName),
           lastName: v.lastName,
           suffix: scrub(v.suffix),
-          birthDate: v.birthDate,
+          birthDate: scrub(v.birthDate),
           sex: v.sex,
           contactNumber: scrub(v.contactNumber),
           address: scrub(v.address),
@@ -240,7 +240,7 @@ export async function updateStudent(_prev: ActionState, formData: FormData): Pro
     firstName: v.firstName,
     lastName: v.lastName,
     middleName: v.middleName || null,
-    birthDate: v.birthDate,
+    birthDate: scrub(v.birthDate),
     sex: v.sex,
   });
 

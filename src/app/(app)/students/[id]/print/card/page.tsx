@@ -62,7 +62,7 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
           <h1 className="mt-1 text-xl font-bold text-brand-900">{fullName(student)}</h1>
           <p className="numeric mt-0.5 text-xs text-brand-500">
             {student.studentNumber} · {student.sex === "male" ? "Male" : "Female"} ·{" "}
-            {ageFromBirthDate(student.birthDate)} yrs
+            {ageFromBirthDate(student.birthDate) ?? "—"} yrs
           </p>
         </div>
 

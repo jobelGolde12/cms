@@ -8,7 +8,7 @@ export type DuplicateMatch = {
   possibleStudentNumber: string;
   first: string;
   last: string;
-  birthDate: string;
+  birthDate: string | null;
   sex: string;
   reasons: string[];
   score: number;
@@ -18,7 +18,8 @@ export type DuplicateInput = {
   firstName: string;
   lastName: string;
   middleName?: string | null;
-  birthDate: string;
+  /** null when unknown (e.g. XLSX-imported records without a birth date). */
+  birthDate: string | null;
   sex: string;
   excludeStudentId?: string | null;
 };
@@ -45,11 +46,16 @@ export async function detectDuplicates(
     })
     .from(students)
     .where(
-      or(
-        eq(students.lastName, input.lastName),
-        eq(students.firstName, input.firstName),
-        eq(students.birthDate, input.birthDate),
-      ),
+      input.birthDate
+        ? or(
+            eq(students.lastName, input.lastName),
+            eq(students.firstName, input.firstName),
+            eq(students.birthDate, input.birthDate),
+          )
+        : or(
+            eq(students.lastName, input.lastName),
+            eq(students.firstName, input.firstName),
+          ),
     );
 
   const matches: DuplicateMatch[] = [];
@@ -79,7 +85,9 @@ export async function detectDuplicates(
       score += 10;
     }
 
-    if (row.birthDate === input.birthDate) {
+    // Birth date is only a signal when BOTH sides have one — two unknown dates
+    // must never pass as a matching identifier.
+    if (Boolean(row.birthDate) && row.birthDate === input.birthDate) {
       reasons.push("birth_date");
       score += 35;
     }

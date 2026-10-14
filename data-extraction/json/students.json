@@ -1,0 +1,441 @@
+{
+  "metadata": {
+    "source_file": "School Form_ Personal Info of Students Needed.xlsx",
+    "extraction_timestamp": "2026-10-14T11:09:40",
+    "extraction_status": "completed"
+  },
+  "school": {
+    "sheet_title": "School Form 1 (SF 1) School Register",
+    "sheet_subtitle": "(This replaced  Form 1, Master List & STS Form 2-Family Background and Profile)",
+    "school_id": "302245",
+    "region": "V",
+    "division": "SORSOGON",
+    "district": "STA. MAGDALENA",
+    "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+    "school_year": "2026-2027",
+    "grade_level": 12,
+    "section": "HESTIA - CSS"
+  },
+  "roster_source": "Modified SF1 (boys rows 10-49, girls rows 51-90)",
+  "student_count_master_roster_sf1": 17,
+  "student_count_including_june_only_record": 18,
+  "note": "Names are preserved exactly as typed in the workbook, format 'Last Name, First Name Middle' (no separate name columns exist in source).",
+  "students": [
+    {
+      "excel_row_sf1": 10,
+      "sex_group": "MALE",
+      "seq_no": 1,
+      "name_last_first_middle": "CORNELIO, ZOILO",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 14,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 11,
+      "sex_group": "MALE",
+      "seq_no": 2,
+      "name_last_first_middle": "GAON, VIRGILIO F.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 15,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 12,
+      "sex_group": "MALE",
+      "seq_no": 3,
+      "name_last_first_middle": "GARBIN, JOLIX D.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 16,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 13,
+      "sex_group": "MALE",
+      "seq_no": 4,
+      "name_last_first_middle": "GARCERA, LEVI G.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 17,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 14,
+      "sex_group": "MALE",
+      "seq_no": 5,
+      "name_last_first_middle": "GIMPES, VINCENT C.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 18,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 15,
+      "sex_group": "MALE",
+      "seq_no": 6,
+      "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 19,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 16,
+      "sex_group": "MALE",
+      "seq_no": 7,
+      "name_last_first_middle": "LATAG, XANJHO B.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "monthly_remarks_from_sf2_sheets": {
+        "June": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "July": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "August": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "September": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "October": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "November": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "December": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "January": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "February": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "March": "T/I - SYSTEMS PLUS COMPUTER COLLEGE",
+        "April": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+      },
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 20,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 17,
+      "sex_group": "MALE",
+      "seq_no": 8,
+      "name_last_first_middle": "LICUP, ALDRIN P.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 21,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 18,
+      "sex_group": "MALE",
+      "seq_no": 9,
+      "name_last_first_middle": "ROGADOR, JOSHUA G.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 22,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 51,
+      "sex_group": "FEMALE",
+      "seq_no": 1,
+      "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 57,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 52,
+      "sex_group": "FEMALE",
+      "seq_no": 2,
+      "name_last_first_middle": "FUENTES, JECEL M.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 58,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 53,
+      "sex_group": "FEMALE",
+      "seq_no": 3,
+      "name_last_first_middle": "FUNGO, MARIAN G.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 59,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 54,
+      "sex_group": "FEMALE",
+      "seq_no": 4,
+      "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 60,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 55,
+      "sex_group": "FEMALE",
+      "seq_no": 5,
+      "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 61,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 56,
+      "sex_group": "FEMALE",
+      "seq_no": 6,
+      "name_last_first_middle": "GALINDES, JEAN ANNE",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 62,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 57,
+      "sex_group": "FEMALE",
+      "seq_no": 7,
+      "name_last_first_middle": "GUID, GRACE JOY F.",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 63,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": 58,
+      "sex_group": "FEMALE",
+      "seq_no": 8,
+      "name_last_first_middle": "LOZANO, GILLIAN F",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": true,
+      "year_round_summary_from_summary_sheet": {
+        "excel_row_summary": 64,
+        "attendance_monthly_and_total": {
+          "TOTAL": 0
+        },
+        "tardiness_monthly_and_total": {
+          "TOTAL": 0
+        }
+      }
+    },
+    {
+      "excel_row_sf1": null,
+      "excel_row_june_sheet": 58,
+      "sex_group": "FEMALE",
+      "seq_no": 2,
+      "name_last_first_middle": "BUASAN, ANGELA MHEYO FORMANES",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "school_year": "2026-2027",
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "present_in_master_sf1_roster": false,
+      "presence_note": "Listed only in the 'June' SF2 sheet female roster (reported month: SEPTEMBER); missing from the Modified SF1 master roster and from all other month sheets.",
+      "absent_total": null,
+      "tardy_total": null
+    }
+  ],
+  "students_listed_only_in_sf2_sheets_not_in_sf1": [
+    {
+      "sheet": "June",
+      "excel_row": 58,
+      "seq_no": 2,
+      "name_last_first_middle": "BUASAN, ANGELA MHEYO FORMANES",
+      "issue": "present in June sheet female roster; absent from Modified SF1 girls list"
+    }
+  ],
+  "dangling_transferee_records_in_sf1": [
+    {
+      "excel_row": 22,
+      "student_name": null,
+      "transferee_information": {
+        "previous_school": "Macabalan Elementary School",
+        "teacher": "Lois D. Delen",
+        "grade_and_section": "I-Rose"
+      }
+    },
+    {
+      "excel_row": 25,
+      "student_name": null,
+      "transferee_information": {
+        "previous_school": "Santa Fe Elementary School",
+        "address": "Division of Bukidnon",
+        "teacher": "ANIE T. SALVIO",
+        "grade_and_section": "II-A"
+      }
+    }
+  ]
+}

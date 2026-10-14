@@ -1,0 +1,18 @@
+{
+  "issues": [],
+  "review_items": [
+    "Learner 'June' appears in the 'June' SF2 sheet roster but is missing from the Modified SF1 master roster (Summary sheet therefore mis-aligns June female rows).",
+    "Sheet 'June' reports the month of SEPTEMBER (two sheets report September: 'June' and 'September').",
+    "Modified SF1 rows 22/25 contain transferee data (previous school/teacher/grade) but no student name in column C on those rows.",
+    "Printable SF2 female block skips Modified SF1 girls #1-2 (BONUEL, RIHANA JANE G. and FUENTES, JECEL M.): row 57 maps to SF1 C53.",
+    "No attendance marks were recorded anywhere in the workbook: every attendance cell is blank (blank = present per the sheet's own legend); all absent/tardy totals are blank or 0.",
+    "June sheet 'No. of Days of Classes' = 12 but its date row lists 22 September dates."
+  ],
+  "counts": {
+    "month_sheets_checked": 11,
+    "date_cells": 238,
+    "typed_marks": 0,
+    "sf1_roster": 17,
+    "summary_students": 17
+  }
+}

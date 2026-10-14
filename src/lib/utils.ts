@@ -32,8 +32,12 @@ export function formatDateTime(value: Date | string | null | undefined): string 
   });
 }
 
-/** Child age in whole years from an ISO birth date. */
-export function ageFromBirthDate(birthDate: string, at: Date = new Date()): number | null {
+/** Child age in whole years from an ISO birth date (null-when-unknown safe). */
+export function ageFromBirthDate(
+  birthDate: string | null | undefined,
+  at: Date = new Date(),
+): number | null {
+  if (!birthDate) return null;
   const [y, m, d] = birthDate.split("-").map(Number);
   if (!y || !m || !d) return null;
   const birth = new Date(Date.UTC(y, m - 1, d));

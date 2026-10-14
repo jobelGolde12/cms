@@ -105,7 +105,13 @@ export const studentFormSchemaBase = z.object({
   middleName: optionalText(60),
   lastName: z.string().trim().min(1, "Last name is required").max(60),
   suffix: optionalText(10),
-  birthDate: isoDate.refine((v) => studentBirthDateIssues(v) === null, "Enter a realistic birth date"),
+  /** Optional: the XLSX-imported roster carries no birth dates, so a record can
+   *  be saved without one; a value must still pass the realistic-date window. */
+  birthDate: z
+    .union([isoDate, z.literal("")])
+    .optional()
+    .transform((v) => (typeof v === "string" && v.length > 0 ? v : null))
+    .refine((v) => v === null || studentBirthDateIssues(v) === null, "Enter a realistic birth date"),
   sex: z.enum(SEXES, { message: "Select a sex" }),
   contactNumber: phPhone("Contact number"),
   address: optionalText(300),

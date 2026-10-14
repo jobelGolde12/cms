@@ -278,7 +278,7 @@ export function RecordComparison({ item }: { item: DuplicateItem }) {
   const base: Side = {
     code: item.studentNumber,
     name: `${item.studentLast}, ${item.studentFirst}`,
-    birth: item.studentBirth,
+    birth: item.studentBirth ?? "",
     sex: item.studentSex,
     registered: item.studentCreatedAt,
     href: `/students/${item.studentId}`,
@@ -286,7 +286,7 @@ export function RecordComparison({ item }: { item: DuplicateItem }) {
   const incoming: Side = {
     code: item.possibleNumber,
     name: `${item.possibleLast}, ${item.possibleFirst}`,
-    birth: item.possibleBirth,
+    birth: item.possibleBirth ?? "",
     sex: item.possibleSex,
     registered: item.possibleCreatedAt,
     href: `/students/${item.possibleStudentId}`,

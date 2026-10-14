@@ -205,9 +205,8 @@ export function StudentForm({
         <Field
           label="Birth date"
           htmlFor="birthDate"
-          required
           error={mergedError("birthDate")}
-          hint="Age 9–24 for high school records; today at most."
+          hint="Optional when the source lacks it (unknown from imported rosters). Age 9–24 for high school records; today at most."
         >
           <Input
             id="birthDate"
@@ -219,7 +218,6 @@ export function StudentForm({
             value={values.birthDate}
             onChange={setValue("birthDate")}
             onBlur={() => touch("birthDate")}
-            required
             aria-invalid={Boolean(mergedError("birthDate"))}
           />
         </Field>

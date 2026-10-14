@@ -1,0 +1,5381 @@
+{
+  "metadata": {
+    "source_file": "School Form_ Personal Info of Students Needed.xlsx",
+    "source_file_size_bytes": 3504626,
+    "workbook_type": "DepEd Auto-SF2 (School Form 2, Daily Attendance) generated workbook, includes Modified SF1 (School Form 1 roster)",
+    "worksheet_count": 16,
+    "worksheet_names": [
+      "Instructions",
+      "Modified SF1",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+      "January",
+      "February",
+      "March",
+      "April",
+      "Conso",
+      "Summary",
+      "Printable SF2"
+    ],
+    "source_last_modified": "2026-10-14T10:37:20",
+    "extraction_timestamp": "2026-10-14T11:09:40",
+    "extraction_status": "completed"
+  },
+  "instructions": {
+    "sheet": "Instructions",
+    "title": "Instructions",
+    "program_name": "Auto-SF2",
+    "text_lines": [
+      {
+        "excel_cell": "D5",
+        "text": "1. Type/copy-paste the names of pupils/students and other important information in the Modified SF1 worksheet."
+      },
+      {
+        "excel_cell": "D6",
+        "text": "2. Click \"June\" button to access the June sheet. And type the dates in the appropriate cells."
+      },
+      {
+        "excel_cell": "D7",
+        "text": "3. Hide unused rows so that they will not appear in the final printout. You can unhide them anytime if you need to."
+      },
+      {
+        "excel_cell": "D8",
+        "text": "4. Indicate the date in the appropriate cell before checking the attendance of pupils/students every day. Computation will only take place if the date is specified."
+      },
+      {
+        "excel_cell": "D9",
+        "text": "5. (IMPORTANT) Type \"E\" in the appropriate cell to indicate entry of pupil/student during the first school-week of June. If the pupil/student is a late enrollee,"
+      },
+      {
+        "excel_cell": "D10",
+        "text": "type \"LE\". If he/she is a transferree in your school, type T/I. Failing to indicate \"E\", \"LE\" or \"T/I\" will exclude the child from your class register."
+      },
+      {
+        "excel_cell": "D11",
+        "text": "6. When checking the attendance of pupils/students, leave the cell BLANK if the pupil/student is present."
+      },
+      {
+        "excel_cell": "D12",
+        "text": "7. To work on the form for the succeeding months, you must choose the appropriate tab/button and repeat Steps 3 & 4."
+      },
+      {
+        "excel_cell": "D14",
+        "text": "REMINDERS:"
+      },
+      {
+        "excel_cell": "D15",
+        "text": "1. If you wish to use this program, you must start in the month of JUNE. But if you haven't done so, please copy the entries from your SF2 starting in June."
+      },
+      {
+        "excel_cell": "D16",
+        "text": "2. Name entry can only be done in the Modified SF1 worksheet."
+      },
+      {
+        "excel_cell": "D17",
+        "text": "3. Hyperlink buttons are provided for easy navigation across worksheets."
+      },
+      {
+        "excel_cell": "D18",
+        "text": "4. Do not erase or rearrange your entries in the Modified SF1 worksheet as this will affect the monthly and annual summaries."
+      },
+      {
+        "excel_cell": "D19",
+        "text": "5. Year-round summary of Attendance and Tardiness is available in this program. You may access it by clicking the \"Summary\" button."
+      },
+      {
+        "excel_cell": "D20",
+        "text": "6. Consolidation of your enrollment data can be accessed by clicking the \"Conso\" button."
+      },
+      {
+        "excel_cell": "B23",
+        "text": "Programmed by: Al Stephen R. Lagumen"
+      },
+      {
+        "excel_cell": "B24",
+        "text": "Email Address:"
+      },
+      {
+        "excel_cell": "D25",
+        "text": "al.lagumen@deped.gov.ph"
+      }
+    ],
+    "programmer": "Programmed by: Al Stephen R. Lagumen",
+    "email_label": "Email Address:",
+    "email": "al.lagumen@deped.gov.ph"
+  },
+  "school_master_roster": {
+    "sheet": "Modified SF1",
+    "type": "School Form 1 (SF1) - master learner roster",
+    "meta": {
+      "sheet_title": "School Form 1 (SF 1) School Register",
+      "sheet_subtitle": "(This replaced  Form 1, Master List & STS Form 2-Family Background and Profile)",
+      "school_id": "302245",
+      "region": "V",
+      "division": "SORSOGON",
+      "district": "STA. MAGDALENA",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "school_year": "2026-2027",
+      "grade_level": 12,
+      "section": "HESTIA - CSS"
+    },
+    "boys": [
+      {
+        "excel_row": 10,
+        "sex_group": "BOYS",
+        "seq_no": 1,
+        "name_last_first_middle": "CORNELIO, ZOILO"
+      },
+      {
+        "excel_row": 11,
+        "sex_group": "BOYS",
+        "seq_no": 2,
+        "name_last_first_middle": "GAON, VIRGILIO F."
+      },
+      {
+        "excel_row": 12,
+        "sex_group": "BOYS",
+        "seq_no": 3,
+        "name_last_first_middle": "GARBIN, JOLIX D."
+      },
+      {
+        "excel_row": 13,
+        "sex_group": "BOYS",
+        "seq_no": 4,
+        "name_last_first_middle": "GARCERA, LEVI G."
+      },
+      {
+        "excel_row": 14,
+        "sex_group": "BOYS",
+        "seq_no": 5,
+        "name_last_first_middle": "GIMPES, VINCENT C."
+      },
+      {
+        "excel_row": 15,
+        "sex_group": "BOYS",
+        "seq_no": 6,
+        "name_last_first_middle": "HIMZON, AHRIEL SIMON E."
+      },
+      {
+        "excel_row": 16,
+        "sex_group": "BOYS",
+        "seq_no": 7,
+        "name_last_first_middle": "LATAG, XANJHO B."
+      },
+      {
+        "excel_row": 17,
+        "sex_group": "BOYS",
+        "seq_no": 8,
+        "name_last_first_middle": "LICUP, ALDRIN P."
+      },
+      {
+        "excel_row": 18,
+        "sex_group": "BOYS",
+        "seq_no": 9,
+        "name_last_first_middle": "ROGADOR, JOSHUA G."
+      }
+    ],
+    "girls": [
+      {
+        "excel_row": 51,
+        "sex_group": "GIRLS",
+        "seq_no": 1,
+        "name_last_first_middle": "BONUEL, RIHANA JANE G."
+      },
+      {
+        "excel_row": 52,
+        "sex_group": "GIRLS",
+        "seq_no": 2,
+        "name_last_first_middle": "FUENTES, JECEL M."
+      },
+      {
+        "excel_row": 53,
+        "sex_group": "GIRLS",
+        "seq_no": 3,
+        "name_last_first_middle": "FUNGO, MARIAN G."
+      },
+      {
+        "excel_row": 54,
+        "sex_group": "GIRLS",
+        "seq_no": 4,
+        "name_last_first_middle": "FURTER, JAMAICAH KATE B."
+      },
+      {
+        "excel_row": 55,
+        "sex_group": "GIRLS",
+        "seq_no": 5,
+        "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G."
+      },
+      {
+        "excel_row": 56,
+        "sex_group": "GIRLS",
+        "seq_no": 6,
+        "name_last_first_middle": "GALINDES, JEAN ANNE"
+      },
+      {
+        "excel_row": 57,
+        "sex_group": "GIRLS",
+        "seq_no": 7,
+        "name_last_first_middle": "GUID, GRACE JOY F."
+      },
+      {
+        "excel_row": 58,
+        "sex_group": "GIRLS",
+        "seq_no": 8,
+        "name_last_first_middle": "LOZANO, GILLIAN F"
+      }
+    ],
+    "dangling_transferee_records": [
+      {
+        "excel_row": 22,
+        "student_name": null,
+        "transferee_information": {
+          "previous_school": "Macabalan Elementary School",
+          "teacher": "Lois D. Delen",
+          "grade_and_section": "I-Rose"
+        }
+      },
+      {
+        "excel_row": 25,
+        "student_name": null,
+        "transferee_information": {
+          "previous_school": "Santa Fe Elementary School",
+          "address": "Division of Bukidnon",
+          "teacher": "ANIE T. SALVIO",
+          "grade_and_section": "II-A"
+        }
+      }
+    ],
+    "indicator_legends": [
+      {
+        "excel_row": 92,
+        "table_left": {
+          "indicator": "Indicator",
+          "code": "Code",
+          "required_information": "Required Information"
+        },
+        "table_right": {
+          "indicator": "Indicator",
+          "code": "Code",
+          "required_information": "Required Information"
+        }
+      },
+      {
+        "excel_row": 93,
+        "table_left": {
+          "indicator": "Transferred Out",
+          "code": "T/O",
+          "required_information": "Name of  Public (P) Private (PR) School  & Effectivity Date"
+        },
+        "table_right": {
+          "indicator": "CCT Recipient",
+          "code": "CCT",
+          "required_information": "CCT Control/reference number & Effectivity Date"
+        }
+      },
+      {
+        "excel_row": 94,
+        "table_left": {
+          "indicator": "Transferred IN",
+          "code": "T/I",
+          "required_information": "Name of  Public (P) Private (PR) School  & Effectivity Date"
+        },
+        "table_right": {
+          "indicator": "Balik-Aral",
+          "code": "B/A",
+          "required_information": "Name of school last attended & Year"
+        }
+      },
+      {
+        "excel_row": 95,
+        "table_left": {
+          "indicator": "Dropped",
+          "code": "DRP",
+          "required_information": "Reason  and Effectivity Date"
+        },
+        "table_right": {
+          "indicator": "Learner With Dissability",
+          "code": "LWD",
+          "required_information": "Specify"
+        }
+      },
+      {
+        "excel_row": 96,
+        "table_left": {
+          "indicator": "Late Enrollment",
+          "code": "LE",
+          "required_information": "Reason (Enrollment beyond 1st Friday of June)"
+        },
+        "table_right": {
+          "indicator": "Accelarated",
+          "code": "ACL",
+          "required_information": "Specify Level & Effectivity Data"
+        }
+      }
+    ],
+    "certification": {
+      "prepared_by": "MARIEL T. ANONUEVO",
+      "prepared_by_caption": "(Signature of Adviser over Printed Name)",
+      "certified_correct_by": "JOHNBERK B. EVASCO",
+      "certified_correct_by_caption": null,
+      "comment": "Programmed by Al Stephen R. Lagumen"
+    }
+  },
+  "monthly_sf2_sheets": [
+    {
+      "sheet": "June",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "SEPTEMBER",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "E",
+          "day_of_month": 1,
+          "day_code": "T"
+        },
+        {
+          "excelColumn": "F",
+          "day_of_month": 2,
+          "day_code": null
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 3,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 16,
+          "day_code": "W"
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 17,
+          "day_code": "TH"
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 18,
+          "day_code": "F"
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 21,
+          "day_code": "M"
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 22,
+          "day_code": "T"
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 23,
+          "day_code": "W"
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 24,
+          "day_code": "TH"
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 25,
+          "day_code": "F"
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 28,
+          "day_code": "M"
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 29,
+          "day_code": "T"
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 30,
+          "day_code": "W"
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "BUASAN, ANGELA MHEYO FORMANES",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 65,
+          "sex_group": "FEMALE",
+          "seq_no": 9,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "E": 9,
+              "P": 9,
+              "Q": 9,
+              "R": 9,
+              "S": 9,
+              "T": 9,
+              "U": 9,
+              "V": 9,
+              "W": 9,
+              "X": 9,
+              "Y": 9,
+              "Z": 9,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 98,
+            "per_date": {
+              "E": 9,
+              "P": 9,
+              "Q": 9,
+              "R": 9,
+              "S": 9,
+              "T": 9,
+              "U": 9,
+              "V": 9,
+              "W": 9,
+              "X": 9,
+              "Y": 9,
+              "Z": 9,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 101,
+            "per_date": {
+              "E": 18,
+              "P": 18,
+              "Q": 18,
+              "R": 18,
+              "S": 18,
+              "T": 18,
+              "U": 18,
+              "V": 18,
+              "W": 18,
+              "X": 18,
+              "Y": 18,
+              "Z": 18,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: SEPTEMBER",
+        "no_of_days_of_classes": 12,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105",
+            "label": "* Enrolment  as of  (1st Friday of June)",
+            "M": 9,
+            "F": 8,
+            "TOTAL": 17
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107",
+            "label": "Late Enrollment during the month                                               (beyond cut-off)",
+            "M": 0,
+            "F": 0,
+            "TOTAL": 0
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109",
+            "label": "Registered Learner as of end of the month",
+            "M": 9,
+            "F": 9,
+            "TOTAL": 18
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111",
+            "label": "Percentage of Enrolment as of end of the month",
+            "M": 100,
+            "F": 100,
+            "TOTAL": 100
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Average Daily Attendance",
+            "M": 100,
+            "F": 100,
+            "TOTAL": 100
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114",
+            "label": "Percentage of Attendance for the month",
+            "M": 100,
+            "F": 100,
+            "TOTAL": 100
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116",
+            "label": "Number of students with 5 consecutive days of absences:",
+            "M": 0,
+            "F": 0,
+            "TOTAL": 0
+          },
+          "dropout": {
+            "label_cell": "AB118",
+            "label": "Drop out",
+            "M": 0,
+            "F": 0,
+            "TOTAL": 0
+          },
+          "transferred_out": {
+            "label_cell": "AB120",
+            "label": "Transferred out",
+            "M": 0,
+            "F": 0,
+            "TOTAL": 0
+          },
+          "transferred_in": {
+            "label_cell": "AB122",
+            "label": "Transferred in",
+            "M": 1,
+            "F": 0,
+            "TOTAL": 1
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": "I certify that this is a true and correct report.",
+          "teacher_name": "MARIEL T. ANONUEVO",
+          "teacher_caption": "                          (Signature of Teacher over Printed Name)",
+          "attested_by_label": "Attested by:",
+          "attested_by": "JOHNBERK B. EVASCO",
+          "attested_by_caption": " (Signature of School Head over Printed Name)"
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q103",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q104",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "July",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "JULY",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "F",
+          "day_of_month": 1,
+          "day_code": "W"
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 2,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 3,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 6,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 13,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 16,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 17,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 20,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 23,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 24,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 27,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 28,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 29,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AA",
+          "day_of_month": 30,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AB",
+          "day_of_month": 31,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "F": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "F": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "F": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: JULY",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "August",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "AUGUST",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "D",
+          "day_of_month": 3,
+          "day_code": "M"
+        },
+        {
+          "excelColumn": "E",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "F",
+          "day_of_month": 5,
+          "day_code": null
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 6,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 12,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 13,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 17,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 19,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 20,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 24,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 26,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 27,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 28,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 31,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: AUGUST",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!",
+            "TOTAL": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "September",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "SEPTEMBER",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "E",
+          "day_of_month": 1,
+          "day_code": "T"
+        },
+        {
+          "excelColumn": "F",
+          "day_of_month": 2,
+          "day_code": null
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 3,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 16,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 17,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 23,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 24,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 28,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 29,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 30,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: SEPTEMBER",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!",
+            "TOTAL": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "October",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "OCTOBER",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "G",
+          "day_of_month": 1,
+          "day_code": "TH"
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 2,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 5,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 6,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 12,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 13,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 16,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 19,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 20,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 23,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 26,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 27,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 28,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AA",
+          "day_of_month": 29,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AB",
+          "day_of_month": 30,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "G": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "G": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "G": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: OCTOBER",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!",
+            "TOTAL": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "November",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "NOVEMBER",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "D",
+          "day_of_month": 2,
+          "day_code": "M"
+        },
+        {
+          "excelColumn": "E",
+          "day_of_month": 3,
+          "day_code": null
+        },
+        {
+          "excelColumn": "F",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 5,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 6,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 12,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 13,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 16,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 17,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 19,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 20,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 23,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 24,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 26,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 27,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 30,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: NOVEMBER",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!",
+            "TOTAL": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "December",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "DECEMBER",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "E",
+          "day_of_month": 1,
+          "day_code": "T"
+        },
+        {
+          "excelColumn": "F",
+          "day_of_month": 2,
+          "day_code": null
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 3,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 16,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 17,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 23,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 24,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 28,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 29,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 30,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AA",
+          "day_of_month": 31,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: DECEMBER",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!",
+            "TOTAL": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "January",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "JANUARY",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "H",
+          "day_of_month": 1,
+          "day_code": "F"
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 5,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 6,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 12,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 13,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 19,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 20,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 26,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 27,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AA",
+          "day_of_month": 28,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AB",
+          "day_of_month": 29,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "H": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "H": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "H": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: JANUARY",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!",
+            "TOTAL": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "February",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "FEBRUARY",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "D",
+          "day_of_month": 1,
+          "day_code": "M"
+        },
+        {
+          "excelColumn": "E",
+          "day_of_month": 2,
+          "day_code": null
+        },
+        {
+          "excelColumn": "F",
+          "day_of_month": 3,
+          "day_code": null
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 5,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 12,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 16,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 17,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 19,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 23,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 24,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 26,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 29,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "D": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: FEBRUARY",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!",
+            "TOTAL": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "March",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "MARCH",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "E",
+          "day_of_month": 1,
+          "day_code": "T"
+        },
+        {
+          "excelColumn": "F",
+          "day_of_month": 2,
+          "day_code": null
+        },
+        {
+          "excelColumn": "G",
+          "day_of_month": 3,
+          "day_code": null
+        },
+        {
+          "excelColumn": "H",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 9,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 10,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 16,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 17,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 23,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 24,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 28,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 29,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 30,
+          "day_code": null
+        },
+        {
+          "excelColumn": "AA",
+          "day_of_month": 31,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "E": 0,
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: MARCH",
+        "no_of_days_of_classes": 1,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month",
+            "M": "#DIV/0!",
+            "F": "#DIV/0!"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    },
+    {
+      "sheet": "April",
+      "meta": {
+        "school_id": "302245",
+        "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+        "school_year": "2026-2027",
+        "grade_level": 12,
+        "section": "HESTIA - CSS",
+        "reported_month": "APRIL",
+        "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+        "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+        "total_for_month_header": "Total for the Month",
+        "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+      },
+      "dates": [
+        {
+          "excelColumn": "H",
+          "day_of_month": 1,
+          "day_code": null
+        },
+        {
+          "excelColumn": "I",
+          "day_of_month": 4,
+          "day_code": null
+        },
+        {
+          "excelColumn": "J",
+          "day_of_month": 5,
+          "day_code": null
+        },
+        {
+          "excelColumn": "K",
+          "day_of_month": 6,
+          "day_code": null
+        },
+        {
+          "excelColumn": "L",
+          "day_of_month": 7,
+          "day_code": null
+        },
+        {
+          "excelColumn": "M",
+          "day_of_month": 8,
+          "day_code": null
+        },
+        {
+          "excelColumn": "N",
+          "day_of_month": 11,
+          "day_code": null
+        },
+        {
+          "excelColumn": "O",
+          "day_of_month": 12,
+          "day_code": null
+        },
+        {
+          "excelColumn": "P",
+          "day_of_month": 13,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Q",
+          "day_of_month": 14,
+          "day_code": null
+        },
+        {
+          "excelColumn": "R",
+          "day_of_month": 15,
+          "day_code": null
+        },
+        {
+          "excelColumn": "S",
+          "day_of_month": 18,
+          "day_code": null
+        },
+        {
+          "excelColumn": "T",
+          "day_of_month": 19,
+          "day_code": null
+        },
+        {
+          "excelColumn": "U",
+          "day_of_month": 20,
+          "day_code": null
+        },
+        {
+          "excelColumn": "V",
+          "day_of_month": 21,
+          "day_code": null
+        },
+        {
+          "excelColumn": "W",
+          "day_of_month": 22,
+          "day_code": null
+        },
+        {
+          "excelColumn": "X",
+          "day_of_month": 25,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Y",
+          "day_of_month": 26,
+          "day_code": null
+        },
+        {
+          "excelColumn": "Z",
+          "day_of_month": 27,
+          "day_code": null
+        }
+      ],
+      "students_males": [
+        {
+          "excel_row": 14,
+          "sex_group": "MALE",
+          "seq_no": 1,
+          "name_last_first_middle": "CORNELIO, ZOILO",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 15,
+          "sex_group": "MALE",
+          "seq_no": 2,
+          "name_last_first_middle": "GAON, VIRGILIO F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 16,
+          "sex_group": "MALE",
+          "seq_no": 3,
+          "name_last_first_middle": "GARBIN, JOLIX D.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 17,
+          "sex_group": "MALE",
+          "seq_no": 4,
+          "name_last_first_middle": "GARCERA, LEVI G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 18,
+          "sex_group": "MALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GIMPES, VINCENT C.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 19,
+          "sex_group": "MALE",
+          "seq_no": 6,
+          "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 20,
+          "sex_group": "MALE",
+          "seq_no": 7,
+          "name_last_first_middle": "LATAG, XANJHO B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null,
+          "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+        },
+        {
+          "excel_row": 21,
+          "sex_group": "MALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LICUP, ALDRIN P.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 22,
+          "sex_group": "MALE",
+          "seq_no": 9,
+          "name_last_first_middle": "ROGADOR, JOSHUA G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "students_females": [
+        {
+          "excel_row": 57,
+          "sex_group": "FEMALE",
+          "seq_no": 1,
+          "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 58,
+          "sex_group": "FEMALE",
+          "seq_no": 2,
+          "name_last_first_middle": "FUENTES, JECEL M.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 59,
+          "sex_group": "FEMALE",
+          "seq_no": 3,
+          "name_last_first_middle": "FUNGO, MARIAN G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 60,
+          "sex_group": "FEMALE",
+          "seq_no": 4,
+          "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 61,
+          "sex_group": "FEMALE",
+          "seq_no": 5,
+          "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 62,
+          "sex_group": "FEMALE",
+          "seq_no": 6,
+          "name_last_first_middle": "GALINDES, JEAN ANNE",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 63,
+          "sex_group": "FEMALE",
+          "seq_no": 7,
+          "name_last_first_middle": "GUID, GRACE JOY F.",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        },
+        {
+          "excel_row": 64,
+          "sex_group": "FEMALE",
+          "seq_no": 8,
+          "name_last_first_middle": "LOZANO, GILLIAN F",
+          "attendance_marks_recorded": {},
+          "absent_total": null,
+          "tardy_total": null
+        }
+      ],
+      "totals_per_day": {
+        "male_total_per_day": [
+          {
+            "excel_row": 54,
+            "per_date": {
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "female_total_per_day": [
+          {
+            "excel_row": 97,
+            "per_date": {
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ],
+        "combined_total_per_day": [
+          {
+            "excel_row": 100,
+            "per_date": {
+              "AD": 0,
+              "AE": 0
+            }
+          }
+        ]
+      },
+      "page2_summary": {
+        "month_cell": "Month: APRIL",
+        "no_of_days_of_classes": 0,
+        "values": {
+          "enrolment_as_of_1st_friday_of_june": {
+            "label_cell": "AB105"
+          },
+          "late_enrollment_during_the_month": {
+            "label_cell": "AB107"
+          },
+          "registered_learner_as_of_end_of_the_month": {
+            "label_cell": "AB109"
+          },
+          "percentage_of_enrolment_as_of_end_of_the_month": {
+            "label_cell": "AB111"
+          },
+          "average_daily_attendance": {
+            "label_cell": "AB113",
+            "label": "Percentage of Attendance for the month"
+          },
+          "percentage_of_attendance_for_the_month": {
+            "label_cell": "AB114"
+          },
+          "students_with_5_consecutive_days_of_absences": {
+            "label_cell": "AB116"
+          },
+          "dropout": {
+            "label_cell": "AB118"
+          },
+          "transferred_out": {
+            "label_cell": "AB120"
+          },
+          "transferred_in": {
+            "label_cell": "AB122"
+          }
+        },
+        "summary_for_month_header_row": "Summary for the Month",
+        "certification": {
+          "certify_text": null,
+          "teacher_name": null,
+          "teacher_caption": null,
+          "attested_by_label": null,
+          "attested_by": null,
+          "attested_by_caption": null
+        },
+        "attendance_codes_legend_row": {
+          "title_cell": "Q102",
+          "title": "1. CODES FOR CHECKING ATTENDANCE",
+          "codes_cell": "Q103",
+          "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+        }
+      },
+      "page2_boilerplate_equals_june_template": true
+    }
+  ],
+  "conso": {
+    "sheet": "Conso",
+    "meta": {
+      "school_id": "302245",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "school_year": "2026-2027",
+      "grade_level": 12,
+      "section": "HESTIA - CSS",
+      "reported_month": "YEAR-ROUND",
+      "learners_name_header": "LEARNER'S NAME                                                                                         (Last Name, First Name, Middle Name)",
+      "date_row_note": "(1st row for date, 2nd row for Day: M,T,W,TH,F)",
+      "total_for_month_header": "Total for the Month",
+      "remarks_header": "REMARK/S (If DROPPED OUT, state reason, please refer to legend number 2.\nIf TRANSFERRED IN/OUT, write the name of School.)"
+    },
+    "dates": [
+      {
+        "excelColumn": "I",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "J",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "K",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "L",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "M",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "N",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "O",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "P",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "Q",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "R",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "S",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "T",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "U",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "V",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "W",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "X",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "Y",
+        "day_of_month": null,
+        "day_code": null
+      },
+      {
+        "excelColumn": "Z",
+        "day_of_month": null,
+        "day_code": null
+      }
+    ],
+    "students_males": [
+      {
+        "excel_row": 14,
+        "sex_group": "MALE",
+        "seq_no": 1,
+        "name_last_first_middle": "CORNELIO, ZOILO",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 15,
+        "sex_group": "MALE",
+        "seq_no": 2,
+        "name_last_first_middle": "GAON, VIRGILIO F.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 16,
+        "sex_group": "MALE",
+        "seq_no": 3,
+        "name_last_first_middle": "GARBIN, JOLIX D.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 17,
+        "sex_group": "MALE",
+        "seq_no": 4,
+        "name_last_first_middle": "GARCERA, LEVI G.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 18,
+        "sex_group": "MALE",
+        "seq_no": 5,
+        "name_last_first_middle": "GIMPES, VINCENT C.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 19,
+        "sex_group": "MALE",
+        "seq_no": 6,
+        "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 20,
+        "sex_group": "MALE",
+        "seq_no": 7,
+        "name_last_first_middle": "LATAG, XANJHO B.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null,
+        "remarks": "T/I - SYSTEMS PLUS COMPUTER COLLEGE"
+      },
+      {
+        "excel_row": 21,
+        "sex_group": "MALE",
+        "seq_no": 8,
+        "name_last_first_middle": "LICUP, ALDRIN P.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 22,
+        "sex_group": "MALE",
+        "seq_no": 9,
+        "name_last_first_middle": "ROGADOR, JOSHUA G.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      }
+    ],
+    "students_females": [
+      {
+        "excel_row": 57,
+        "sex_group": "FEMALE",
+        "seq_no": 1,
+        "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 58,
+        "sex_group": "FEMALE",
+        "seq_no": 2,
+        "name_last_first_middle": "FUENTES, JECEL M.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 59,
+        "sex_group": "FEMALE",
+        "seq_no": 3,
+        "name_last_first_middle": "FUNGO, MARIAN G.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 60,
+        "sex_group": "FEMALE",
+        "seq_no": 4,
+        "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 61,
+        "sex_group": "FEMALE",
+        "seq_no": 5,
+        "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 62,
+        "sex_group": "FEMALE",
+        "seq_no": 6,
+        "name_last_first_middle": "GALINDES, JEAN ANNE",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 63,
+        "sex_group": "FEMALE",
+        "seq_no": 7,
+        "name_last_first_middle": "GUID, GRACE JOY F.",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      },
+      {
+        "excel_row": 64,
+        "sex_group": "FEMALE",
+        "seq_no": 8,
+        "name_last_first_middle": "LOZANO, GILLIAN F",
+        "attendance_marks_recorded": {},
+        "absent_total": null,
+        "tardy_total": null
+      }
+    ],
+    "totals_per_day": {
+      "male_total_per_day": {
+        "excel_row": 54,
+        "values": {
+          "AD": 0,
+          "AE": 0
+        }
+      },
+      "female_total_per_day": {
+        "excel_row": 97,
+        "values": {
+          "AD": 0,
+          "AE": 0
+        }
+      },
+      "combined_total_per_day": {
+        "excel_row": 100,
+        "values": {
+          "AD": 0,
+          "AE": 0
+        }
+      }
+    },
+    "page2_summary": {
+      "month_cell": "Month: YEAR-ROUND",
+      "no_of_days_of_classes": 0,
+      "values": {
+        "enrolment_as_of_1st_friday_of_june": {
+          "label_cell": "AB105"
+        },
+        "late_enrollment_during_the_month": {
+          "label_cell": "AB107"
+        },
+        "registered_learner_as_of_end_of_the_month": {
+          "label_cell": "AB109"
+        },
+        "percentage_of_enrolment_as_of_end_of_the_month": {
+          "label_cell": "AB111"
+        },
+        "average_daily_attendance": {
+          "label_cell": "AB113",
+          "label": "Percentage of Attendance for the month"
+        },
+        "percentage_of_attendance_for_the_month": {
+          "label_cell": "AB114"
+        },
+        "students_with_5_consecutive_days_of_absences": {
+          "label_cell": "AB116"
+        },
+        "dropout": {
+          "label_cell": "AB118"
+        },
+        "transferred_out": {
+          "label_cell": "AB120"
+        },
+        "transferred_in": {
+          "label_cell": "AB122"
+        }
+      },
+      "summary_for_month_header_row": "Summary for the Month",
+      "certification": {
+        "certify_text": null,
+        "teacher_name": null,
+        "teacher_caption": null,
+        "attested_by_label": null,
+        "attested_by": null,
+        "attested_by_caption": null
+      },
+      "attendance_codes_legend_row": {
+        "title_cell": "Q102",
+        "title": "1. CODES FOR CHECKING ATTENDANCE",
+        "codes_cell": "Q103",
+        "codes_text": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)"
+      }
+    },
+    "page2_boilerplate_equals_june_template": true
+  },
+  "summary": {
+    "sheet": "Summary",
+    "type": "year-round attendance/tardiness summary per learner",
+    "headers": {
+      "attendance_months": [
+        "JUN",
+        "JUL",
+        "AUG",
+        "SEP",
+        "OCT",
+        "NOV",
+        "DEC",
+        "JAN",
+        "FEB",
+        "MAR",
+        "APR",
+        "TOTAL"
+      ],
+      "tardiness_months": [
+        "JUN",
+        "JUL",
+        "AUG",
+        "SEP",
+        "OCT",
+        "NOV",
+        "DEC",
+        "JAN",
+        "FEB",
+        "MAR",
+        "APR",
+        "TOTAL"
+      ],
+      "notes": [
+        "A: seq no (formula from Modified SF1 col A)",
+        "B: learner name (formula from Modified SF1 col C)",
+        "D-O: attendance totals pulled from each month sheet AL column",
+        "P-AA: tardiness totals pulled from each month sheet AE column"
+      ]
+    },
+    "students": [
+      {
+        "excel_row": 14,
+        "seq_no": 1,
+        "name_last_first_middle": "CORNELIO, ZOILO",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 15,
+        "seq_no": 2,
+        "name_last_first_middle": "GAON, VIRGILIO F.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 16,
+        "seq_no": 3,
+        "name_last_first_middle": "GARBIN, JOLIX D.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 17,
+        "seq_no": 4,
+        "name_last_first_middle": "GARCERA, LEVI G.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 18,
+        "seq_no": 5,
+        "name_last_first_middle": "GIMPES, VINCENT C.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 19,
+        "seq_no": 6,
+        "name_last_first_middle": "HIMZON, AHRIEL SIMON E.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 20,
+        "seq_no": 7,
+        "name_last_first_middle": "LATAG, XANJHO B.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 21,
+        "seq_no": 8,
+        "name_last_first_middle": "LICUP, ALDRIN P.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 22,
+        "seq_no": 9,
+        "name_last_first_middle": "ROGADOR, JOSHUA G.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 57,
+        "seq_no": 1,
+        "name_last_first_middle": "BONUEL, RIHANA JANE G.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 58,
+        "seq_no": 2,
+        "name_last_first_middle": "FUENTES, JECEL M.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 59,
+        "seq_no": 3,
+        "name_last_first_middle": "FUNGO, MARIAN G.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 60,
+        "seq_no": 4,
+        "name_last_first_middle": "FURTER, JAMAICAH KATE B.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 61,
+        "seq_no": 5,
+        "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 62,
+        "seq_no": 6,
+        "name_last_first_middle": "GALINDES, JEAN ANNE",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 63,
+        "seq_no": 7,
+        "name_last_first_middle": "GUID, GRACE JOY F.",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      },
+      {
+        "excel_row": 64,
+        "seq_no": 8,
+        "name_last_first_middle": "LOZANO, GILLIAN F",
+        "attendance": {
+          "TOTAL": 0
+        },
+        "tardiness": {
+          "TOTAL": 0
+        }
+      }
+    ],
+    "totals_per_day": {
+      "male_total_per_day": {
+        "excel_row": 54,
+        "values": {
+          "D": 0,
+          "E": 0,
+          "F": 0,
+          "G": 0,
+          "H": 0,
+          "I": 0,
+          "J": 0,
+          "K": 0,
+          "L": 0,
+          "M": 0,
+          "N": 0,
+          "O": 0,
+          "P": 0,
+          "Q": 0,
+          "R": 0,
+          "S": 0,
+          "T": 0,
+          "U": 0,
+          "V": 0,
+          "W": 0,
+          "X": 0,
+          "Y": 0,
+          "Z": 0,
+          "AA": 0,
+          "AF": 0,
+          "AG": 0
+        }
+      },
+      "female_total_per_day": {
+        "excel_row": 97,
+        "values": {
+          "D": 0,
+          "E": 0,
+          "F": 0,
+          "G": 0,
+          "H": 0,
+          "I": 0,
+          "J": 0,
+          "K": 0,
+          "L": 0,
+          "M": 0,
+          "N": 0,
+          "O": 0,
+          "P": 0,
+          "Q": 0,
+          "R": 0,
+          "S": 0,
+          "T": 0,
+          "U": 0,
+          "V": 0,
+          "W": 0,
+          "X": 0,
+          "Y": 0,
+          "Z": 0,
+          "AA": 0,
+          "AF": 0,
+          "AG": 0
+        }
+      },
+      "combined_total_per_day": {
+        "excel_row": 100,
+        "values": {
+          "D": 0,
+          "E": 0,
+          "F": 0,
+          "G": 0,
+          "H": 0,
+          "I": 0,
+          "J": 0,
+          "K": 0,
+          "L": 0,
+          "M": 0,
+          "N": 0,
+          "O": 0,
+          "P": 0,
+          "Q": 0,
+          "R": 0,
+          "S": 0,
+          "T": 0,
+          "U": 0,
+          "V": 0,
+          "W": 0,
+          "X": 0,
+          "Y": 0,
+          "Z": 0,
+          "AA": 0,
+          "AF": 0,
+          "AG": 0
+        }
+      }
+    }
+  },
+  "printable_sf2": {
+    "sheet": "Printable SF2",
+    "type": "print layout (empty grid, mirrors formulas)",
+    "meta": {
+      "school_id": "302245",
+      "school_year": "2026-2027",
+      "school_name": "STA. MAGDALENA NATIONAL HIGH SCHOOL",
+      "month_label": "Month:"
+    },
+    "learners": [
+      {
+        "excel_row": 14,
+        "sex_group": "MALE",
+        "seq_no": 1,
+        "name_last_first_middle": "CORNELIO, ZOILO"
+      },
+      {
+        "excel_row": 15,
+        "sex_group": "MALE",
+        "seq_no": 2,
+        "name_last_first_middle": "GAON, VIRGILIO F."
+      },
+      {
+        "excel_row": 16,
+        "sex_group": "MALE",
+        "seq_no": 3,
+        "name_last_first_middle": "GARBIN, JOLIX D."
+      },
+      {
+        "excel_row": 17,
+        "sex_group": "MALE",
+        "seq_no": 4,
+        "name_last_first_middle": "GARCERA, LEVI G."
+      },
+      {
+        "excel_row": 18,
+        "sex_group": "MALE",
+        "seq_no": 5,
+        "name_last_first_middle": "GIMPES, VINCENT C."
+      },
+      {
+        "excel_row": 19,
+        "sex_group": "MALE",
+        "seq_no": 6,
+        "name_last_first_middle": "HIMZON, AHRIEL SIMON E."
+      },
+      {
+        "excel_row": 20,
+        "sex_group": "MALE",
+        "seq_no": 7,
+        "name_last_first_middle": "LATAG, XANJHO B."
+      },
+      {
+        "excel_row": 21,
+        "sex_group": "MALE",
+        "seq_no": 8,
+        "name_last_first_middle": "LICUP, ALDRIN P."
+      },
+      {
+        "excel_row": 22,
+        "sex_group": "MALE",
+        "seq_no": 9,
+        "name_last_first_middle": "ROGADOR, JOSHUA G."
+      },
+      {
+        "excel_row": 57,
+        "sex_group": "FEMALE",
+        "seq_no": 3,
+        "name_last_first_middle": "FUNGO, MARIAN G."
+      },
+      {
+        "excel_row": 58,
+        "sex_group": "FEMALE",
+        "seq_no": 4,
+        "name_last_first_middle": "FURTER, JAMAICAH KATE B."
+      },
+      {
+        "excel_row": 59,
+        "sex_group": "FEMALE",
+        "seq_no": 5,
+        "name_last_first_middle": "GALLANOSA, RACHEL KIMBERLY G."
+      },
+      {
+        "excel_row": 60,
+        "sex_group": "FEMALE",
+        "seq_no": 6,
+        "name_last_first_middle": "GALINDES, JEAN ANNE"
+      },
+      {
+        "excel_row": 61,
+        "sex_group": "FEMALE",
+        "seq_no": 7,
+        "name_last_first_middle": "GUID, GRACE JOY F."
+      },
+      {
+        "excel_row": 62,
+        "sex_group": "FEMALE",
+        "seq_no": 8,
+        "name_last_first_middle": "LOZANO, GILLIAN F"
+      }
+    ],
+    "attendance_grid_visible_value_cells": [],
+    "certification": {
+      "teacher_name_source": "=June!AE126",
+      "teacher_name": "MARIEL T. ANONUEVO",
+      "attested_by_source": "=June!AE130",
+      "attested_by": "JOHNBERK B. EVASCO"
+    },
+    "grid_note": "Attendance grid cells in 'Printable SF2' contain no values/formulas beyond the header row (blank template).",
+    "roster_note": "The Printable SF2 female block (rows 57-96) maps to Modified SF1 C53..C90, i.e. it SKIPS SF1 girls #1-2 (BONUEL, RIHANA JANE G. and FUENTES, JECEL M.). The male block maps correctly (C10..). Only those days' students that have cached names are listed below."
+  },
+  "sf2_page2_boilerplate_reference": {
+    "verified_equal_in_sheets": [
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+      "January",
+      "February",
+      "March",
+      "April"
+    ],
+    "conso_boilerplate_equals_june_template": true,
+    "full_text_cells": {
+      "A103": "GUIDELINES:",
+      "Q103": "1. CODES FOR CHECKING ATTENDANCE",
+      "AB103": "Month: SEPTEMBER",
+      "AF103": "No. of Days of Classes:",
+      "AH103": "=IF(AL12=0,0,AL12)",
+      "AI103": "Summary for the Month",
+      "A104": "1. The attendance shall be accomplished daily. Refer to the codes for checking learners' attendance.",
+      "Q104": "blank- Present;   (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)",
+      "AI104": "M",
+      "AJ104": "F",
+      "AK104": "TOTAL",
+      "A105": "2. Dates shall be written in the preceding columns beside Learner's Name.",
+      "AB105": "* Enrolment  as of  (1st Friday of June)",
+      "AI105": "9",
+      "AJ105": "8",
+      "AK105": "=SUM(AI105:AJ106)",
+      "A106": "3. To compute the following:",
+      "A107": "a.",
+      "B107": "Percentage of Enrolment =",
+      "D107": "Registered Learner as of End of the Month",
+      "N107": "x 100",
+      "Q107": "2. REASONS/CAUSES OF DROP-OUTS",
+      "AB107": "Late Enrollment during the month                                               (beyond cut-off)",
+      "AI107": "=BR107",
+      "AJ107": "=BS107",
+      "AK107": "=BT107",
+      "D108": "Enrolment as of 1st Friday of June",
+      "Q108": "a. Domestic-Related Factors",
+      "A109": "b.",
+      "B109": "Average Daily Attendance = ",
+      "D109": "Total Daily Attendance",
+      "Q109": "a.1. Had to take care of siblings",
+      "AB109": "Registered Learner as of end of the month",
+      "AI109": "9",
+      "AJ109": "9",
+      "AK109": "=SUM(AI109:AJ110)",
+      "D110": "Number of School Days in reporting month",
+      "Q110": "a.2. Early marriage/pregnancy",
+      "A111": "c.",
+      "B111": "Percentage of Attendance for the month =",
+      "D111": "Average daily attendance",
+      "N111": "x 100",
+      "Q111": "a.3. Parents' attitude toward schooling",
+      "AB111": "Percentage of Enrolment as of end of the month",
+      "AI111": "100",
+      "AJ111": "100",
+      "AK111": "100",
+      "D112": "Registered Learner as of End of the month",
+      "Q112": "a.4. Family problems",
+      "Q113": "b. Individual-Related Factors",
+      "AB113": "Average Daily Attendance",
+      "AI113": "100",
+      "AJ113": "100",
+      "AK113": "100",
+      "A114": "4. Every End of the month, the class adviser will submit this form to the office of the principal for recording of \n     summary table into the School Form 4. Once signed by the principal, this form should be returned to the adviser.",
+      "Q114": "b.1. Illness",
+      "AB114": "Percentage of Attendance for the month ",
+      "AI114": "100",
+      "AJ114": "100",
+      "AK114": "100",
+      "Q115": "b.2. Overage",
+      "A116": "5. The adviser will extend neccessary intervention including but not limited to home visitation  to learner/s that committed 5 consecutive days of absences or those with potentials of dropping out",
+      "Q116": "b.3. Death",
+      "AB116": "Number of students with 5 consecutive days of absences:",
+      "AI116": "=$AN$54",
+      "AJ116": "=$AN$98",
+      "AK116": "=SUM(AI116:AJ117)",
+      "Q117": "b.4. Drug Abuse",
+      "A118": "6.  Attendance performance of learner is expected to reflect in Form 137 and Form 138 every grading period",
+      "Q118": "b.5. Poor academic performance",
+      "AB118": "Drop out",
+      "AI118": "=COUNTIF($D$14:$AB$53,\"DRP\")",
+      "AJ118": "=COUNTIF($D$57:$AB$97,\"DRP\")",
+      "AK118": "=SUM(AI118:AJ119)",
+      "A119": "*",
+      "B119": "Beginning of School Year cut-off report is every 1st Friday of School Calendar Days",
+      "Q119": "b.6. Lack of interest/Distractions",
+      "Q120": "b.7. Hunger/Malnutrition",
+      "AB120": "Transferred out",
+      "AI120": "=COUNTIF($D$14:$AB$53,\"T/O\")",
+      "AJ120": "=COUNTIF($D$57:$AB$97,\"T/O\")",
+      "AK120": "=SUM(AI120:AJ121)",
+      "Q121": "c. School-Related Factors",
+      "Q122": "c.1. Teacher Factor",
+      "AB122": "Transferred in",
+      "AI122": "1",
+      "AJ122": "=COUNTIF($D$57:$AB$97,\"T/I\")",
+      "AK122": "=SUM(AI122:AJ123)",
+      "Q123": "c.2. Physical condition of classroom",
+      "Q124": "c.3. Peer influence",
+      "Q125": "d. Geographic/Environmental",
+      "AB125": "I certify that this is a true and correct report.",
+      "Q126": "d.1. Distance between home and school",
+      "AE126": "MARIEL T. ANONUEVO",
+      "Q127": "d.2. Armed conflict (incl. Tribal wars & clanfeuds)",
+      "AD128": "                          (Signature of Teacher over Printed Name)",
+      "Q129": "d.3. Calamities/Disasters",
+      "Q130": "e. Financial-Related",
+      "AB130": "Attested by:",
+      "AE130": "=IF('Modified SF1'!X95=\"\",\"\",'Modified SF1'!X95)",
+      "A131": "School Form 2: Page 2 of ________",
+      "Q131": "e.1. Child labor, work",
+      "Q132": "f. Others",
+      "AG132": " (Signature of School Head over Printed Name)"
+    }
+  }
+}

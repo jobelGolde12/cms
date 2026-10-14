@@ -191,7 +191,9 @@ export const students = sqliteTable(
     middleName: text("middle_name"),
     lastName: text("last_name").notNull(),
     suffix: text("suffix"),
-    birthDate: text("birth_date").notNull(), // ISO date YYYY-MM-DD
+    /** ISO date YYYY-MM-DD; null when the source does not provide the birth date
+     *  (e.g. XLSX-imported SF1/SF2 rosters carry names only). */
+    birthDate: text("birth_date"),
     /** male | female */
     sex: text("sex").notNull(),
 
@@ -284,6 +286,8 @@ export const studentEnrollments = sqliteTable(
     /** active | completed | transferred | withdrawn */
     status: text("status").notNull().default("active"),
     enrollmentDate: text("enrollment_date"),
+    /** Free-text remarks recorded with the enrollment (e.g. transfer-in source school). */
+    remarks: text("remarks"),
     recordedBy: text("recorded_by")
       .notNull()
       .references(() => users.id),
