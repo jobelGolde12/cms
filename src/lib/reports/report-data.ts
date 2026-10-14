@@ -17,7 +17,7 @@ import {
   subjects,
 } from "@/db/schema";
 import type { SessionUser } from "../auth";
-import { userSectionScope } from "../scope";
+import { userSectionScope, canViewConfidentialBehavior, confidentialBehaviorFilter } from "../scope";
 import { ageFromBirthDate, fullName } from "../utils";
 import type { AssessmentDomain, ReportType } from "@/lib/constants";
 import { REPORT_TYPE_LABELS } from "@/lib/constants";
@@ -63,6 +63,9 @@ export async function buildReport(
 ): Promise<BuiltReport> {
   const scope = await userSectionScope(user);
   const withScope = (extra?: SQL) => (scope ? (extra ? and(scope, extra) : scope) : extra);
+  // Confidential (Guidance Office) behavior rows are stripped from every
+  // report for users outside the guidance/admin boundary.
+  const brConfidential = !canViewConfidentialBehavior(user);
 
   const generatedAt = new Date();
   const filters = [
@@ -360,7 +363,11 @@ export async function buildReport(
           ),
         )
         .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
-        .where(withScope(sql`1 = 1`))
+        .where(
+          withScope(
+            and(sql`1 = 1`, confidentialBehaviorFilter(user) ?? sql`1 = 1`),
+          ),
+        )
         .orderBy(desc(behaviorRecords.date))
         .limit(1000);
 
@@ -495,7 +502,7 @@ export async function buildReport(
           sex: students.sex,
           grade: gradeLevels.name,
           concerns:
-            sql<number>`(select count(*) from behavior_records br where br.student_id = ${students.id} and br.status != 'resolved') + (select count(*) from interventions iv where iv.student_id = ${students.id} and iv.status in ('planned','active'))`,
+            sql<number>`(select count(*) from behavior_records br where br.student_id = ${students.id} ${brConfidential ? "and br.confidential = 0" : ""} and br.status != 'resolved') + (select count(*) from interventions iv where iv.student_id = ${students.id} and iv.status in ('planned','active'))`,
         })
         .from(students)
         .leftJoin(
@@ -508,11 +515,11 @@ export async function buildReport(
         .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
         .where(
           withScope(
-            sql`(exists (select 1 from behavior_records br where br.student_id = ${students.id} and br.status != 'resolved')
+            sql`(exists (select 1 from behavior_records br where br.student_id = ${students.id} ${brConfidential ? "and br.confidential = 0" : ""} and br.status != 'resolved')
               or exists (select 1 from interventions iv where iv.student_id = ${students.id} and iv.status in ('planned','active')))`,
           ),
         )
-        .orderBy(desc(sql`(select count(*) from behavior_records br where br.student_id = ${students.id} and br.status != 'resolved')`))
+        .orderBy(desc(sql`(select count(*) from behavior_records br where br.student_id = ${students.id} ${brConfidential ? "and br.confidential = 0" : ""} and br.status != 'resolved')`))
         .limit(500);
 
       const data = rows.map((r) => ({

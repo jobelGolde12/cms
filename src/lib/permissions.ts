@@ -35,6 +35,9 @@ export const PERMISSIONS = [
   // Assessments (reading / literacy / numeracy)
   "assessments.view",
   "assessments.write",
+  // Health / nutrition (Nurse)
+  "health.view",
+  "health.write",
   // Interventions
   "interventions.view",
   "interventions.write",
@@ -48,6 +51,8 @@ export const PERMISSIONS = [
   "reports.export",
   // QR
   "qr.verify",
+  // Official document generation (Registrar) — never mutates records
+  "documents.print",
   // Users, audit, settings
   "users.view",
   "users.manage",
@@ -148,12 +153,66 @@ const GUIDANCE: Permission[] = [
   "reports.view",
 ];
 
+/**
+ * Nurse — health & nutrition domain ONLY. Deliberately has NO
+ * `students.update` / `guardians.manage`: a Nurse can never edit a student's
+ * general personal information (name, birth date, sex, address, guardians,
+ * enrollment) — only health records she/he owns.
+ */
+const NURSE: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "guardians.view",
+  "enrollment.view",
+  "health.view",
+  "health.write",
+  "reports.view",
+  "reports.generate",
+];
+
+/**
+ * Registrar — STRICTLY read-only plus official document generation.
+ * No create/update/archive/write permissions on any student domain.
+ */
+const REGISTRAR: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "guardians.view",
+  "enrollment.view",
+  "grades.view",
+  "attendance.view",
+  "assessments.view",
+  "reports.view",
+  "reports.generate",
+  "reports.export",
+  "documents.print",
+];
+
+/**
+ * Language & Literacy Coordinator — literacy/reading/numeracy assessment
+ * domain only. No behavior, no health, no grades, never user management.
+ */
+const LITERACY_COORDINATOR: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "guardians.view",
+  "enrollment.view",
+  "assessments.view",
+  "assessments.write",
+  "interventions.view",
+  "reports.view",
+  "reports.generate",
+];
+
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   admin: ADMIN,
   school_admin: SCHOOL_ADMIN,
   teacher: TEACHER,
   records: RECORDS,
   guidance: GUIDANCE,
+  nurse: NURSE,
+  registrar: REGISTRAR,
+  literacy_coordinator: LITERACY_COORDINATOR,
 };
 
 export function hasPermission(role: Role, permission: Permission): boolean {

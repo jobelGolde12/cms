@@ -45,6 +45,9 @@ async function seedRoles() {
     { id: "role-teacher", name: "Teacher / Adviser", description: "Assigned sections: grades, attendance, assessments, behavior." },
     { id: "role-records", name: "Records Personnel", description: "Student records, enrollment, verification, historical records." },
     { id: "role-guidance", name: "Guidance Personnel", description: "Behavior, interventions, and student support information." },
+    { id: "role-nurse", name: "Nurse", description: "Health and nutrition records only — cannot edit general student information." },
+    { id: "role-registrar", name: "Registrar", description: "Strictly read-only official records plus student card / Form 137 printing." },
+    { id: "role-literacy-coordinator", name: "Language & Literacy Coordinator", description: "Reading, literacy and numeracy assessments and statistics." },
   ];
   for (const r of roleRows) {
     await db
@@ -89,6 +92,9 @@ async function seedUsers() {
     { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", id: "user-teacher", name: "Teacher" },
     { role: "records", emailEnv: "DEFAULT_RECORDS_EMAIL", hashEnv: "DEFAULT_RECORDS_PASSWORD_HASH", id: "user-records", name: "Records" },
     { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", id: "user-guidance", name: "Guidance" },
+    { role: "nurse", emailEnv: "DEFAULT_NURSE_EMAIL", hashEnv: "DEFAULT_NURSE_PASSWORD_HASH", id: "user-nurse", name: "Nurse" },
+    { role: "registrar", emailEnv: "DEFAULT_REGISTRAR_EMAIL", hashEnv: "DEFAULT_REGISTRAR_PASSWORD_HASH", id: "user-registrar", name: "Registrar" },
+    { role: "literacy_coordinator", emailEnv: "DEFAULT_LITERACY_EMAIL", hashEnv: "DEFAULT_LITERACY_PASSWORD_HASH", id: "user-literacy", name: "LiteracyCoord" },
   ];
   for (const d of rolesToSeed) {
     const email = process.env[d.emailEnv];

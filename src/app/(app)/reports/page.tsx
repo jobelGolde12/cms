@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { FileText, Download } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { db } from "@/db";
 import { reports } from "@/db/schema";
 import { desc } from "drizzle-orm";
@@ -14,6 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 export default async function ReportsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (!hasPermission(user.role, "reports.view")) redirect("/dashboard");
 
   const recent = await db
     .select({

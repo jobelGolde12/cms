@@ -18,7 +18,7 @@ import {
   type RecordStatus,
 } from "./constants";
 import type { SessionUser } from "./auth";
-import { userSectionScope } from "./scope";
+import { userSectionScope, confidentialBehaviorFilter } from "./scope";
 import { dashboardStats } from "./queries";
 
 /* -------------------------------------------------------------------------- */
@@ -318,13 +318,20 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       .groupBy(gradeLevels.id)
       .orderBy(gradeLevels.orderIndex),
 
-    // Open behavior concerns by category.
+    // Open behavior concerns by category (confidential guidance rows excluded
+    // unless the user is guidance/admin — see scope.confidentialBehaviorFilter).
     db
       .select({ label: behaviorCategories.name, value: count() })
       .from(behaviorRecords)
       .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
       .innerJoin(students, eq(students.id, behaviorRecords.studentId))
-      .where(and(scope, inArray(behaviorRecords.status, ["open", "monitored"])))
+      .where(
+        and(
+          scope,
+          inArray(behaviorRecords.status, ["open", "monitored"]),
+          confidentialBehaviorFilter(user) ?? sql`1 = 1`,
+        ),
+      )
       .groupBy(behaviorCategories.id)
       .orderBy(desc(count())),
 

@@ -20,7 +20,7 @@ import {
   enrollmentFormSchema,
   gradeFormSchema,
 } from "@/lib/schemas";
-import { canAccessStudent } from "@/lib/scope";
+import { canAccessStudent, canViewConfidentialBehavior } from "@/lib/scope";
 import type { Permission } from "@/lib/permissions";
 import { invalidateForecasts } from "@/lib/forecasting/storage";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
@@ -284,6 +284,17 @@ export async function saveBehavior(_prev: ActionState, formData: FormData): Prom
 
   try {
     if (recordId) {
+      // Confidential (Guidance Office) records may only be modified by
+      // admin/school_admin/guidance — never by teachers/advisers or others.
+      const existing = await db
+        .select({ confidential: behaviorRecords.confidential })
+        .from(behaviorRecords)
+        .where(eq(behaviorRecords.id, recordId))
+        .limit(1);
+      if (existing[0]?.confidential && !canViewConfidentialBehavior(user)) {
+        return fail("You do not have permission to modify this record.");
+      }
+
       await db
         .update(behaviorRecords)
         .set({
@@ -306,6 +317,9 @@ export async function saveBehavior(_prev: ActionState, formData: FormData): Prom
         severity: scrub(severity),
         followUp: scrub(followUp),
         status,
+        // Records authored by Guidance Office are confidential: only
+        // admin/school_admin/guidance can ever read them back.
+        confidential: user.role === "guidance",
         recordedBy: user.id,
       });
     }

@@ -127,6 +127,7 @@ export const config = {
     "/api/reports/:path*",
     "/dashboard/:path*",
     "/students/:path*",
+    "/health/:path*",
     "/verification/:path*",
     "/duplicates/:path*",
     "/performance/:path*",

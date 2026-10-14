@@ -22,6 +22,7 @@ const navLinks: NavLink[] = [
   { label: "Students", href: "/students", icon: "students", permission: "students.view" },
   { label: "Performance", href: "/performance", icon: "performance", permission: "grades.view" },
   { label: "Student Development", href: "/development", icon: "development", permission: "behavior.view" },
+  { label: "Health & Nutrition", href: "/health", icon: "health", permission: "health.view" },
   { label: "Verification", href: "/verification", icon: "verification", permission: "verification.review" },
   { label: "Duplicate Review", href: "/duplicates", icon: "duplicates", permission: "duplicates.view" },
   { label: "Reports", href: "/reports", icon: "reports", permission: "reports.view" },
@@ -33,7 +34,7 @@ const navLinks: NavLink[] = [
 ];
 
 const NAV_SECTIONS: { heading: string; items: string[] }[] = [
-  { heading: "Core Modules", items: ["/dashboard", "/students", "/performance", "/development", "/verification", "/duplicates", "/reports"] },
+  { heading: "Core Modules", items: ["/dashboard", "/students", "/performance", "/development", "/health", "/verification", "/duplicates", "/reports"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
   { heading: "System", items: ["/users", "/settings"] },
 ];

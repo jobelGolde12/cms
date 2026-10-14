@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { canEditStudent } from "@/lib/scope";
 import { getStudentProfile, getGuardiansForStudent } from "@/lib/queries";
 import { StudentForm } from "@/components/student-form";
@@ -10,6 +11,10 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const { id } = await params;
+
+  // Scope AND domain permission must both hold — otherwise the form would
+  // render for roles whose submissions the server would reject anyway.
+  if (!hasPermission(user.role, "students.update")) redirect(`/students/${id}`);
 
   const student = await getStudentProfile(id);
   if (!student) redirect("/students");

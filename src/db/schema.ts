@@ -440,6 +440,12 @@ export const behaviorRecords = sqliteTable(
     followUp: text("follow_up"),
     /** open | monitored | resolved */
     status: text("status").notNull().default("open"),
+    /**
+     * Confidential Guidance Office record. When true, only admin,
+     * school_admin and guidance roles may read or write this row
+     * (enforced server-side in every behavior query/action).
+     */
+    confidential: bool("confidential").notNull().default(false),
     recordedBy: text("recorded_by")
       .notNull()
       .references(() => users.id),
@@ -451,6 +457,69 @@ export const behaviorRecords = sqliteTable(
     index("behavior_category_idx").on(t.categoryId),
     index("behavior_date_idx").on(t.date),
     index("behavior_status_idx").on(t.status),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
+/*  Health — nutrition & clinical records (Nurse domain)                      */
+/* -------------------------------------------------------------------------- */
+
+/** Nutritional status assessments (weight/height/BMI) per student & period. */
+export const healthRecords = sqliteTable(
+  "health_records",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    schoolYearId: text("school_year_id").references(() => schoolYears.id),
+    measurementDate: text("measurement_date").notNull(), // ISO date
+    /** kg */
+    weightKg: real("weight_kg"),
+    /** cm */
+    heightCm: real("height_cm"),
+    /** kg/m² — computed by the action layer, stored for reporting */
+    bmi: real("bmi"),
+    /** normal | wasted | severely_wasted | overweight | obese */
+    nutritionalStatus: text("nutritional_status"),
+    remarks: text("remarks"),
+    recordedBy: text("recorded_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("health_student_idx").on(t.studentId),
+    index("health_date_idx").on(t.measurementDate),
+    index("health_status_idx").on(t.nutritionalStatus),
+  ],
+);
+
+/** General clinical/school-health records (first aid, referral, etc.). */
+export const clinicalRecords = sqliteTable(
+  "clinical_records",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // ISO date
+    /** Health Assessment | First Aid | Referral | Health Education | … */
+    category: text("category").notNull(),
+    description: text("description").notNull(),
+    assessment: text("assessment"),
+    actionTaken: text("action_taken"),
+    remarks: text("remarks"),
+    recordedBy: text("recorded_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("clinical_student_idx").on(t.studentId),
+    index("clinical_date_idx").on(t.date),
   ],
 );
 
@@ -882,6 +951,17 @@ export const gradeRelations = relations(studentGrades, ({ one }) => ({
   recorder: one(users, { fields: [studentGrades.recordedBy], references: [users.id] }),
 }));
 
+export const healthRecordRelations = relations(healthRecords, ({ one }) => ({
+  student: one(students, { fields: [healthRecords.studentId], references: [students.id] }),
+  schoolYear: one(schoolYears, { fields: [healthRecords.schoolYearId], references: [schoolYears.id] }),
+  recorder: one(users, { fields: [healthRecords.recordedBy], references: [users.id] }),
+}));
+
+export const clinicalRecordRelations = relations(clinicalRecords, ({ one }) => ({
+  student: one(students, { fields: [clinicalRecords.studentId], references: [students.id] }),
+  recorder: one(users, { fields: [clinicalRecords.recordedBy], references: [users.id] }),
+}));
+
 export const attendanceRelations = relations(attendanceRecords, ({ one }) => ({
   enrollment: one(studentEnrollments, {
     fields: [attendanceRecords.enrollmentId],
@@ -984,6 +1064,8 @@ export type Subject = typeof subjects.$inferSelect;
 export type GradingPeriod = typeof gradingPeriods.$inferSelect;
 export type StudentGrade = typeof studentGrades.$inferSelect;
 export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
+export type HealthRecord = typeof healthRecords.$inferSelect;
+export type ClinicalRecord = typeof clinicalRecords.$inferSelect;
 export type BehaviorCategory = typeof behaviorCategories.$inferSelect;
 export type BehaviorRecord = typeof behaviorRecords.$inferSelect;
 export type Assessment = typeof assessments.$inferSelect;

@@ -51,6 +51,12 @@ export function roleNameFromId(roleId: string): Role | null {
       return "records";
     case "role-guidance":
       return "guidance";
+    case "role-nurse":
+      return "nurse";
+    case "role-registrar":
+      return "registrar";
+    case "role-literacy-coordinator":
+      return "literacy_coordinator";
     default:
       return null;
   }

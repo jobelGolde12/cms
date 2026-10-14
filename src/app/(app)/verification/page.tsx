@@ -19,6 +19,9 @@ export default async function VerificationPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  // The queue exposes learner PII outside the student registry — restrict it
+  // to verification-capable roles (admin / school_admin / records).
+  if (!hasPermission(user.role, "verification.review")) redirect("/dashboard");
 
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim().toLowerCase() : "";

@@ -44,6 +44,9 @@ export default async function DuplicatesPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  // Duplicate candidates contain learner PII (names + birth dates) — only
+  // duplicate-review roles may load this page at all.
+  if (!hasPermission(user.role, "duplicates.view")) redirect("/dashboard");
 
   const params = await searchParams;
   const str = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : "");

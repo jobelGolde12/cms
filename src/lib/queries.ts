@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { confidentialBehaviorFilter } from "./scope";
 import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/db";
 import {
@@ -7,8 +8,10 @@ import {
   auditLogs,
   behaviorCategories,
   behaviorRecords,
+  clinicalRecords,
   duplicateCandidates,
   gradeLevels,
+  healthRecords,
   gradingPeriods,
   guardians,
   interventions,
@@ -467,7 +470,7 @@ export async function getAssessmentsForStudent(studentId: string) {
     .orderBy(desc(assessments.date));
 }
 
-export async function getBehaviorForStudent(studentId: string) {
+export async function getBehaviorForStudent(studentId: string, user?: SessionUser) {
   const recorder = alias(users, "recorder");
   return db
     .select({
@@ -485,7 +488,14 @@ export async function getBehaviorForStudent(studentId: string) {
     .from(behaviorRecords)
     .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
     .leftJoin(recorder, eq(recorder.id, behaviorRecords.recordedBy))
-    .where(eq(behaviorRecords.studentId, studentId))
+    .where(
+      user
+        ? and(
+            eq(behaviorRecords.studentId, studentId),
+            confidentialBehaviorFilter(user),
+          )
+        : eq(behaviorRecords.studentId, studentId),
+    )
     .orderBy(desc(behaviorRecords.date));
 }
 
@@ -525,6 +535,84 @@ export async function getFollowupsForIntervention(interventionId: string) {
     .leftJoin(users, eq(users.id, interventionFollowups.recordedBy))
     .where(eq(interventionFollowups.interventionId, interventionId))
     .orderBy(desc(interventionFollowups.followUpDate));
+}
+
+export async function getHealthForStudent(studentId: string) {
+  const recorder = alias(users, "recorder");
+  return db
+    .select({
+      id: healthRecords.id,
+      measurementDate: healthRecords.measurementDate,
+      weightKg: healthRecords.weightKg,
+      heightCm: healthRecords.heightCm,
+      bmi: healthRecords.bmi,
+      nutritionalStatus: healthRecords.nutritionalStatus,
+      remarks: healthRecords.remarks,
+      recorderFirst: recorder.firstName,
+      recorderLast: recorder.lastName,
+    })
+    .from(healthRecords)
+    .leftJoin(recorder, eq(recorder.id, healthRecords.recordedBy))
+    .where(eq(healthRecords.studentId, studentId))
+    .orderBy(desc(healthRecords.measurementDate));
+}
+
+export async function getClinicalForStudent(studentId: string) {
+  const recorder = alias(users, "recorder");
+  return db
+    .select({
+      id: clinicalRecords.id,
+      date: clinicalRecords.date,
+      category: clinicalRecords.category,
+      description: clinicalRecords.description,
+      assessment: clinicalRecords.assessment,
+      actionTaken: clinicalRecords.actionTaken,
+      remarks: clinicalRecords.remarks,
+      recorderFirst: recorder.firstName,
+      recorderLast: recorder.lastName,
+    })
+    .from(clinicalRecords)
+    .leftJoin(recorder, eq(recorder.id, clinicalRecords.recordedBy))
+    .where(eq(clinicalRecords.studentId, studentId))
+    .orderBy(desc(clinicalRecords.date));
+}
+
+/** Nutritional status distribution for the health page (role-gated upstream). */
+export async function healthStats() {
+  const rows = await db
+    .select({
+      nutritionalStatus: healthRecords.nutritionalStatus,
+      count: count(),
+    })
+    .from(healthRecords)
+    .groupBy(healthRecords.nutritionalStatus);
+  return rows;
+}
+
+/** Recent health measurements across students (newest first). */
+export async function listHealthRecords(limit = 50) {
+  const recorder = alias(users, "recorder");
+  return db
+    .select({
+      id: healthRecords.id,
+      studentId: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      measurementDate: healthRecords.measurementDate,
+      weightKg: healthRecords.weightKg,
+      heightCm: healthRecords.heightCm,
+      bmi: healthRecords.bmi,
+      nutritionalStatus: healthRecords.nutritionalStatus,
+      remarks: healthRecords.remarks,
+      recorderFirst: recorder.firstName,
+      recorderLast: recorder.lastName,
+    })
+    .from(healthRecords)
+    .innerJoin(students, eq(students.id, healthRecords.studentId))
+    .leftJoin(recorder, eq(recorder.id, healthRecords.recordedBy))
+    .orderBy(desc(healthRecords.measurementDate))
+    .limit(limit);
 }
 
 export async function getVerificationHistory(studentId: string) {
@@ -630,6 +718,7 @@ export async function dashboardStats(user: SessionUser): Promise<DashboardStats>
           inner join ${behaviorCategories} on ${behaviorCategories.id} = ${behaviorRecords.categoryId}
           where ${behaviorRecords.studentId} = ${students.id}
             and ${behaviorRecords.status} != 'resolved'
+            and ${behaviorRecords.confidential} = 0
             and ${behaviorCategories.kind} = 'concern'
         )`),
     ]);
@@ -1052,6 +1141,8 @@ export async function listBehaviorRecords(
 ): Promise<BehaviorRow[]> {
   const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
   const conditions: SQL[] = [scope];
+  const confidentialFilter = confidentialBehaviorFilter(user);
+  if (confidentialFilter) conditions.push(confidentialFilter);
   if (kind && kind !== "all") conditions.push(eq(behaviorCategories.kind, kind));
 
   const offset = (page - 1) * pageSize;

@@ -1,16 +1,16 @@
 import { eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { sections, studentEnrollments } from "@/db/schema";
+import { behaviorRecords, sections, studentEnrollments } from "@/db/schema";
 import type { SessionUser } from "./auth";
 
 /**
  * Row-level scoping for student records.
  *
- * - admin / school_admin / records → all students
+ * - admin / school_admin / records / guidance / nurse / registrar /
+ *   literacy_coordinator → all students (domain gating — which tables a role
+ *   may read or write — is handled by permission checks, not row scope)
  * - teacher → students with an active enrollment in a section where the user
  *   is the adviser (parameter-driven, never string-interpolated from user input)
- * - guidance → all students (domain gating — which tables the role may read —
- *   is handled by permission checks, not row scope)
  * - unknown roles → nothing
  *
  * Used by every read *and* write path so that authorization cannot be
@@ -46,6 +46,9 @@ export function studentScope(user: SessionUser, sectionIds?: string[]): SQL | un
     case "school_admin":
     case "records":
     case "guidance":
+    case "nurse":
+    case "registrar":
+    case "literacy_coordinator":
       return undefined; // school-wide
     case "teacher": {
       const ids = sectionIds ?? [];
@@ -67,6 +70,26 @@ export async function userSectionScope(user: SessionUser): Promise<SQL | undefin
 export type StudentScopeRef = {
   studentId: string;
 };
+
+/**
+ * Confidential (Guidance Office) behavior records are readable only by
+ * admin, school_admin and guidance roles. Every role that holds
+ * `behavior.view` still sees non-confidential classroom records.
+ */
+export function canViewConfidentialBehavior(user: SessionUser): boolean {
+  return (
+    user.role === "admin" || user.role === "school_admin" || user.role === "guidance"
+  );
+}
+
+/** SQL predicate excluding confidential behavior rows for the given user. */
+export function confidentialBehaviorFilter(
+  user: SessionUser,
+  column = behaviorRecords.confidential,
+): SQL | undefined {
+  if (canViewConfidentialBehavior(user)) return undefined;
+  return eq(column, false);
+}
 
 /** Can this user read this student's record? Used before detail views/writes. */
 export async function canAccessStudent(

@@ -25,8 +25,10 @@ import {
   auditLogs,
   behaviorCategories,
   behaviorRecords,
+  clinicalRecords,
   duplicateCandidates,
   gradeLevels,
+  healthRecords,
   gradingPeriods,
   guardians,
   interventionFollowups,
@@ -106,6 +108,9 @@ async function seedRolesAndPermissions() {
     { id: "role-teacher", name: "Teacher / Adviser", description: "Assigned sections: grades, attendance, assessments, behavior." },
     { id: "role-records", name: "Records Personnel", description: "Student records, enrollment, verification, historical records." },
     { id: "role-guidance", name: "Guidance Personnel", description: "Behavior, interventions, and student support information." },
+    { id: "role-nurse", name: "Nurse", description: "Health and nutrition records only — cannot edit general student information." },
+    { id: "role-registrar", name: "Registrar", description: "Strictly read-only official records plus student card / Form 137 printing." },
+    { id: "role-literacy-coordinator", name: "Language & Literacy Coordinator", description: "Reading, literacy and numeracy assessments and statistics." },
   ];
   for (const r of roleRows) {
     await db
@@ -159,6 +164,9 @@ async function seedUsers() {
     { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_TEACHER_LAST_NAME", id: "user-teacher", name: "Teacher" },
     { role: "records", emailEnv: "DEFAULT_RECORDS_EMAIL", hashEnv: "DEFAULT_RECORDS_PASSWORD_HASH", firstEnv: "DEFAULT_RECORDS_FIRST_NAME", lastEnv: "DEFAULT_RECORDS_LAST_NAME", id: "user-records", name: "Records" },
     { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", firstEnv: "DEFAULT_GUIDANCE_FIRST_NAME", lastEnv: "DEFAULT_GUIDANCE_LAST_NAME", id: "user-guidance", name: "Guidance" },
+    { role: "nurse", emailEnv: "DEFAULT_NURSE_EMAIL", hashEnv: "DEFAULT_NURSE_PASSWORD_HASH", firstEnv: "DEFAULT_NURSE_FIRST_NAME", lastEnv: "DEFAULT_NURSE_LAST_NAME", id: "user-nurse", name: "Nurse" },
+    { role: "registrar", emailEnv: "DEFAULT_REGISTRAR_EMAIL", hashEnv: "DEFAULT_REGISTRAR_PASSWORD_HASH", firstEnv: "DEFAULT_REGISTRAR_FIRST_NAME", lastEnv: "DEFAULT_REGISTRAR_LAST_NAME", id: "user-registrar", name: "Registrar" },
+    { role: "literacy_coordinator", emailEnv: "DEFAULT_LITERACY_EMAIL", hashEnv: "DEFAULT_LITERACY_PASSWORD_HASH", firstEnv: "DEFAULT_LITERACY_FIRST_NAME", lastEnv: "DEFAULT_LITERACY_LAST_NAME", id: "user-literacy", name: "LiteracyCoord" },
   ];
 
   const fallbackHash = await hashPassword("password123");
@@ -301,6 +309,8 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
   await db.delete(interventions);
   await db.delete(duplicateCandidates);
   await db.delete(recordVerifications);
+  await db.delete(clinicalRecords);
+  await db.delete(healthRecords);
   await db.delete(assessments);
   await db.delete(behaviorRecords);
   await db.delete(attendanceRecords);
@@ -313,6 +323,7 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
   const creator = people[0]!.id;
   const teacherId = people.find((p) => p.role === "teacher")!.id;
   const guidanceId = people.find((p) => p.role === "guidance")!.id;
+  const nurseId = people.find((p) => p.role === "nurse")!.id;
 
   const subjectRows = await db.select({ id: subjects.id }).from(subjects);
   const periodRows = await db
@@ -449,6 +460,40 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
         date: isoDate(new Date(now.getTime() - randInt(10, 60) * 86400000)),
         level: pick(levels),
         assessorId: teacherId,
+      });
+    }
+
+    // Health (Nurse domain): nutritional assessment for ~70% of students.
+    if (rand() < 0.7) {
+      const weight = randInt(30, 75) + Math.round(rand() * 10) / 10;
+      const height = randInt(130, 175) + Math.round(rand() * 10) / 10;
+      const bmi = Math.round((weight / Math.pow(height / 100, 2)) * 10) / 10;
+      const status =
+        bmi < 15.5 ? "wasted" : bmi < 14 ? "severely_wasted" : bmi >= 30 ? "obese" : bmi >= 25 ? "overweight" : "normal";
+      await db.insert(healthRecords).values({
+        id: crypto.randomUUID(),
+        studentId: id,
+        schoolYearId: structure.yearId,
+        measurementDate: isoDate(new Date(now.getTime() - randInt(10, 90) * 86400000)),
+        weightKg: weight,
+        heightCm: height,
+        bmi,
+        nutritionalStatus: status,
+        remarks: null,
+        recordedBy: nurseId,
+      });
+    }
+    // Clinical records for a few students.
+    if (rand() < 0.15) {
+      await db.insert(clinicalRecords).values({
+        id: crypto.randomUUID(),
+        studentId: id,
+        date: isoDate(new Date(now.getTime() - randInt(5, 80) * 86400000)),
+        category: pick(["Health Assessment", "First Aid", "Referral", "Health Education"]),
+        description: "School-health visit recorded by the nurse (demo note).",
+        assessment: "No acute findings",
+        actionTaken: "Advised rest and hydration",
+        recordedBy: nurseId,
       });
     }
 

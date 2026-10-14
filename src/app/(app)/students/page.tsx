@@ -27,6 +27,9 @@ export default async function StudentsPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  // Invariant gate (all current roles hold students.view) — keeps the
+  // registry access model explicit rather than accidental.
+  if (!hasPermission(user.role, "students.view")) redirect("/dashboard");
 
   const params = await searchParams;
   const str = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : "");

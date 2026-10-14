@@ -7,6 +7,7 @@ import {
   ENROLLMENT_STATUSES,
   FOLLOWUP_STATUSES,
   INTERVENTION_STATUSES,
+  NUTRITIONAL_STATUSES,
   ROLES,
   SEXES,
 } from "./constants";
@@ -172,7 +173,16 @@ export const userFormSchema = z.object({
   lastName: z.string().trim().min(1, "Last name is required").max(60),
   email: z.email("Enter a valid email address").max(120),
   roleId: z.enum(
-    ["role-admin", "role-school-admin", "role-teacher", "role-records", "role-guidance"],
+    [
+      "role-admin",
+      "role-school-admin",
+      "role-teacher",
+      "role-records",
+      "role-guidance",
+      "role-nurse",
+      "role-registrar",
+      "role-literacy-coordinator",
+    ],
     { message: "Select a role" },
   ),
   phone: z
@@ -254,6 +264,45 @@ export const followupFormSchema = z.object({
   followUpDate: isoDate,
   status: z.enum(FOLLOWUP_STATUSES),
   notes: optionalText(500),
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Health & nutrition (Nurse domain)                                         */
+/* -------------------------------------------------------------------------- */
+
+/** Realistic high-school weight (kg) and height (cm) windows. */
+export const healthRecordSchema = z
+  .object({
+    studentId: z.string().min(1),
+    measurementDate: isoDate,
+    weightKg: z.coerce
+      .number()
+      .min(5, "Weight must be between 5 and 200 kg")
+      .max(200, "Weight must be between 5 and 200 kg")
+      .optional()
+      .or(z.literal("")),
+    heightCm: z.coerce
+      .number()
+      .min(60, "Height must be between 60 and 250 cm")
+      .max(250, "Height must be between 60 and 250 cm")
+      .optional()
+      .or(z.literal("")),
+    nutritionalStatus: z.enum(NUTRITIONAL_STATUSES).optional().or(z.literal("")),
+    remarks: optionalText(300),
+  })
+  .refine((v) => v.weightKg !== "" || v.heightCm !== "" || v.nutritionalStatus !== "", {
+    message: "Provide at least weight, height, or a nutritional status.",
+    path: ["measurementDate"],
+  });
+
+export const clinicalRecordSchema = z.object({
+  studentId: z.string().min(1),
+  date: isoDate,
+  category: z.string().trim().min(1, "Category is required").max(60),
+  description: z.string().trim().min(1, "Description is required").max(500),
+  assessment: optionalText(300),
+  actionTaken: optionalText(300),
+  remarks: optionalText(300),
 });
 
 /* -------------------------------------------------------------------------- */

@@ -13,11 +13,20 @@ export const SCHOOL = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
-/*  Roles — five school roles (barangay/lgu removed with the municipality     */
+/*  Roles — eight school roles (barangay/lgu removed with the municipality     */
 /*  scope; schools users are internal personnel).                              */
 /* -------------------------------------------------------------------------- */
 
-export const ROLES = ["admin", "school_admin", "teacher", "records", "guidance"] as const;
+export const ROLES = [
+  "admin",
+  "school_admin",
+  "teacher",
+  "records",
+  "guidance",
+  "nurse",
+  "registrar",
+  "literacy_coordinator",
+] as const;
 export type Role = (typeof ROLES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -26,6 +35,9 @@ export const ROLE_LABELS: Record<Role, string> = {
   teacher: "Teacher / Adviser",
   records: "Records Personnel",
   guidance: "Guidance Personnel",
+  nurse: "Nurse",
+  registrar: "Registrar",
+  literacy_coordinator: "Language & Literacy Coordinator",
 };
 
 /* -------------------------------------------------------------------------- */
@@ -185,6 +197,41 @@ export const FOLLOWUP_STATUS_LABELS: Record<FollowupStatus, string> = {
   missed: "Missed",
   cancelled: "Cancelled",
 };
+
+/* -------------------------------------------------------------------------- */
+/*  Health — nutritional status & clinical records (Nurse domain)              */
+/* -------------------------------------------------------------------------- */
+
+export const NUTRITIONAL_STATUSES = [
+  "normal",
+  "wasted",
+  "severely_wasted",
+  "overweight",
+  "obese",
+] as const;
+export type NutritionalStatus = (typeof NUTRITIONAL_STATUSES)[number];
+
+export const NUTRITIONAL_STATUS_LABELS: Record<NutritionalStatus, string> = {
+  normal: "Normal",
+  wasted: "Wasted",
+  severely_wasted: "Severely Wasted",
+  overweight: "Overweight",
+  obese: "Obese",
+};
+
+export const HEALTH_SEED_CATEGORIES = [
+  "Health Assessment",
+  "First Aid",
+  "Referral",
+  "Health Education",
+] as const;
+
+export const ASSESSMENT_TYPE_PRESETS = [
+  "Phil-IRI",
+  "Reading Assessment",
+  "Literacy Assessment",
+  "Numeracy Assessment",
+] as const;
 
 export const INTERVENTION_SEED_TYPES = [
   "Academic Remediation",

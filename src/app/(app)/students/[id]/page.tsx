@@ -12,6 +12,8 @@ import {
   getAttendanceForStudent,
   getAssessmentsForStudent,
   getBehaviorForStudent,
+  getClinicalForStudent,
+  getHealthForStudent,
   getInterventionsForStudent,
   getVerificationHistory,
   getQrEvents,
@@ -33,6 +35,10 @@ import {
 } from "@/lib/constants";
 import { ValidationReviewForm } from "@/components/validation/review-form";
 import { ArchiveStudentButton } from "@/components/archive-student-button";
+import { HealthRecordForm } from "@/components/health/health-record-form";
+import { ClinicalRecordForm } from "@/components/health/clinical-record-form";
+import { NUTRITIONAL_STATUS_LABELS, type NutritionalStatus } from "@/lib/constants";
+import { Printer } from "lucide-react";
 
 function Section({
   title,
@@ -67,22 +73,37 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   // must enforce the same scope the list already applies.
   if (!(await canAccessStudent(user, { studentId: id }))) redirect("/students");
 
+  // Domain gates — every section of this profile visible to a role is
+  // explicitly allowed; sensitive data is never rendered "by default".
   const canReview = hasPermission(user.role, "verification.review");
   const canArchive =
     hasPermission(user.role, "students.archive") && student.status === "active";
+  const canEditBasic = hasPermission(user.role, "students.update");
+  const canGrades = hasPermission(user.role, "grades.view");
+  const canAssessments = hasPermission(user.role, "assessments.view");
+  const canBehavior = hasPermission(user.role, "behavior.view");
+  const canInterventions = hasPermission(user.role, "interventions.view");
+  const canAttendance = hasPermission(user.role, "attendance.view");
+  const canQr = hasPermission(user.role, "qr.verify");
+  const canHealth = hasPermission(user.role, "health.view");
+  const canWriteHealth = hasPermission(user.role, "health.write");
+  const canPrint = hasPermission(user.role, "documents.print");
   const isPending = student.recordStatus === "pending_validation";
 
-  const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents] =
+  const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents, health, clinical] =
     await Promise.all([
       getGuardiansForStudent(id),
       getEnrollmentHistory(id),
       getStudentGrades(id),
       getAttendanceForStudent(id),
       getAssessmentsForStudent(id),
-      getBehaviorForStudent(id),
+      // Confidential behavior rows are filtered per role inside the query.
+      getBehaviorForStudent(id, user),
       getInterventionsForStudent(id),
       getVerificationHistory(id),
       getQrEvents(id),
+      getHealthForStudent(id),
+      getClinicalForStudent(id),
     ]);
 
   return (
@@ -113,15 +134,33 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             <CopyButton value={student.studentNumber} />
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {canPrint ? (
+            <>
+              <Link href={`/students/${student.id}/print/card`}>
+                <Button variant="outline" size="sm">
+                  <Printer aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
+                  Card
+                </Button>
+              </Link>
+              <Link href={`/students/${student.id}/print/form137`}>
+                <Button variant="outline" size="sm">
+                  <Printer aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
+                  Form 137
+                </Button>
+              </Link>
+            </>
+          ) : null}
           {canArchive ? (
             <ArchiveStudentButton studentId={student.id} studentNumber={student.studentNumber} />
           ) : null}
-          <Link href={`/students/${student.id}/edit`}>
-            <Button variant="outline" size="sm">
-              Edit
-            </Button>
-          </Link>
+          {canEditBasic ? (
+            <Link href={`/students/${student.id}/edit`}>
+              <Button variant="outline" size="sm">
+                Edit
+              </Button>
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -208,6 +247,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             )}
           </Section>
 
+          {canGrades ? (
           <Section title="Grades">
             {grades.length === 0 ? (
               <EmptyHint>No grades recorded.</EmptyHint>
@@ -227,7 +267,9 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               </ul>
             )}
           </Section>
+          ) : null}
 
+          {canAssessments ? (
           <Section title="Assessments">
             {assessments.length === 0 ? (
               <EmptyHint>No assessment records.</EmptyHint>
@@ -252,7 +294,9 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               </ul>
             )}
           </Section>
+          ) : null}
 
+          {canBehavior ? (
           <Section title="Behavior Records">
             {behavior.length === 0 ? (
               <EmptyHint>No behavior records.</EmptyHint>
@@ -277,7 +321,83 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               </ul>
             )}
           </Section>
+          ) : null}
 
+          {canHealth ? (
+            <>
+              <Section title="Health & Nutrition (Nurse)">
+                {health.length === 0 ? (
+                  <EmptyHint>No health measurements recorded.</EmptyHint>
+                ) : (
+                  <ul className="divide-y divide-brand-100">
+                    {health.map((h) => (
+                      <li key={h.id} className="py-2.5 text-sm first:pt-0 last:pb-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium text-brand-900">
+                            {formatDate(h.measurementDate)}
+                            {h.bmi != null ? <span className="numeric ml-2 text-xs text-brand-500">BMI {h.bmi}</span> : null}
+                          </span>
+                          <span className="text-xs capitalize text-brand-500">
+                            {h.nutritionalStatus
+                              ? NUTRITIONAL_STATUS_LABELS[h.nutritionalStatus as NutritionalStatus] ?? h.nutritionalStatus
+                              : "—"}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 text-xs text-brand-500">
+                          {h.weightKg != null ? <span className="numeric">Weight {h.weightKg} kg</span> : null}
+                          {h.heightCm != null ? <span className="numeric"> · Height {h.heightCm} cm</span> : null}
+                          {h.recorderFirst ? <span> · {h.recorderFirst} {h.recorderLast}</span> : ""}
+                        </div>
+                        {h.remarks ? <div className="mt-0.5 text-xs text-brand-400">{h.remarks}</div> : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {canWriteHealth ? (
+                  <details className="mt-3 rounded-md border border-brand-100 bg-brand-50/40 px-3 py-2">
+                    <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-brand-600">
+                      Record nutritional status
+                    </summary>
+                    <div className="pt-3">
+                      <HealthRecordForm studentId={student.id} />
+                    </div>
+                  </details>
+                ) : null}
+              </Section>
+
+              <Section title="Clinical Records (Nurse)">
+                {clinical.length === 0 ? (
+                  <EmptyHint>No clinical records.</EmptyHint>
+                ) : (
+                  <ul className="divide-y divide-brand-100">
+                    {clinical.map((c) => (
+                      <li key={c.id} className="py-2.5 text-sm first:pt-0 last:pb-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium text-brand-900">{c.category}</span>
+                          <span className="numeric shrink-0 text-xs text-brand-400">{formatDate(c.date)}</span>
+                        </div>
+                        <div className="mt-0.5 text-xs text-brand-600">{c.description}</div>
+                        {c.actionTaken ? <div className="mt-0.5 text-xs text-brand-500">Action: {c.actionTaken}</div> : null}
+                        {c.recorderFirst ? <div className="mt-0.5 text-xs text-brand-400">Recorded by {c.recorderFirst} {c.recorderLast}</div> : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {canWriteHealth ? (
+                  <details className="mt-3 rounded-md border border-brand-100 bg-brand-50/40 px-3 py-2">
+                    <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-brand-600">
+                      Record clinical entry
+                    </summary>
+                    <div className="pt-3">
+                      <ClinicalRecordForm studentId={student.id} />
+                    </div>
+                  </details>
+                ) : null}
+              </Section>
+            </>
+          ) : null}
+
+          {canInterventions ? (
           <Section title="Interventions">
             {interventions.length === 0 ? (
               <EmptyHint>No interventions recorded.</EmptyHint>
@@ -301,7 +421,9 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               </ul>
             )}
           </Section>
+          ) : null}
 
+          {canAttendance ? (
           <Section
             title="Attendance (recent)"
             icon={<Clock aria-hidden="true" className="h-4 w-4" />}
@@ -321,6 +443,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               </ul>
             )}
           </Section>
+          ) : null}
         </div>
 
         {/* ----------------------------- Side column ------------------------------ */}
@@ -363,6 +486,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             )}
           </Section>
 
+          {canQr ? (
           <Section title="QR Events" icon={<QrCode aria-hidden="true" className="h-4 w-4" />}>
             {qrEvents.length === 0 ? (
               <p className="text-xs text-brand-500">No QR events.</p>
@@ -380,6 +504,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               </ul>
             )}
           </Section>
+          ) : null}
 
           <Section title="Record Meta" icon={<ShieldCheck aria-hidden="true" className="h-4 w-4" />}>
             <dl className="space-y-1.5 text-xs">
