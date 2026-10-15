@@ -27,9 +27,15 @@ This application is a modern, internal **school records and analytics platform**
 |---|---|
 | **Administrator (`admin`)** | Full access — user management, settings, audit logs, system-wide reports, verification reviews |
 | **School Administrator (`school_admin`)** | School-level oversight — enrollment, grades, attendance, reports, verification, student records |
-| **Teacher (`teacher`)** | Student profiles, grades, attendance, behavior, assessments, interventions, reports |
-| **Records Personnel (`records`)** | Student data entry/update, enrollment, grades, attendance, verification, reports |
-| **Guidance Personnel (`guidance`)** | Student profiles, behavior, assessments, interventions, attendance, reports |
+| **Teacher (`teacher`)** | Own advisory sections — student profiles, grades, attendance, behavior notes, assessments |
+| **Records Personnel (`records`)** | Student data entry/update, enrollment, verification review, exports |
+| **Guidance Personnel (`guidance`)** | Behavior records (incl. confidential guidance entries), interventions, assessments |
+| **Nurse (`nurse`)** | Health & nutrition and clinical records only — cannot edit general student information |
+| **Registrar (`registrar`)** | Strictly read-only views plus official document printing (student card, Form 137) |
+| **Language & Literacy Coordinator (`literacy_coordinator`)** | Reading/literacy/numeracy assessments and related reports |
+| **Admin Officer (`admin_officer`)** | Employee records, 201 files and service credits — strictly isolated from student data |
+
+Full access details: [`documentation/security/role-permission-matrix.md`](documentation/security/role-permission-matrix.md).
 
 Accounts are **provisioned internally** by the System Administrator. There is no public self-registration flow for production.
 
@@ -229,7 +235,7 @@ DEFAULT_GUIDANCE_LAST_NAME=
 DEFAULT_GUIDANCE_ROLE=guidance
 ```
 
-> **Note**: Roles must match exactly: `admin`, `school_admin`, `teacher`, `records`, `guidance`. Never commit real password hashes or credentials.
+> **Note**: Roles must match exactly: `admin`, `school_admin`, `teacher`, `records`, `guidance`, `nurse`, `registrar`, `literacy_coordinator`, `admin_officer`. Never commit real password hashes or credentials.
 
 ### Database setup
 
@@ -449,7 +455,7 @@ Full schema documentation lives under `documentation/database/`.
 
 ### Authorization
 
-- **Roles** (exact values in `constants.ts`): `admin`, `school_admin`, `teacher`, `records`, `guidance`
+- **Roles** (exact values in `constants.ts`): `admin`, `school_admin`, `teacher`, `records`, `guidance`, `nurse`, `registrar`, `literacy_coordinator`, `admin_officer`
 - **Permissions**: Listed in `src/lib/permissions.ts` (e.g. `dashboard.view`, `students.create`, `verification.review`, `reports.export`, `audit_logs.view`)
 - **Enforcement**: Server-side via `requirePermission()` and `getAuthorizedUser()`. Never rely on UI visibility alone.
 - **Data scope**: `scope.ts` applies grade-level and section-level filters for applicable roles.
@@ -506,7 +512,7 @@ This is a standard Next.js application. Typical deployment steps:
 | `npm run seed` throws about missing env vars | Default account variables (`DEFAULT_ADMIN_*`, etc.) are empty | Fill required fields in `.env.local` or disable seed defaults |
 | `npm run dev` crashes with out-of-memory | Large Node heap required for modern Next.js | The `dev` script sets `NODE_OPTIONS="--max-old-space-size=4096"`; verify environment |
 | Login redirects back to `/login` repeatedly | `SESSION_COOKIE_SECURE` mismatch or cookie blocked | For local HTTP, keep `SESSION_COOKIE_SECURE=false`; for HTTPS, set `true` |
-| Reports download as empty or fail | User lacks `reports.export` permission | Verify user role in `users` table; only `admin`, `school_admin`, `teacher`, `records`, `guidance` have varying report access |
+| Reports download as empty or fail | User lacks `reports.export` permission | Verify user role in `users` table; exports are held by `admin`, `school_admin`, `records` and `registrar` |
 | `local.db` file grows very large | Development seed creates many demo records | The seed is idempotent; delete `local.db` and re-seed if needed |
 
 ---

@@ -188,6 +188,7 @@ export const userFormSchema = z.object({
       "role-nurse",
       "role-registrar",
       "role-literacy-coordinator",
+      "role-admin-officer",
     ],
     { message: "Select a role" },
   ),

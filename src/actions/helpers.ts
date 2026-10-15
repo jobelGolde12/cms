@@ -54,6 +54,7 @@ export const ROLE_IDS = {
   nurse: "role-nurse",
   registrar: "role-registrar",
   literacy_coordinator: "role-literacy-coordinator",
+  admin_officer: "role-admin-officer",
 } as const;
 
 /**

@@ -15,6 +15,7 @@ const ALL_ROLES: readonly Role[] = [
   "nurse",
   "registrar",
   "literacy_coordinator",
+  "admin_officer",
 ];
 
 describe("role catalog", () => {
@@ -73,6 +74,60 @@ describe("nurse is health-domain only", () => {
     expect(hasPermission("nurse", "grades.write")).toBe(false);
     expect(hasPermission("nurse", "behavior.write")).toBe(false);
     expect(hasPermission("nurse", "assessments.write")).toBe(false);
+  });
+});
+
+describe("admin officer is employee-domain only, isolated from students", () => {
+  it("holds the employee-records permissions", () => {
+    expect(hasPermission("admin_officer", "employees.view")).toBe(true);
+    expect(hasPermission("admin_officer", "employee_201.manage")).toBe(true);
+    expect(hasPermission("admin_officer", "service_credits.view")).toBe(true);
+    expect(hasPermission("admin_officer", "users.manage")).toBe(false);
+  });
+
+  it("holds NO student-facing permissions at all", () => {
+    for (const p of [
+      "students.view",
+      "students.create",
+      "students.update",
+      "students.archive",
+      "guardians.view",
+      "enrollment.view",
+      "grades.view",
+      "grades.write",
+      "attendance.view",
+      "behavior.view",
+      "assessments.view",
+      "health.view",
+      "interventions.view",
+      "verification.review",
+      "duplicates.view",
+      "qr.verify",
+      "documents.print",
+    ] as const) {
+      expect(hasPermission("admin_officer", p)).toBe(false);
+    }
+  });
+});
+
+describe("matrix decisions from the 2026-10 audit", () => {
+  it("health.view is held only by admin and nurse (school_admin denied per doc note)", () => {
+    expect(hasPermission("admin", "health.view")).toBe(true);
+    expect(hasPermission("nurse", "health.view")).toBe(true);
+    expect(hasPermission("school_admin", "health.view")).toBe(false);
+    expect(hasPermission("records", "health.view")).toBe(false);
+  });
+
+  it("user list is admin-only (users.view/manage)", () => {
+    expect(hasPermission("admin", "users.view")).toBe(true);
+    expect(hasPermission("admin", "users.manage")).toBe(true);
+    expect(hasPermission("school_admin", "users.view")).toBe(false);
+    expect(hasPermission("school_admin", "users.manage")).toBe(false);
+  });
+
+  it("teacher interventions write stays withheld (view-only)", () => {
+    expect(hasPermission("teacher", "interventions.view")).toBe(true);
+    expect(hasPermission("teacher", "interventions.write")).toBe(false);
   });
 });
 

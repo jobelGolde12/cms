@@ -1,4 +1,4 @@
-import { eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { behaviorRecords, sections, studentEnrollments } from "@/db/schema";
 import type { SessionUser } from "./auth";
@@ -9,6 +9,7 @@ import type { SessionUser } from "./auth";
  * - admin / school_admin / records / guidance / nurse / registrar /
  *   literacy_coordinator → all students (domain gating — which tables a role
  *   may read or write — is handled by permission checks, not row scope)
+ * - admin_officer → no student rows at all (employee-records domain)
  * - teacher → students with an active enrollment in a section where the user
  *   is the adviser (parameter-driven, never string-interpolated from user input)
  * - unknown roles → nothing
@@ -26,12 +27,18 @@ export async function adviserSectionIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-/** SQL `inArray` predicate over the enrollment join for the given sections. */
+/**
+ * SQL `inArray` predicate over the enrollment join for the given sections.
+ * Per the permission matrix the teacher/adviser scope covers students with an
+ * *active* enrollment in one of their sections — completed/transferred/
+ * withdrawn enrollments fall outside the adviser's row scope.
+ */
 function enrollmentInSection(studentIdColumn: SQL, sectionIds: string[]): SQL {
   return sql`exists (
     select 1 from ${studentEnrollments}
     where ${studentEnrollments.studentId} = ${studentIdColumn}
       and ${inArray(studentEnrollments.sectionId, sectionIds)}
+      and ${eq(studentEnrollments.status, "active")}
   )`;
 }
 
@@ -105,10 +112,11 @@ export async function canAccessStudent(
     .select({ id: studentEnrollments.id })
     .from(studentEnrollments)
     .where(
-      sql`${studentEnrollments.studentId} = ${ref.studentId} and ${inArray(
-        studentEnrollments.sectionId,
-        ids,
-      )}`,
+      and(
+        eq(studentEnrollments.studentId, ref.studentId),
+        inArray(studentEnrollments.sectionId, ids),
+        eq(studentEnrollments.status, "active"),
+      ),
     )
     .limit(1);
   return rows.length > 0;

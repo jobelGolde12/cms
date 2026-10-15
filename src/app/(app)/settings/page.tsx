@@ -13,11 +13,11 @@ import { Field, Input } from "@/components/ui/field";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 
-const EDITABLE_KEYS = ["system_name", "child_code_prefix", "default_school_year", "maintenance_mode"];
+const EDITABLE_KEYS = ["system_name", "student_number_prefix", "default_school_year", "maintenance_mode"];
 
 const EDITABLE_LABELS: Record<string, string> = {
   system_name: "System name",
-  child_code_prefix: "Child code prefix",
+  student_number_prefix: "Student number prefix",
   default_school_year: "Default school year",
   maintenance_mode: "Maintenance mode (true/false)",
 };

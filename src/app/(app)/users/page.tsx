@@ -21,7 +21,7 @@ export default async function UsersPage() {
       <PageHeader
         eyebrow="Access Control"
         title="User Management"
-        description="School personnel accounts — System Administrator, School Administrator, Teacher/Adviser, Records, Guidance, Nurse, Registrar and Language & Literacy Coordinator. New accounts are provisioned by a System Administrator."
+        description="School personnel accounts — System Administrator, School Administrator, Teacher/Adviser, Records, Guidance, Nurse, Registrar, Language & Literacy Coordinator and Admin Officer. New accounts are provisioned by a System Administrator."
       />
 
       <Card>

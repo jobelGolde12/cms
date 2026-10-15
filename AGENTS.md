@@ -101,4 +101,4 @@ Never include secret values in generated documentation.
 
 Never include secret values in AI responses.
 
-If a secret is needed, tell the user which environment variable is required without requesting its value unless absolutely necessary.
+If a file or folder is not needed to push in github repo it will add in .gitignore.

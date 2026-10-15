@@ -40,6 +40,27 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# python virtual env
+.venv/
+
+# data extraction reports and scripts (not needed in repo)
+data-extraction/
+
+# local backups
+local.db.stale-backup
+
+# excel/data files
+*.xlsx
+*.docx
+
+# local database backups
+*.db.stale-backup
+
+# temporary/debug folders
+.freebuff/
+grade-plan/
+plan/
+
 # vercel
 .vercel
 

@@ -101,7 +101,6 @@ const SCHOOL_ADMIN: Permission[] = [
   "reports.generate",
   "reports.export",
   "qr.verify",
-  "users.view",
   "audit_logs.view",
   "settings.manage",
 ];
@@ -213,6 +212,11 @@ const LITERACY_COORDINATOR: Permission[] = [
   "reports.generate",
 ];
 
+/**
+ * Admin Officer — employee-records domain ONLY. Deliberately holds no
+ * student-facing permissions: rows outside their own dashboard/reports are
+ * unreachable (row-level scope denies every student row).
+ */
 const ADMIN_OFFICER: Permission[] = [
   "dashboard.view",
   "employees.view",

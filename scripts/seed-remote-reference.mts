@@ -48,6 +48,7 @@ async function seedRoles() {
     { id: "role-nurse", name: "Nurse", description: "Health and nutrition records only — cannot edit general student information." },
     { id: "role-registrar", name: "Registrar", description: "Strictly read-only official records plus student card / Form 137 printing." },
     { id: "role-literacy-coordinator", name: "Language & Literacy Coordinator", description: "Reading, literacy and numeracy assessments and statistics." },
+    { id: "role-admin-officer", name: "Admin Officer", description: "Employee records, PERA/201 files and service credits — no student data access." },
   ];
   for (const r of roleRows) {
     await db

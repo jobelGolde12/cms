@@ -11,7 +11,7 @@ import {
   students,
   type NewStudent,
 } from "@/db/schema";
-import { getAuthorizedUser, getCurrentUser } from "@/lib/auth";
+import { getAuthorizedUser } from "@/lib/auth";
 import { logAudit, notify } from "@/lib/audit";
 import { nextStudentNumber } from "@/lib/student-number";
 import { canAccessStudent, canEditStudent } from "@/lib/scope";
@@ -436,12 +436,6 @@ export async function archiveStudent(_prev: ActionState, formData: FormData): Pr
   revalidatePath(`/students/${studentId}`);
   revalidatePath("/dashboard");
   return ok("Record archived. It is retained for history but hidden from active lists.");
-}
-
-/** Convenience for UI: current user context check used by client forms. */
-export async function canCurrentUserCreateStudents(): Promise<boolean> {
-  const user = await getCurrentUser();
-  return Boolean(user && user.role);
 }
 
 // Re-export for form components needing the duplicate pair count for a student.
