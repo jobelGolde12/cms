@@ -58,6 +58,15 @@ export const PERMISSIONS = [
   "users.manage",
   "audit_logs.view",
   "settings.manage",
+  // Employee records (Admin Officer only — strict isolation from students)
+  "employees.view",
+  "employees.create",
+  "employees.update",
+  "employees.archive",
+  "employee_201.view",
+  "employee_201.manage",
+  "service_credits.view",
+  "service_credits.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -204,6 +213,21 @@ const LITERACY_COORDINATOR: Permission[] = [
   "reports.generate",
 ];
 
+const ADMIN_OFFICER: Permission[] = [
+  "dashboard.view",
+  "employees.view",
+  "employees.create",
+  "employees.update",
+  "employees.archive",
+  "employee_201.view",
+  "employee_201.manage",
+  "service_credits.view",
+  "service_credits.manage",
+  "reports.view",
+  "reports.generate",
+  "audit_logs.view",
+];
+
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   admin: ADMIN,
   school_admin: SCHOOL_ADMIN,
@@ -213,6 +237,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   nurse: NURSE,
   registrar: REGISTRAR,
   literacy_coordinator: LITERACY_COORDINATOR,
+  admin_officer: ADMIN_OFFICER,
 };
 
 export function hasPermission(role: Role, permission: Permission): boolean {

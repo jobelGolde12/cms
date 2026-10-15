@@ -43,6 +43,8 @@ export function roleNameFromId(roleId: string): Role | null {
   switch (roleId) {
     case "role-admin":
       return "admin";
+    case "role-admin-officer":
+      return "admin_officer";
     case "role-school-admin":
       return "school_admin";
     case "role-teacher":

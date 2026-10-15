@@ -26,6 +26,7 @@ export const ROLES = [
   "nurse",
   "registrar",
   "literacy_coordinator",
+  "admin_officer",
 ] as const;
 export type Role = (typeof ROLES)[number];
 
@@ -38,6 +39,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   nurse: "Nurse",
   registrar: "Registrar",
   literacy_coordinator: "Language & Literacy Coordinator",
+  admin_officer: "Admin Officer",
 };
 
 /* -------------------------------------------------------------------------- */
