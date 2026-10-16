@@ -843,6 +843,154 @@ export const forecasts = sqliteTable(
 );
 
 /* -------------------------------------------------------------------------- */
+/*  Employees — Admin Officer domain (employee records ONLY; no student data)  */
+/* -------------------------------------------------------------------------- */
+
+export const employees = sqliteTable(
+  "employees",
+  {
+    id: text("id").primaryKey(),
+    /** Application-generated stable identifier, e.g. EMP-2026-000001. */
+    employeeNumber: text("employee_number").notNull(),
+
+    /* Personal information */
+    firstName: text("first_name").notNull(),
+    middleName: text("middle_name"),
+    lastName: text("last_name").notNull(),
+    suffix: text("suffix"),
+    /** ISO date YYYY-MM-DD */
+    birthDate: text("birth_date"),
+    /** male | female */
+    sex: text("sex").notNull(),
+    /** single | married | widowed | separated | annulled */
+    civilStatus: text("civil_status"),
+    address: text("address"),
+    contactNumber: text("contact_number"),
+    email: text("email"),
+    emergencyContactName: text("emergency_contact_name"),
+    emergencyContactRelation: text("emergency_contact_relation"),
+    emergencyContactNumber: text("emergency_contact_number"),
+
+    /* Employment information */
+    position: text("position"),
+    designation: text("designation"),
+    /** permanent | provisional | casual | contractual | substitute | part_time */
+    appointmentStatus: text("appointment_status"),
+    /** teaching | non_teaching | support */
+    employmentType: text("employment_type"),
+    department: text("department"),
+    /** ISO date YYYY-MM-DD */
+    dateHired: text("date_hired"),
+    dateOfAppointment: text("date_of_appointment"),
+    salaryGrade: text("salary_grade"),
+    step: text("step"),
+
+    /* Government / personnel identifiers */
+    gsisNumber: text("gsis_number"),
+    philhealthNumber: text("philhealth_number"),
+    pagibigNumber: text("pagibig_number"),
+    tinNumber: text("tin_number"),
+    prcLicenseNumber: text("prc_license_number"),
+    eligibility: text("eligibility"),
+
+    /** active | inactive | archived */
+    status: text("status").notNull().default("active"),
+
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    updatedBy: text("updated_by").references(() => users.id),
+
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("employees_number_uq").on(t.employeeNumber),
+    index("employees_last_name_idx").on(t.lastName),
+    index("employees_first_name_idx").on(t.firstName),
+    index("employees_status_idx").on(t.status),
+    index("employees_position_idx").on(t.position),
+    index("employees_created_idx").on(t.createdAt),
+  ],
+);
+
+/**
+ * 201 File — the employee personnel record. One row per document/entry,
+ * categorised so the file can be organized per DepEd personnel-document
+ * conventions. Soft-archivable (never physically deleted).
+ */
+export const employee201Records = sqliteTable(
+  "employee_201_records",
+  {
+    id: text("id").primaryKey(),
+    employeeId: text("employee_id")
+      .notNull()
+      .references(() => employees.id, { onDelete: "cascade" }),
+    /** personal_information | appointment | eligibility | training | performance | leave | government | certificate | memorandum | other */
+    category: text("category").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    /** ISO date YYYY-MM-DD */
+    recordDate: text("record_date").notNull(),
+    /** Storage reference for uploaded documents (path/key, not the file itself). */
+    fileReference: text("file_reference"),
+    isArchived: bool("is_archived").notNull().default(false),
+
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    updatedBy: text("updated_by").references(() => users.id),
+
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("employee_201_employee_idx").on(t.employeeId),
+    index("employee_201_category_idx").on(t.category),
+    index("employee_201_date_idx").on(t.recordDate),
+    index("employee_201_archived_idx").on(t.isArchived),
+  ],
+);
+
+/**
+ * Service credits — auditable transaction ledger per employee.
+ * Balance is always derived: total(earned) − total(consumed). No manually
+ * editable stored balance column, so history is the source of truth.
+ */
+export const serviceCreditTransactions = sqliteTable(
+  "service_credit_transactions",
+  {
+    id: text("id").primaryKey(),
+    employeeId: text("employee_id")
+      .notNull()
+      .references(() => employees.id, { onDelete: "cascade" }),
+    /** earned | consumed */
+    type: text("type").notNull(),
+    /** Positive quantity of credits (in days); sign comes from `type`. */
+    credits: real("credits").notNull(),
+    /** ISO date YYYY-MM-DD */
+    transactionDate: text("transaction_date").notNull(),
+    reason: text("reason").notNull(),
+    /** Reference document (e.g. office order no.). */
+    referenceDocument: text("reference_document"),
+    remarks: text("remarks"),
+
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    updatedBy: text("updated_by").references(() => users.id),
+
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("service_credits_employee_idx").on(t.employeeId),
+    index("service_credits_type_idx").on(t.type),
+    index("service_credits_date_idx").on(t.transactionDate),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
 /*  Relations (for typed relational queries)                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -1047,6 +1195,29 @@ export const auditLogRelations = relations(auditLogs, ({ one }) => ({
   user: one(users, { fields: [auditLogs.userId], references: [users.id] }),
 }));
 
+export const employeeRelations = relations(employees, ({ one, many }) => ({
+  creator: one(users, { fields: [employees.createdBy], references: [users.id] }),
+  updater: one(users, { fields: [employees.updatedBy], references: [users.id] }),
+  records201: many(employee201Records),
+  serviceCreditTransactions: many(serviceCreditTransactions),
+}));
+
+export const employee201RecordRelations = relations(employee201Records, ({ one }) => ({
+  employee: one(employees, {
+    fields: [employee201Records.employeeId],
+    references: [employees.id],
+  }),
+  creator: one(users, { fields: [employee201Records.createdBy], references: [users.id] }),
+}));
+
+export const serviceCreditTransactionRelations = relations(serviceCreditTransactions, ({ one }) => ({
+  employee: one(employees, {
+    fields: [serviceCreditTransactions.employeeId],
+    references: [employees.id],
+  }),
+  creator: one(users, { fields: [serviceCreditTransactions.createdBy], references: [users.id] }),
+}));
+
 /* -------------------------------------------------------------------------- */
 /*  Inferred types                                                            */
 /* -------------------------------------------------------------------------- */
@@ -1085,3 +1256,9 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 export type Forecast = typeof forecasts.$inferSelect;
 export type NewForecast = typeof forecasts.$inferInsert;
 export type SystemSetting = typeof systemSettings.$inferSelect;
+export type Employee = typeof employees.$inferSelect;
+export type NewEmployee = typeof employees.$inferInsert;
+export type Employee201Record = typeof employee201Records.$inferSelect;
+export type NewEmployee201Record = typeof employee201Records.$inferInsert;
+export type ServiceCreditTransaction = typeof serviceCreditTransactions.$inferSelect;
+export type NewServiceCreditTransaction = typeof serviceCreditTransactions.$inferInsert;

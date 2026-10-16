@@ -233,6 +233,12 @@ DEFAULT_GUIDANCE_PASSWORD_HASH=
 DEFAULT_GUIDANCE_FIRST_NAME=
 DEFAULT_GUIDANCE_LAST_NAME=
 DEFAULT_GUIDANCE_ROLE=guidance
+
+DEFAULT_ADMIN_OFFICER_EMAIL=
+DEFAULT_ADMIN_OFFICER_PASSWORD_HASH=
+DEFAULT_ADMIN_OFFICER_FIRST_NAME=
+DEFAULT_ADMIN_OFFICER_LAST_NAME=
+DEFAULT_ADMIN_OFFICER_ROLE=admin_officer
 ```
 
 > **Note**: Roles must match exactly: `admin`, `school_admin`, `teacher`, `records`, `guidance`, `nurse`, `registrar`, `literacy_coordinator`, `admin_officer`. Never commit real password hashes or credentials.
@@ -300,6 +306,7 @@ All sensitive variables are **server-only**. Never prefix them with `NEXT_PUBLIC
 | `DEFAULT_TEACHER_*` | Same pattern; `ROLE=teacher` | Teacher |
 | `DEFAULT_RECORDS_*` | Same pattern; `ROLE=records` | Records Personnel |
 | `DEFAULT_GUIDANCE_*` | Same pattern; `ROLE=guidance` | Guidance Personnel |
+| `DEFAULT_ADMIN_OFFICER_*` | Same pattern; `ROLE=admin_officer` | Admin Officer (employee records) |
 
 > *If neither Turso nor `LIBSQL_URL` is set, the application falls back to `file:./local.db`.
 

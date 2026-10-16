@@ -4,6 +4,8 @@ import { hasPermission } from "@/lib/permissions";
 import { recentNotifications, unreadNotificationCount } from "@/lib/queries";
 import { SCHOOL } from "@/lib/constants";
 import { dashboardData } from "@/lib/dashboard-data";
+import { officerDashboardData } from "@/lib/employees";
+import { OfficerDashboard } from "@/components/dashboard/officer";
 import {
   BarangayDistribution,
   EducationDistribution,
@@ -22,6 +24,13 @@ import ForecastPanel from "@/components/forecast/forecast-panel";
 export default async function AppDashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
+  // Admin Officer gets an employee-records-only dashboard: no student queries
+  // run at all on this render path.
+  if (user.role === "admin_officer") {
+    const officerData = await officerDashboardData();
+    return <OfficerDashboard data={officerData} user={user} />;
+  }
 
   const [data, notifications, unread] = await Promise.all([
     dashboardData(user),

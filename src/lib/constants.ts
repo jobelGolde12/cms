@@ -324,6 +324,100 @@ export const EXPORT_FORMATS = ["PDF", "XLSX", "CSV"] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 /* -------------------------------------------------------------------------- */
+/*  Employees — Admin Officer domain (strictly isolated from student data)     */
+/* -------------------------------------------------------------------------- */
+
+export const EMPLOYEE_STATUSES = ["active", "inactive", "archived"] as const;
+export type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number];
+
+export const EMPLOYEE_STATUS_LABELS: Record<EmployeeStatus, string> = {
+  active: "Active",
+  inactive: "Inactive",
+  archived: "Archived",
+};
+
+export const APPOINTMENT_STATUSES = [
+  "permanent",
+  "provisional",
+  "casual",
+  "contractual",
+  "substitute",
+  "part_time",
+] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
+
+export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  permanent: "Permanent",
+  provisional: "Provisional",
+  casual: "Casual",
+  contractual: "Contractual",
+  substitute: "Substitute",
+  part_time: "Part-Time",
+};
+
+export const EMPLOYMENT_TYPES = ["teaching", "non_teaching", "support"] as const;
+export type EmploymentType = (typeof EMPLOYMENT_TYPES)[number];
+
+export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  teaching: "Teaching",
+  non_teaching: "Non-Teaching",
+  support: "Support",
+};
+
+export const CIVIL_STATUSES = [
+  "single",
+  "married",
+  "widowed",
+  "separated",
+  "annulled",
+] as const;
+export type CivilStatus = (typeof CIVIL_STATUSES)[number];
+
+export const CIVIL_STATUS_LABELS: Record<CivilStatus, string> = {
+  single: "Single",
+  married: "Married",
+  widowed: "Widowed",
+  separated: "Separated",
+  annulled: "Annulled",
+};
+
+/** 201 File document categories (DepEd personnel-document conventions). */
+export const EMPLOYEE_201_CATEGORIES = [
+  "personal_information",
+  "appointment",
+  "eligibility",
+  "training",
+  "performance",
+  "leave",
+  "government",
+  "certificate",
+  "memorandum",
+  "other",
+] as const;
+export type Employee201Category = (typeof EMPLOYEE_201_CATEGORIES)[number];
+
+export const EMPLOYEE_201_CATEGORY_LABELS: Record<Employee201Category, string> = {
+  personal_information: "Personal Information",
+  appointment: "Appointment / Employment Records",
+  eligibility: "Eligibility Documents",
+  training: "Training and Seminars",
+  performance: "Performance Records",
+  leave: "Leave Records",
+  government: "Government Documents",
+  certificate: "Certificates",
+  memorandum: "Memoranda",
+  other: "Other Personnel Documents",
+};
+
+export const SERVICE_CREDIT_TYPES = ["earned", "consumed"] as const;
+export type ServiceCreditType = (typeof SERVICE_CREDIT_TYPES)[number];
+
+export const SERVICE_CREDIT_TYPE_LABELS: Record<ServiceCreditType, string> = {
+  earned: "Earned",
+  consumed: "Consumed",
+};
+
+/* -------------------------------------------------------------------------- */
 /*  Sex                                                                        */
 /* -------------------------------------------------------------------------- */
 

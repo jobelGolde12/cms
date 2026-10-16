@@ -32,6 +32,9 @@ import {
   gradingPeriods,
   guardians,
   interventionFollowups,
+  employees,
+  employee201Records,
+  serviceCreditTransactions,
   interventions,
   notifications,
   permissions,
@@ -168,6 +171,7 @@ async function seedUsers() {
     { role: "nurse", emailEnv: "DEFAULT_NURSE_EMAIL", hashEnv: "DEFAULT_NURSE_PASSWORD_HASH", firstEnv: "DEFAULT_NURSE_FIRST_NAME", lastEnv: "DEFAULT_NURSE_LAST_NAME", id: "user-nurse", name: "Nurse" },
     { role: "registrar", emailEnv: "DEFAULT_REGISTRAR_EMAIL", hashEnv: "DEFAULT_REGISTRAR_PASSWORD_HASH", firstEnv: "DEFAULT_REGISTRAR_FIRST_NAME", lastEnv: "DEFAULT_REGISTRAR_LAST_NAME", id: "user-registrar", name: "Registrar" },
     { role: "literacy_coordinator", emailEnv: "DEFAULT_LITERACY_EMAIL", hashEnv: "DEFAULT_LITERACY_PASSWORD_HASH", firstEnv: "DEFAULT_LITERACY_FIRST_NAME", lastEnv: "DEFAULT_LITERACY_LAST_NAME", id: "user-literacy", name: "LiteracyCoord" },
+    { role: "admin_officer", emailEnv: "DEFAULT_ADMIN_OFFICER_EMAIL", hashEnv: "DEFAULT_ADMIN_OFFICER_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_OFFICER_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_OFFICER_LAST_NAME", id: "user-admin-officer", name: "AdminOfficer" },
   ];
 
   const fallbackHash = await hashPassword("password123");
@@ -638,6 +642,161 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
 
 /* ----------------------------------- run ---------------------------------- */
 
+/* --------------------------- employee demo data --------------------------- */
+
+const EMPLOYEE_POSITIONS = [
+  { position: "Principal I", type: "teaching", dept: "Office of the School Principal", sg: "SG-19", apt: "permanent" },
+  { position: "Master Teacher I", type: "teaching", dept: "Mathematics", sg: "SG-18", apt: "permanent" },
+  { position: "Teacher III", type: "teaching", dept: "Science", sg: "SG-13", apt: "permanent" },
+  { position: "Teacher II", type: "teaching", dept: "English", sg: "SG-12", apt: "permanent" },
+  {      position: "Teacher I", type: "teaching", dept: "Filipino", sg: "SG-11", apt: "provisional" },
+  { position: "School Nurse", type: "non_teaching", dept: "Health Services", sg: "SG-11", apt: "permanent" },
+  { position: "Registrar I", type: "non_teaching", dept: "Registrar's Office", sg: "SG-10", apt: "permanent" },
+  { position: "Guidance Counselor", type: "non_teaching", dept: "Guidance Office", sg: "SG-12", apt: "permanent" },
+  { position: "Administrative Officer I", type: "non_teaching", dept: "Records Office", sg: "SG-11", apt: "permanent" },
+  { position: "Utility Worker", type: "support", dept: "General Services", sg: null, apt: "casual" },
+] as const;
+
+const E201_SEED: { category: string; title: string; kind: "personal" | "issued" }[] = [
+  { category: "personal_information", title: "Personal Data Sheet (PDS)", kind: "personal" },
+  { category: "appointment", title: "Letter of Appointment", kind: "personal" },
+  { category: "government", title: "GSIS Membership Record", kind: "personal" },
+];
+
+async function seedEmployees(creatorId: string) {
+  // Idempotency: employees cascade-clear their 201 records and credit ledger.
+  await db.delete(employees);
+  await db.delete(auditLogs).where(eq(auditLogs.action, "CREATE_EMPLOYEE"));
+
+  const FIRST = [...FIRST_M, ...FIRST_F];
+  const categories = ["eligibility", "training", "performance", "certificate", "leave", "memorandum"];
+
+  for (let i = 0; i < EMPLOYEE_POSITIONS.length; i++) {
+    const spec = EMPLOYEE_POSITIONS[i];
+    const sex = FIRST[i]!.length % 2 === 0 ? "female" : "male";
+    const firstName = pick(FIRST);
+    const lastName = pick(LAST);
+    const birthYear = now.getFullYear() - randInt(24, 58);
+    const id = crypto.randomUUID();
+    const employeeNumber = `EMP-${now.getFullYear()}-${String(i + 1).padStart(6, "0")}`;
+    const hireDate = isoDate(new Date(now.getFullYear() - randInt(1, 25), randInt(0, 11), randInt(1, 28)));
+
+    await db.insert(employees).values({
+      id,
+      employeeNumber,
+      firstName,
+      middleName: pick(FIRST),
+      lastName,
+      birthDate: `${birthYear}-${String(randInt(1, 12)).padStart(2, "0")}-${String(randInt(1, 28)).padStart(2, "0")}`,
+      sex,
+      civilStatus: pick(["single", "married", "widowed"]),
+      address: `Purok ${randInt(1, 6)}, Sta. Magdalena, Sorsogon`,
+      contactNumber: `09${randInt(100000000, 999999999)}`,
+      email: null,
+      emergencyContactName: pick(GUARDIAN_FIRST) + " " + lastName,
+      emergencyContactRelation: pick(["Spouse", "Parent", "Sibling"]),
+      emergencyContactNumber: `09${randInt(100000000, 999999999)}`,
+      position: spec.position,
+      designation: null,
+      appointmentStatus: spec.apt as string,
+      employmentType: spec.type as string,
+      department: spec.dept,
+      dateHired: hireDate,
+      dateOfAppointment: hireDate,
+      salaryGrade: spec.sg as string | null,
+      step: `Step ${randInt(1, 8)}`,
+      gsisNumber: `GSIS-${randInt(10000000, 99999999)}`,
+      philhealthNumber: `PH-${randInt(1000000000, 9999999999)}`,
+      pagibigNumber: `HDMF-${randInt(1000000000, 9999999999)}`,
+      tinNumber: `TIN-${randInt(100000000, 999999999)}`,
+      prcLicenseNumber: spec.type === "teaching" ? `PRC-${randInt(1000000, 9999999)}` : null,
+      eligibility: spec.type === "teaching" ? "Professional Teacher (LET)" : pick(["Civil Service Professional", "CS Sub-Professional"]),
+      status: i === EMPLOYEE_POSITIONS.length - 1 ? "inactive" : "active",
+      createdBy: creatorId,
+      updatedBy: creatorId,
+    });
+
+    // 201 file entries.
+    for (const entry of E201_SEED) {
+      await db.insert(employee201Records).values({
+        id: crypto.randomUUID(),
+        employeeId: id,
+        category: entry.category,
+        title: entry.title,
+        description: null,
+        recordDate: hireDate,
+        fileReference: null,
+        createdBy: creatorId,
+        updatedBy: creatorId,
+      });
+    }
+    for (let c = 0; c < randInt(1, 3); c++) {
+      const category = pick(categories);
+      await db.insert(employee201Records).values({
+        id: crypto.randomUUID(),
+        employeeId: id,
+        category,
+        title: pick([
+          "Regional Training on Numeracy",
+          "SLAC Session Certificate",
+          "Office Memorandum No. 12",
+          "Performance Review — Very Satisfactory",
+          "Seminar on Child Protection Policy",
+          "VacationLeave — Approved",
+        ]),
+        description: "Demo personnel document.",
+        recordDate: isoDate(new Date(now.getTime() - randInt(30, 700) * 86400000)),
+        fileReference: null,
+        createdBy: creatorId,
+        updatedBy: creatorId,
+      });
+    }
+
+    // Service credit ledger — never consumes more than earned.
+    const earned = randInt(3, 30);
+    for (let e = 0; e < randInt(2, 4); e++) {
+      await db.insert(serviceCreditTransactions).values({
+        id: crypto.randomUUID(),
+        employeeId: id,
+        type: "earned",
+        credits: Math.max(1, Math.round((earned / 3) * 2) / 2),
+        transactionDate: isoDate(new Date(now.getTime() - randInt(30, 500) * 86400000)),
+        reason: pick(["Teacher-in-charge during summer classes", "Weekend school activity", "Off-campus event supervision"]),
+        referenceDocument: `OO-${now.getFullYear()}-${randInt(1, 99)}`,
+        remarks: null,
+        createdBy: creatorId,
+        updatedBy: creatorId,
+      });
+    }
+    let remaining = earned;
+    for (let cc = 0; cc < randInt(0, 2) && remaining > 1; cc++) {
+      const consume = Math.min(remaining - 1, randInt(1, 3));
+      if (consume <= 0) break;
+      remaining -= consume;
+      await db.insert(serviceCreditTransactions).values({
+        id: crypto.randomUUID(),
+        employeeId: id,
+        type: "consumed",
+        credits: consume,
+        transactionDate: isoDate(new Date(now.getTime() - randInt(1, 90) * 86400000)),
+        reason: pick(["Service-credit leave", "Make-up for class absences"]),
+        referenceDocument: `SC-${now.getFullYear()}-${randInt(1, 99)}`,
+        remarks: null,
+        createdBy: creatorId,
+        updatedBy: creatorId,
+      });
+    }
+  }
+
+  await db.insert(auditLogs).values({
+    id: crypto.randomUUID(),
+    userId: creatorId,
+    action: "CREATE_EMPLOYEE",
+    entityType: "employee",
+    newValuesJson: JSON.stringify({ demo: true, count: EMPLOYEE_POSITIONS.length }),
+  });
+}
+
 async function main() {
   await seedRolesAndPermissions();
   const people = await seedUsers();
@@ -645,6 +804,7 @@ async function main() {
   const structure = await seedAcademicStructure(teacher.id);
   await seedCategoriesAndSettings();
   await seedDemoData(people, structure);
+  await seedEmployees(people.find((p) => p.role === "admin_officer")?.id ?? people[0]!.id);
 }
 
 main()

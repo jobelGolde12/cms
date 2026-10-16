@@ -1,15 +1,20 @@
 import { z } from "zod";
 import {
+  APPOINTMENT_STATUSES,
   ASSESSMENT_DOMAINS,
   ATTENDANCE_STATUSES,
   BEHAVIOR_RECORD_STATUSES,
   BEHAVIOR_SEVERITIES,
+  CIVIL_STATUSES,
+  EMPLOYEE_201_CATEGORIES,
+  EMPLOYMENT_TYPES,
   ENROLLMENT_STATUSES,
   FOLLOWUP_STATUSES,
   INTERVENTION_STATUSES,
   NUTRITIONAL_STATUSES,
   ROLES,
   SEXES,
+  SERVICE_CREDIT_TYPES,
 } from "./constants";
 
 const isoDate = z
@@ -230,6 +235,103 @@ export const duplicateReviewSchema = z.object({
   decision: z.enum(["confirmed_duplicate", "not_duplicate", "dismissed"]),
   notes: optionalText(500),
 });
+
+/* -------------------------------------------------------------------------- */
+/*  Employees (Admin Officer domain)                                          */
+/* -------------------------------------------------------------------------- */
+
+/** Employees are working-age adults: 18 at entry, retirement at 75 max. */
+export function employeeBirthDateIssues(date: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "Enter a valid date";
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  const valid =
+    dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+  if (!valid) return "Enter a real calendar date";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (dt > today) return "Birth date cannot be in the future";
+  const age = ageFromBirthDateStrict(date);
+  if (age < 18) return "Employee must be at least 18 years old";
+  if (age > 75) return `Age ${age} is above the realistic working range (max 75)`;
+  return null;
+}
+
+export const employeeFormSchema = z.object({
+  employeeNumber: optionalText(30),
+  firstName: z.string().trim().min(1, "First name is required").max(60),
+  middleName: optionalText(60),
+  lastName: z.string().trim().min(1, "Last name is required").max(60),
+  suffix: optionalText(10),
+  birthDate: z
+    .union([isoDate, z.literal("")])
+    .optional()
+    .transform((v) => (typeof v === "string" && v.length > 0 ? v : null))
+    .refine(
+      (v) => v === null || employeeBirthDateIssues(v) === null,
+      "Enter a realistic birth date",
+    ),
+  sex: z.enum(SEXES, { message: "Select a sex" }),
+  civilStatus: z.enum(CIVIL_STATUSES).optional().or(z.literal("")),
+  address: optionalText(300),
+  contactNumber: phPhone("Contact number"),
+  email: z.email("Enter a valid email address").max(120).optional().or(z.literal("")),
+  emergencyContactName: optionalText(120),
+  emergencyContactRelation: optionalText(40),
+  emergencyContactNumber: phPhone("Emergency contact number"),
+
+  position: optionalText(120),
+  designation: optionalText(120),
+  appointmentStatus: z.enum(APPOINTMENT_STATUSES).optional().or(z.literal("")),
+  employmentType: z.enum(EMPLOYMENT_TYPES).optional().or(z.literal("")),
+  department: optionalText(120),
+  dateHired: z.union([isoDate, z.literal("")]).optional(),
+  dateOfAppointment: z.union([isoDate, z.literal("")]).optional(),
+  salaryGrade: optionalText(20),
+  step: optionalText(20),
+  gsisNumber: optionalText(40),
+  philhealthNumber: optionalText(40),
+  pagibigNumber: optionalText(40),
+  tinNumber: optionalText(40),
+  prcLicenseNumber: optionalText(40),
+  eligibility: optionalText(200),
+});
+
+export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
+
+/** A manually typed employee number must be sane; blank keeps auto-generation. */
+export const employeeNumberInputSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9\-]{2,30}$/, "Use letters, digits and dashes (2–30 chars)")
+  .optional()
+  .or(z.literal(""));
+
+export const employee201Schema = z.object({
+  employeeId: z.string().min(1, "Employee is required"),
+  category: z.enum(EMPLOYEE_201_CATEGORIES, { message: "Select a category" }),
+  title: z.string().trim().min(1, "Title is required").max(200),
+  description: optionalText(500),
+  recordDate: isoDate,
+  fileReference: optionalText(200),
+});
+
+export const serviceCreditSchema = z.object({
+  employeeId: z.string().min(1, "Employee is required"),
+  type: z.enum(SERVICE_CREDIT_TYPES, { message: "Select earned or consumed" }),
+  credits: z.coerce
+    .number()
+    .min(0.01, "Credits must be greater than 0")
+    .max(365, "Credits per entry is capped at 365"),
+  transactionDate: isoDate,
+  reason: z.string().trim().min(1, "Reason is required").max(300),
+  referenceDocument: optionalText(100),
+  remarks: optionalText(300),
+});
+
+
+export type Employee201Values = z.infer<typeof employee201Schema>;
+export type ServiceCreditValues = z.infer<typeof serviceCreditSchema>;
 
 /* -------------------------------------------------------------------------- */
 /*  Student development (assessments, behavior, interventions)                 */

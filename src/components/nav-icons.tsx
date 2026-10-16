@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Users,
+  Briefcase,
   GraduationCap,
   TrendingUp,
   HeartHandshake,
@@ -14,6 +15,7 @@ import {
   Activity,
   Bell,
   Settings,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,6 +28,8 @@ import {
 export const NAV_ICONS = {
   dashboard: LayoutDashboard,
   students: Users,
+  employees: Briefcase,
+  service_credits: Wallet,
   performance: TrendingUp,
   development: HeartHandshake,
   health: HeartPulse,

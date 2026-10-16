@@ -20,6 +20,8 @@ type NavLink = {
 const navLinks: NavLink[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard", permission: "dashboard.view" },
   { label: "Students", href: "/students", icon: "students", permission: "students.view" },
+  { label: "Employees", href: "/employees", icon: "employees", permission: "employees.view" },
+  { label: "Service Credits", href: "/service-credits", icon: "service_credits", permission: "service_credits.view" },
   { label: "Performance", href: "/performance", icon: "performance", permission: "grades.view" },
   { label: "Student Development", href: "/development", icon: "development", permission: "behavior.view" },
   { label: "Health & Nutrition", href: "/health", icon: "health", permission: "health.view" },
@@ -28,13 +30,14 @@ const navLinks: NavLink[] = [
   { label: "Reports", href: "/reports", icon: "reports", permission: "reports.view" },
   { label: "QR Studio", href: "/qr", icon: "qr", permission: "qr.verify" },
   { label: "Activity Logs", href: "/activity-logs", icon: "activity", permission: "audit_logs.view" },
-  { label: "Notifications", href: "/notifications", icon: "notifications", permission: "students.view" },
+  { label: "Notifications", href: "/notifications", icon: "notifications", permission: "dashboard.view" },
   { label: "Users", href: "/users", icon: "users", permission: "users.view" },
   { label: "Settings", href: "/settings", icon: "settings", permission: "dashboard.view" },
 ];
 
 const NAV_SECTIONS: { heading: string; items: string[] }[] = [
   { heading: "Core Modules", items: ["/dashboard", "/students", "/performance", "/development", "/health", "/verification", "/duplicates", "/reports"] },
+  { heading: "Employee Records", items: ["/employees", "/service-credits"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
   { heading: "System", items: ["/users", "/settings"] },
 ];
@@ -87,8 +90,9 @@ export default async function AppShell({
             <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base md:text-lg">Dashboard</h1>
           </div>
 
-          {/* Search (links into the registry search) */}
-          <form action="/students" className="ml-2 hidden min-w-0 flex-1 max-w-sm lg:block" role="search">
+          {/* Search (links into the registry search; hidden for roles without students.view) */}
+          {hasPermission(user.role, "students.view") ? (
+            <form action="/students" className="ml-2 hidden min-w-0 flex-1 max-w-sm lg:block" role="search">
             <label htmlFor="global-search" className="sr-only">
               Search students in the registry
             </label>
@@ -116,6 +120,7 @@ export default async function AppShell({
               </datalist>
             </div>
           </form>
+          ) : null}
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
             <span className="hidden items-center gap-1.5 text-[11px] font-medium text-emerald-700 sm:inline-flex">
