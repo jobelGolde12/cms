@@ -54,6 +54,14 @@ export default async function AppShell({
 
   return (
     <div className="min-h-screen bg-[#f5f7fc]">
+      {/* Skip-to-content (WCAG 2.1 AA): first focusable element, becomes visible on focus. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-900 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to main content
+      </a>
+
       {/* ------------------------------ Sidebar ------------------------------ */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-[#e5e7eb] bg-white lg:flex">
         <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-5 py-4">
@@ -174,7 +182,11 @@ export default async function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-4 md:px-6 lg:px-8">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 outline-none focus-visible:outline-none sm:px-4 md:px-6 lg:px-8"
+        >
           {children}
         </main>
 
