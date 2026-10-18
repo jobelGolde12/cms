@@ -108,6 +108,23 @@ describe("admin officer is employee-domain only, isolated from students", () => 
       expect(hasPermission("admin_officer", p)).toBe(false);
     }
   });
+
+  it("no other role gains the employee-records permissions", () => {
+    for (const role of ["school_admin", "teacher", "records", "guidance", "nurse", "registrar", "literacy_coordinator"] as const) {
+      for (const p of [
+        "employees.view",
+        "employees.create",
+        "employees.update",
+        "employees.archive",
+        "employee_201.view",
+        "employee_201.manage",
+        "service_credits.view",
+        "service_credits.manage",
+      ] as const) {
+        expect(hasPermission(role, p)).toBe(false);
+      }
+    }
+  });
 });
 
 describe("matrix decisions from the 2026-10 audit", () => {

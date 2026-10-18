@@ -52,6 +52,7 @@ The agent may:
 - Run development/build commands
 - Install dependencies when necessary
 - Inspect project structure
+- Use only Turso database not use local DB
 
 ## Environment variables
 

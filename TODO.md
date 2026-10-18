@@ -1,2279 +1,1187 @@
-# MASTER SYSTEM MIGRATION & IMPLEMENTATION PLANNING PROMPT
 
-## PROJECT: RECORDS MANAGEMENT SYSTEM WITH PROFILE AND PERFORMANCE ANALYTICS OF STA. MAGDALENA NATIONAL HIGH SCHOOL
 
----
+Important note do not ask me a question for clarification. Just do the recommended for you.
 
-# 0. IMPORTANT EXECUTION MODE
+# ADMIN OFFICER — EMPLOYEE RECORDS MANAGEMENT IMPLEMENTATION
 
-YOU ARE CURRENTLY IN:
+You are now operating as a **FULL-STACK SYSTEM ARCHITECT, DATABASE ENGINEER, BACKEND DEVELOPER, FRONTEND DEVELOPER, SECURITY ENGINEER, QA ENGINEER, AND DEBUGGING AGENT**.
 
-PLANNING AND SYSTEM ANALYSIS MODE
+Your task is to implement a new **Admin Officer account/role** in the current system:
 
-DO NOT START IMPLEMENTING THE ACTUAL SYSTEM CHANGES YET.
+> **Records Management System with Profile and Performance Analytics of Sta. Magdalena National High School**
 
-Your first responsibility is to thoroughly inspect the existing codebase and create a complete, production-oriented implementation plan.
-
-The final plan must be detailed enough that another AI coding agent can implement the entire migration without needing to see the original ERD or relying on undocumented assumptions.
-
-The plan must identify:
-
-- exact folders
-- exact files
-- database tables
-- database fields
-- relationships
-- routes
-- components
-- pages
-- API/server actions
-- authentication
-- authorization
-- analytics
-- charts
-- forms
-- validation
-- reports
-- QR functionality
-- audit logs
-- security
-- privacy
-- testing
-- documentation
-- migration strategy
-
-Every implementation task MUST contain a checkbox.
-
-Example:
-
-- [ ] Inspect current student registry
-- [ ] Update student registry terminology
-- [ ] Implement student search
-- [ ] Test student search
-- [ ] Document student search
-
-When a task is actually completed during the future implementation phase, it may become:
-
-- [x] Inspect current student registry
-- [x] Update student registry terminology
-
-NEVER mark a task as completed merely because it is planned.
+The Admin Officer is responsible **ONLY for employee/staff records** and must have **ZERO access to student information**.
 
 ---
 
-# 1. NEW OFFICIAL SYSTEM IDENTITY
+# 1. CRITICAL INSTRUCTIONS
 
-The previous project concept was:
+Before modifying anything:
 
-"Integrated Web-Based Child Mapping System"
+- [ ] Read and understand `AGENTS.md` completely.
+- [ ] Follow every instruction, convention, architecture rule, and restriction defined in `AGENTS.md`.
+- [ ] Inspect the entire existing project structure.
+- [ ] Understand the current authentication system.
+- [ ] Understand the current role/permission system.
+- [ ] Understand the current database schema.
+- [ ] Inspect the existing Admin role and its capabilities.
+- [ ] Inspect how users, students, employees, profiles, and records are currently represented.
+- [ ] Inspect existing middleware, authorization, API routes, server actions, database queries, and UI navigation.
+- [ ] Do not immediately start coding.
+- [ ] First understand how the current system works and determine the safest integration strategy.
 
-That concept is now OUTDATED for this project.
+**Do NOT replace or redesign the existing system unnecessarily.**
 
-The NEW official title is:
+The current theme, layout, visual language, components, typography, spacing, navigation patterns, and overall UI design must remain consistent.
 
-"Records Management System with Profile and Performance Analytics of Sta. Magdalena National High School"
-
-Use this title consistently throughout the new documentation, system terminology, metadata, page titles, and user-facing content where appropriate.
-
-The system is now specifically designed for:
-
-STA. MAGDALENA NATIONAL HIGH SCHOOL
-
-The system is NOT a municipality-wide child mapping platform.
-
----
-
-# 2. MAJOR SCOPE CHANGE
-
-The old system was designed around:
-
-- Municipality
-- Barangays
-- LGU
-- Schools
-- Community volunteers
-- Multi-agency users
-- Child mapping
-- House-to-house surveys
-- Municipality-wide reports
-- Barangay-level reports
-- Inter-agency coordination
-
-THIS SCOPE HAS BEEN REMOVED.
-
-The new system is SCHOOL-ONLY.
-
-The system should focus on:
-
-- students
-- school personnel
-- student profiles
-- enrollment
-- academic records
-- grades
-- attendance
-- behavior
-- reading
-- literacy
-- numeracy
-- student development
-- interventions
-- performance analytics
-- student monitoring
-- school reports
-- school-level administration
-- school-level record management
+You may improve usability where necessary, but **do not introduce an unrelated design system or visual redesign.**
 
 ---
 
-# 3. ABSOLUTE SCOPE BOUNDARY
+# 2. NEW ACCOUNT / ROLE
 
-The system MUST NOT be designed as:
+Create an additional account/role:
 
-- municipality management system
-- barangay management system
-- LGU management system
-- community management system
-- public child registry
-- multi-agency platform
-- public student directory
-- nationwide student database
-- third-party data-sharing platform
+> **Admin Officer**
 
-The system is an:
+The Admin Officer is an internal school employee-records administrator.
 
-INTERNAL SCHOOL RECORDS MANAGEMENT AND STUDENT PERFORMANCE ANALYTICS PLATFORM.
+The Admin Officer should be responsible for:
 
-The system should assume that all authorized users belong to or are officially associated with the school.
-
----
-
-# 4. PRIMARY SYSTEM OBJECTIVE
-
-The primary objective is to centralize student information and provide authorized school personnel with a reliable platform to:
-
-1. Manage student profiles.
-2. Manage enrollment records.
-3. Maintain academic records.
-4. Monitor grades.
-5. Monitor attendance.
-6. Monitor behavior.
-7. Monitor reading performance.
-8. Monitor literacy performance.
-9. Monitor numeracy performance.
-10. Record interventions.
-11. Identify students who may require additional support.
-12. Analyze student performance.
-13. Compare performance across periods.
-14. Generate school reports.
-15. Maintain historical records.
-16. Maintain an audit trail.
-17. Protect sensitive student information.
+- Employee profiles
+- Employee 201 Files
+- Employee personal information
+- Employment information
+- Position/designation information
+- Employee documents and records
+- Service Credits Earned
+- Service Credits Consumed/Used
+- Service Credit balance/history
+- Other employee-related records that are logically necessary
 
 ---
 
-# 5. CORE SYSTEM PHILOSOPHY
+# 3. ABSOLUTE ACCESS RESTRICTION
 
-The new application should follow this conceptual model:
+This is one of the most important requirements.
 
-SCHOOL
-    ↓
-USERS
-    ↓
-STUDENTS
-    ↓
-ENROLLMENT
-    ↓
-STUDENT PROFILE
-    ↓
-ACADEMIC PERFORMANCE
-    ↓
-ATTENDANCE
-    ↓
-BEHAVIOR
-    ↓
-READING
-    ↓
-LITERACY
-    ↓
-NUMERACY
-    ↓
-INTERVENTIONS
-    ↓
-ANALYTICS
-    ↓
-REPORTS
+## Admin Officer MUST NOT have access to student information.
 
-The student is now the central entity.
+The Admin Officer:
 
----
+- [ ] MUST NOT view students.
+- [ ] MUST NOT search students.
+- [ ] MUST NOT filter students.
+- [ ] MUST NOT access student profiles.
+- [ ] MUST NOT access student grades.
+- [ ] MUST NOT access student behavior records.
+- [ ] MUST NOT access student reading/literacy records.
+- [ ] MUST NOT access student numeracy records.
+- [ ] MUST NOT access student analytics.
+- [ ] MUST NOT access student dashboards.
+- [ ] MUST NOT access student reports.
+- [ ] MUST NOT access student APIs.
+- [ ] MUST NOT access student database queries.
+- [ ] MUST NOT access student-related exports.
+- [ ] MUST NOT access student-related routes.
+- [ ] MUST NOT access student-related server actions.
+- [ ] MUST NOT access student-related navigation items.
 
-# 6. FIRST TASK: COMPLETE CODEBASE AUDIT
+Do NOT rely only on hiding UI elements.
 
-Before proposing changes, inspect the entire repository.
+The restriction MUST be enforced at the **authorization/backend/database-access level**.
 
-Do NOT guess.
+If an Admin Officer manually enters a student URL, API endpoint, route, or record ID, the system must deny access.
 
-Do NOT assume that the existing implementation matches previous descriptions.
-
-Inspect the actual code.
-
-Create a codebase audit containing:
-
-## Project architecture
-
-Inspect:
-
-- package.json
-- lock file
-- Next.js configuration
-- TypeScript configuration
-- Tailwind configuration
-- database configuration
-- authentication configuration
-- middleware
-- route handlers
-- server actions
-- API endpoints
-- components
-- layouts
-- pages
-- utilities
-- hooks
-- state management
-- validation
-- schemas
-- database migrations
-- seed files
-- tests
+Use proper authorization checks on every relevant protected resource.
 
 ---
 
-# 7. INSPECT CURRENT FOLDER STRUCTURE
+# 4. ROLE SEPARATION
 
-Document the current structure.
+Clearly distinguish between:
+
+### Existing Admin
+
+The existing Admin role continues to manage the functionality it already has.
+
+### New Admin Officer
+
+The Admin Officer is specifically responsible for:
+
+> **EMPLOYEE RECORDS ONLY**
+
+Do not accidentally transfer existing Admin permissions to Admin Officer.
+
+Do not simply clone the Admin role and hide student pages.
+
+Instead, implement a proper permission boundary.
+
+Prefer a permission structure such as:
+
+```text
+Admin
+├── Existing system administration permissions
+└── Existing authorized records access
+
+Admin Officer
+├── Employee management
+├── Employee profiles
+├── 201 Files
+├── Employee documents
+├── Service Credits
+└── Employee reports
+```
+
+The exact implementation must follow the project's existing authorization architecture after you inspect it.
+
+---
+
+# 5. EMPLOYEE RECORD MANAGEMENT
+
+Create or enhance an employee-management module appropriate for the school.
+
+The module should allow authorized Admin Officers to:
+
+- [ ] View employee list
+- [ ] Search employees
+- [ ] Filter employees
+- [ ] Sort employees
+- [ ] View employee profile
+- [ ] Create employee record
+- [ ] Edit employee record
+- [ ] Archive/deactivate employee when appropriate
+- [ ] View employment information
+- [ ] View employee documents
+- [ ] Manage 201 File information
+- [ ] Manage service credits
+- [ ] View service credit history
+- [ ] Calculate service credit balance
+- [ ] View employee record activity/history where appropriate
+
+Use the existing UI patterns in the project.
+
+---
+
+# 6. EMPLOYEE PROFILE
+
+Design the employee profile around actual employee-record requirements.
+
+Consider appropriate sections such as:
+
+### Personal Information
+
+- Employee ID
+- First name
+- Middle name
+- Last name
+- Suffix
+- Date of birth
+- Sex
+- Civil status
+- Address
+- Contact number
+- Email
+- Emergency contact
+
+### Employment Information
+
+- Employee number
+- Position
+- Designation
+- Employment status
+- Date hired
+- Date of appointment
+- Department/office
+- Employment type
+- Salary grade where applicable
+- Step where applicable
+- Current status
+
+### Government / Personnel Information
+
+Where appropriate:
+
+- GSIS information
+- PhilHealth information
+- Pag-IBIG information
+- TIN
+- PRC information
+- Eligibility
+- License information
+
+Do not blindly add sensitive fields without first inspecting the existing requirements and database architecture.
+
+---
+
+# 7. 201 FILE MANAGEMENT
+
+Implement an appropriate **201 File management section**.
+
+The 201 File should function as the employee's personnel record.
+
+Depending on the existing system requirements, support categories such as:
+
+- Personal information
+- Appointment/employment records
+- Eligibility documents
+- Training and seminars
+- Performance-related records
+- Leave-related records if applicable
+- Government documents
+- Certificates
+- Memoranda
+- Other personnel documents
+
+Allow the Admin Officer to:
+
+- [ ] Add records
+- [ ] Edit records
+- [ ] View records
+- [ ] Categorize records
+- [ ] Track record dates
+- [ ] Add document descriptions
+- [ ] Upload documents if file uploads are already supported or can be safely introduced
+- [ ] Download/view authorized documents
+- [ ] Archive records where appropriate
+
+Do not expose employee documents to unauthorized roles.
+
+---
+
+# 8. SERVICE CREDITS
+
+Implement a proper **Service Credits Management** feature.
+
+The system must distinguish between:
+
+> **Service Credits Earned**
+
+and
+
+> **Service Credits Consumed/Used**
+
+The system should maintain an auditable history instead of storing only a manually editable balance.
 
 For example:
 
-- app/
-- components/
-- lib/
-- db/
-- hooks/
-- public/
-- styles/
-- documentation/
-- tests/
+```text
+Employee
+    ↓
+Service Credit Account
+    ↓
+Service Credit Transactions
+    ├── Earned
+    └── Consumed
+```
 
-Do NOT assume these exact directories exist.
+Each transaction should contain appropriate information such as:
 
-Use the actual project structure.
+- Employee
+- Transaction type
+- Number of credits
+- Date
+- Reason
+- Reference/document
+- Remarks
+- Created by
+- Created date
+- Updated by
+- Updated date
 
-For every important folder explain:
-
-1. purpose
-2. important files
-3. dependencies
-4. whether it requires modification
-5. reason for modification
+Use the existing database conventions.
 
 ---
 
-# 8. INSPECT CURRENT ROUTES
+# 9. SERVICE CREDIT CALCULATION
 
-Create a complete route inventory.
+Implement a reliable balance calculation.
 
-For every route document:
+Conceptually:
 
-- route path
-- page file
-- purpose
-- current terminology
-- current data source
-- current user permissions
-- whether route should be retained
-- whether route should be modified
-- whether route should be removed
-- whether route should be repurposed
+```text
+Current Balance
+=
+Total Earned
+-
+Total Consumed
+```
+
+Do not allow the system to produce an invalid negative balance unless the existing business rules explicitly allow it.
+
+Add appropriate validation.
 
 Example:
 
-| Route | Current Purpose | New Purpose | Action |
-|---|---|---|---|
-| /dashboard | Municipality dashboard | School dashboard | Rewrite |
-| /children | Child registry | Student registry | Rewrite |
-| /children/create | Add child | Add student | Rewrite |
-| /validation | Child validation | Student record verification | Rewrite |
-| /barangays | Barangay management | Not required | Remove |
-| /reports | Municipal reports | School reports | Rewrite |
+```text
+Total Earned:     15.00
+Total Consumed:    5.00
+------------------------
+Available:        10.00
+```
 
-Create the actual table based on the codebase.
+The UI should clearly show:
 
----
-
-# 9. INSPECT CURRENT TERMINOLOGY
-
-Search the entire codebase for old terminology.
-
-Search for:
-
-- child
-- children
-- child mapping
-- municipality
-- municipal
-- barangay
-- barangays
-- LGU
-- community
-- volunteer
-- multi-agency
-- school-community
-- municipal report
-- barangay report
-- municipal statistics
-- barangay statistics
-- out-of-school youth
-- child protection
-- child registry
-- mapping
-- household
-- Annex
-- community survey
-
-For every occurrence determine:
-
-- obsolete
-- needs renaming
-- still relevant
-- needs contextual review
-- can be retained
-
-DO NOT perform a blind global search-and-replace.
+- Total Earned
+- Total Consumed
+- Current Available Balance
+- Recent Transactions
 
 ---
 
-# 10. CURRENT DESIGN MUST BE PRESERVED
+# 10. SERVICE CREDIT HISTORY
 
-This is extremely important.
+Create a transaction/history interface.
 
-The existing design was already created and approved.
+The Admin Officer should be able to:
 
-DO NOT redesign the application from scratch.
+- [ ] View all transactions for an employee
+- [ ] Filter by Earned/Consumed
+- [ ] Filter by date
+- [ ] Search transactions
+- [ ] View transaction details
+- [ ] Add new transaction
+- [ ] Correct transactions according to proper authorization rules
+- [ ] Maintain an audit trail
 
-The existing:
-
-- theme
-- colors
-- typography
-- visual identity
-- spacing
-- navigation
-- dashboard style
-- component style
-- overall layout
-- Stitch-inspired visual direction
-
-must remain the visual foundation.
-
-The migration should primarily change:
-
-- content
-- terminology
-- information architecture
-- data
-- functionality
-- workflows
-- analytics
-- roles
-- permissions
-
-NOT the fundamental visual identity.
+Avoid silently overwriting historical transactions when an auditable transaction model is more appropriate.
 
 ---
 
-# 11. UI UX PRO MAX REQUIREMENT
+# 11. DATABASE IMPLEMENTATION
 
-The project already uses UI UX Pro Max through:
+Before modifying the database:
 
-uipro init --ai opencode
+- [ ] Inspect the existing schema.
+- [ ] Inspect relationships involving users and roles.
+- [ ] Inspect existing student tables.
+- [ ] Inspect whether employee tables already exist.
+- [ ] Inspect whether staff/personnel data already exists.
+- [ ] Inspect existing audit fields.
+- [ ] Inspect migrations/schema conventions.
 
-You MUST inspect and use the installed UI UX Pro Max skill where appropriate.
+Do not create duplicate tables if an appropriate employee structure already exists.
 
-Use it to evaluate:
+If employee functionality already exists partially, extend it instead of creating competing implementations.
 
-- usability
-- accessibility
-- information hierarchy
-- dashboard composition
-- form usability
-- table usability
-- responsive design
-- interaction design
-- empty states
-- loading states
-- error states
-- data visualization
-- student profile UX
-- analytics UX
-- search and filtering
-- confirmation dialogs
-- feedback messages
+Create/update the schema following the existing project's database conventions.
 
-However:
+Make sure relationships are correct.
 
-UI UX Pro Max must NOT be used as an excuse to replace the approved design.
+Potential conceptual structure:
 
-Use:
+```text
+users
+  ↓
+roles / permissions
 
-"Enhance the existing design"
+employees
+  ↓
+employee_201_records
 
-NOT:
+employees
+  ↓
+service_credit_transactions
+```
 
-"Create a completely new design."
+The actual schema must be determined after inspecting the current database.
 
 ---
 
-# 12. DESIGN PRESERVATION ACCEPTANCE CRITERIA
+# 12. DATABASE SECURITY
 
-The final implementation should visually feel like the SAME APPLICATION after migration.
+This feature must have strict data isolation.
 
-The user should recognize the existing design.
+Verify that Admin Officer database queries cannot retrieve student records.
 
-Only the system's purpose and functionality should become different.
+Do not implement security using frontend filtering alone.
 
-Avoid unnecessary:
+For example, this is NOT sufficient:
 
-- gradients
-- glassmorphism
-- excessive shadows
-- excessive borders
-- excessive cards
-- decorative animations
-- unrelated colors
-- random icon styles
-- excessive rounded components
-- completely new layouts
+```text
+Hide Students menu for Admin Officer
+```
 
-Maintain consistency.
+Instead, authorization must also prevent:
 
----
+```text
+Admin Officer → GET /students
+Admin Officer → GET /students/:id
+Admin Officer → student search API
+Admin Officer → student analytics API
+Admin Officer → student database query
+```
 
-# 13. NEW USER ROLE ARCHITECTURE
-
-The old multi-agency role system must be reviewed and redesigned.
-
-Potential roles should be evaluated:
-
-## System Administrator
-
-Responsibilities:
-
-- user management
-- roles
-- permissions
-- system configuration
-- audit logs
-- database/system administration
-
-## School Administrator
-
-Responsibilities:
-
-- school-wide student records
-- academic monitoring
-- reports
-- analytics
-- enrollment monitoring
-- student monitoring
-
-## Teacher / Adviser
-
-Responsibilities may include:
-
-- assigned students
-- academic records
-- grades
-- attendance
-- behavior
-- assessments
-- interventions where permitted
-
-## Records Personnel
-
-Responsibilities:
-
-- student records
-- enrollment
-- profile verification
-- historical records
-- document-related records
-
-## Guidance / Student Support Personnel
-
-Potential access:
-
-- behavior
-- interventions
-- student support information
-- selected student development information
-
-IMPORTANT:
-
-Do not automatically implement every proposed role.
-
-First inspect the existing system and determine which roles make sense.
-
-Document:
-
-- final role list
-- role responsibilities
-- permissions
-- restricted data
-- accessible modules
+Every protected backend operation must validate the authenticated user's permissions.
 
 ---
 
-# 14. ROLE/PERMISSION MATRIX
+# 13. NAVIGATION
 
-Create:
+Add an appropriate Admin Officer navigation experience.
 
-documentation/security/role-permission-matrix.md
+For example:
 
-Include a matrix similar to:
-
-| Feature | Admin | School Admin | Teacher | Records | Guidance |
-|---|---:|---:|---:|---:|---:|
-| Dashboard | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Student Registry | ✓ | ✓ | Assigned | ✓ | Limited |
-| Student Profile | ✓ | ✓ | Assigned | ✓ | Limited |
-| Grades | ✓ | ✓ | ✓ | View | View |
-| Behavior | ✓ | ✓ | Limited | No/limited | ✓ |
-| Attendance | ✓ | ✓ | ✓ | View | View |
-| Reading | ✓ | ✓ | ✓ | View | ✓ |
-| Literacy | ✓ | ✓ | ✓ | View | ✓ |
-| Numeracy | ✓ | ✓ | ✓ | View | ✓ |
-| Interventions | ✓ | ✓ | Limited | No | ✓ |
-| Users | ✓ | ✓/limited | No | No | No |
-| Audit Logs | ✓ | ✓/limited | No | No | No |
-
-This is only an example.
-
-Generate the actual matrix based on the project.
-
----
-
-# 15. DATABASE MIGRATION
-
-The database must be redesigned around the new school-only architecture.
-
-Do NOT assume the previous ERD is still valid.
-
-Create:
-
-documentation/database/
-
-and include:
-
-- database-overview.md
-- database-migration-plan.md
-- schema-design.md
-- data-dictionary.md
-- relationship-map.md
-- indexing-strategy.md
-- constraints.md
-- migration-risks.md
-
----
-
-# 16. CORE DATABASE ENTITIES
-
-Evaluate the need for the following.
-
-Do not blindly create tables.
-
-## users
-
-Authenticated school users.
-
-Potential fields:
-
-- id
-- name
-- email
-- password_hash
-- role_id
-- employee identifier if required
-- status
-- last_login
-- created_at
-- updated_at
-
----
-
-## roles
-
-School-specific roles.
-
----
-
-## permissions
-
-Fine-grained permissions.
-
----
-
-## role_permissions
-
-Role-to-permission relationship.
-
----
-
-## students
-
-Central student record.
-
-Potential fields:
-
-- id
-- student_number
-- first_name
-- middle_name
-- last_name
-- suffix
-- birth_date
-- sex
-- contact information if necessary
-- status
-- profile metadata
-- created_at
-- updated_at
-
----
-
-## guardians
-
-Parent/guardian information if required.
-
----
-
-## student_guardians
-
-Student-to-guardian relationship.
-
----
-
-## school_years
-
-Academic year.
-
----
-
-## grade_levels
-
-Grade level definitions.
-
----
-
-## sections
-
-School sections.
-
----
-
-## student_enrollments
-
-Student historical enrollment.
-
-Relationships should support:
-
-Student
-→ School Year
-→ Grade Level
-→ Section
-
-Do NOT overwrite historical enrollment.
-
----
-
-# 17. ACADEMIC DATABASE
-
-Evaluate:
-
-## subjects
-
-Subject definitions.
-
-## grading_periods
-
-Quarter/period definitions.
-
-## student_grades
-
-Student grade records.
-
-Relationships:
-
-Student
-→ School Year
-→ Grading Period
-→ Subject
-→ Grade
-
-Support historical academic records.
-
----
-
-# 18. ACADEMIC ANALYTICS
-
-Plan analytics for:
-
-- general average
-- subject average
-- quarterly performance
-- yearly performance
-- performance trend
-- subject strengths
-- subject weaknesses
-- students with concerning performance
-- grade-level performance
-- section performance
-- school-year comparison
-
-Every analytics feature must document:
-
-1. data source
-2. calculation
-3. database query
-4. permissions
-5. visualization
-6. filters
-7. empty state
-8. privacy rules
-
----
-
-# 19. ATTENDANCE SYSTEM
-
-Evaluate an attendance module.
-
-Possible records:
-
-- present
-- absent
-- late
-- excused
-- unexcused
-
-Analytics:
-
-- attendance percentage
-- absence count
-- late count
-- monthly trend
-- quarterly trend
-- yearly trend
-- students with repeated absences
-
-Do not create arbitrary "at-risk" rules without documenting them.
-
----
-
-# 20. BEHAVIOR SYSTEM
-
-Evaluate:
-
-## behavior_categories
-
-Examples:
-
-- positive behavior
-- participation
-- leadership
-- cooperation
-- classroom concern
-- disciplinary concern
-
-## behavior_records
-
-Potential:
-
-- student
-- date
-- category
-- description
-- severity
-- recorded_by
-- follow_up
-- status
-
-Behavior data must be permission-controlled.
-
-Avoid unnecessarily stigmatizing language.
-
----
-
-# 21. READING SYSTEM
-
-Evaluate a structured reading assessment system.
-
-Potential:
-
-- assessment
-- date
-- reading level
-- score
-- proficiency
-- assessor
-- notes
-- intervention status
-
-Analytics:
-
-- reading proficiency
-- reading distribution
-- reading trend
-- grade-level comparison
-- improvement
-- students needing support
-
-Do not invent official assessment standards.
-
-Make assessment categories configurable where appropriate.
-
----
-
-# 22. LITERACY SYSTEM
-
-Evaluate whether literacy should be:
-
-1. separate from reading, or
-2. represented as a broader assessment category.
-
-Document the decision.
-
-Potential analytics:
-
-- literacy proficiency
-- literacy trend
-- grade-level literacy
-- intervention progress
-- students needing support
-
-Avoid duplicating data unnecessarily.
-
----
-
-# 23. NUMERACY / "HUMIRACY"
-
-The project description mentions:
-
-"humiracy"
-
-Do NOT silently assume what this means.
-
-Investigate the intended meaning.
-
-If the intended concept is:
-
-"Numeracy"
-
-use NUMERACY consistently.
-
-If it means something else, document the distinction.
-
-Potential numeracy analytics:
-
-- score
-- proficiency
-- skill area
-- trend
-- grade-level comparison
-- intervention progress
-- students needing support
-
----
-
-# 24. OTHER ANALYTICS TO EVALUATE
-
-Evaluate whether the school needs:
-
-## Enrollment analytics
-
-- total enrollment
-- enrollment by grade
-- enrollment by section
-- enrollment trend
-- transfers
-- active/inactive students
-
-## Academic analytics
-
-- general average
-- subject averages
-- grade trends
-- high performers
-- struggling students
-
-## Attendance analytics
-
-- attendance rate
-- absence trend
-- lateness
-- repeated absences
-
-## Reading analytics
-
-- reading proficiency
-- reading trend
-- reading intervention
-
-## Literacy analytics
-
-- literacy proficiency
-- literacy trend
-
-## Numeracy analytics
-
-- numeracy proficiency
-- numeracy trend
-- skill gaps
-
-## Behavior analytics
-
-- behavior category distribution
-- positive behavior
-- behavior concerns
-- repeated concerns
-
-## Intervention analytics
-
-- active interventions
-- completed interventions
-- intervention outcomes
-- students receiving support
-
-## Student development
-
-Evaluate:
-
-- achievements
-- extracurricular activities
-- leadership
-- participation
-- awards
-
-Only implement features supported by actual requirements.
-
----
-
-# 25. STUDENT PROFILE ARCHITECTURE
-
-The student profile should be one of the most important pages.
-
-Design the information architecture as:
-
-STUDENT PROFILE
-
-├── Overview
-├── Personal Information
-├── Enrollment
-├── Academic Performance
-├── Grades
-├── Attendance
-├── Behavior
-├── Reading
-├── Literacy
-├── Numeracy
-├── Interventions
-├── Achievements
-└── Activity History
-
-Only include sections that are actually required.
-
----
-
-# 26. STUDENT PROFILE UX
-
-The profile should allow authorized users to quickly understand:
-
-- who the student is
-- current enrollment
-- current grade level
-- academic performance
-- attendance
-- assessments
-- behavior
-- interventions
-- historical progression
-
-Avoid overwhelming the user.
-
-Use:
-
-- tabs
-- sections
-- expandable areas
-- summary metrics
-- charts
-- timelines
-
-where appropriate.
-
-Preserve the existing visual style.
-
----
-
-# 27. SCHOOL DASHBOARD
-
-Replace old municipality analytics.
-
-The dashboard should be school-level.
-
-Potential metrics:
-
-- Total Students
-- Active Students
-- Current Enrollment
-- Average General Grade
-- Attendance Rate
-- Reading Proficiency
-- Literacy Proficiency
-- Numeracy Proficiency
-- Students Needing Support
-- Active Interventions
-
-Potential charts:
-
-- enrollment by grade
-- performance by subject
-- grade trend
-- attendance trend
-- reading distribution
-- literacy distribution
-- numeracy distribution
-- intervention status
-
-All metrics must come from the database.
-
-No hardcoded production statistics.
-
----
-
-# 28. ANALYTICS QUALITY RULE
-
-Every chart must answer a real question.
-
-Examples:
-
-GOOD:
-
-"How is academic performance changing over the grading periods?"
-
-"Which subjects have the lowest average performance?"
-
-"How many students are below the target reading proficiency?"
-
-"How is attendance changing?"
-
-BAD:
-
-"Number of records created"
-
-"Number of subjects"
-
-"Number of random database entries"
-
-Analytics must support actual school decision-making.
-
----
-
-# 29. AT-RISK STUDENT SYSTEM
-
-Evaluate a configurable student-support indicator system.
-
-Possible indicators:
-
-- low academic performance
-- declining grades
-- repeated absences
-- repeated lateness
-- low reading performance
-- low literacy performance
-- low numeracy performance
-- repeated behavior concerns
-- incomplete intervention
-
-IMPORTANT:
-
-Do not automatically diagnose or label students.
-
-Use neutral terminology such as:
-
-"Requires Attention"
-
-"Needs Monitoring"
-
-"Academic Support Recommended"
-
-where appropriate.
-
-Document the rules.
-
----
-
-# 30. INTERVENTION MANAGEMENT
-
-Evaluate:
-
-## interventions
-
-Potential fields:
-
-- student
-- intervention type
-- reason
-- assigned personnel
-- start date
-- target date
-- status
-- outcome
-- notes
-
-Statuses:
-
-- planned
-- active
-- completed
-- discontinued
-
-Analytics:
-
-- active interventions
-- completed interventions
-- intervention outcomes
-- students requiring follow-up
-
----
-
-# 31. VALIDATION SYSTEM
-
-The old child-mapping validation workflow must be transformed.
-
-New purpose:
-
-STUDENT RECORD VERIFICATION
-
-Possible checks:
-
-- duplicate student
-- missing student number
-- incomplete profile
-- invalid enrollment
-- missing grade records
-- inconsistent school year
-- invalid assessment data
-
-Validation should not automatically destroy or merge records.
-
----
-
-# 32. DUPLICATE DETECTION
-
-Potential duplicate matching:
-
-- student number
-- name
-- birth date
-- sex
-- enrollment information
-
-Workflow:
-
-Possible Duplicate
-       ↓
-Review
-       ↓
-Confirm Duplicate
-       OR
-Mark as Different
-
-Never automatically merge student records without human confirmation.
-
----
-
-# 33. QR SYSTEM
-
-Review existing QR functionality.
-
-If retained:
-
-QR should represent:
-
-SECURE STUDENT IDENTIFIER
-
-NOT:
-
-complete student information.
-
-Recommended flow:
-
-QR
- ↓
-Secure Token
- ↓
-Server Validation
- ↓
-Permission Check
- ↓
-Limited Student Information
-
-Document security considerations.
-
----
-
-# 34. REPORTING SYSTEM
-
-Replace municipality reports with school reports.
-
-Evaluate:
-
-- Student Master List
-- Enrollment Report
-- Grade Report
-- Subject Performance Report
-- Attendance Report
-- Behavior Report
-- Reading Report
-- Literacy Report
-- Numeracy Report
-- Intervention Report
-- Student Profile Report
-- At-Risk/Needs Monitoring Report
-- Grade-Level Performance Report
-- Section Performance Report
-- School-Year Comparison Report
-
-Every report requires:
-
-- authorization
-- filters
-- date/school-year selection
-- appropriate privacy controls
-- error handling
-- empty state
-
----
-
-# 35. NAVIGATION
-
-Evaluate a school-focused navigation structure such as:
-
+```text
 Dashboard
 
+Employees
+├── All Employees
+├── Add Employee
+└── Employee Records
+
+201 Files
+
+Service Credits
+├── Overview
+├── Earned
+├── Consumed
+└── History
+```
+
+Only include pages that are actually implemented.
+
+Do NOT show:
+
+```text
 Students
-├── Student Registry
-├── Add Student
-└── Student Profiles
+Student Analytics
+Grades
+Behavior
+Reading
+Literacy
+Numeracy
+Student Reports
+```
 
-Performance
-├── Academic
-├── Attendance
-├── Reading
-├── Literacy
-└── Numeracy
+to the Admin Officer.
 
-Student Development
-├── Behavior
-├── Interventions
-└── Monitoring
-
-Reports
-
-Administration
-├── Users
-├── Roles & Permissions
-├── Activity Logs
-└── Settings
-
-Do not blindly implement this structure.
-
-Match it to the existing application.
+If the existing dashboard is shared between roles, make sure the dashboard itself does not expose student information to Admin Officer.
 
 ---
 
-# 36. PAGE-BY-PAGE MIGRATION
+# 14. ADMIN OFFICER DASHBOARD
 
-Create a complete page migration table.
+Create an appropriate dashboard if the existing architecture supports role-specific dashboards.
 
-For EVERY page document:
+The dashboard should focus exclusively on employee records.
 
-1. current page
-2. current purpose
-3. new purpose
-4. content changes
-5. data changes
-6. UI changes
-7. backend changes
-8. permissions
-9. validation
-10. testing
-11. documentation
+Possible metrics:
+
+- Total Employees
+- Active Employees
+- Inactive Employees
+- Employees by Position
+- Employees by Employment Status
+- Total Service Credits Earned
+- Total Service Credits Consumed
+- Total Available Service Credits
+- Recent Employee Records
+- Recent Service Credit Transactions
+- Missing/Incomplete Employee Records
+
+Do not display student statistics.
 
 ---
 
-# 37. COMPONENT MIGRATION
+# 15. SEARCH AND FILTERING
 
-Inspect reusable components.
+Employee management should have reliable search and filtering.
 
-For each component:
+Support appropriate searches such as:
 
-- retain
-- modify
-- replace
-- remove
-- create new
+- Employee name
+- Employee ID
+- Position
+- Employment status
+- Department/office
+
+Potential filters:
+
+- Active/Inactive
+- Employment type
+- Position
+- Date hired
+- Other relevant employee attributes
+
+Ensure search does not reload the entire page unnecessarily if the current application architecture supports client/server-side dynamic filtering.
+
+Provide user-friendly loading states/skeletons consistent with the existing application.
+
+---
+
+# 16. VALIDATION
+
+Implement strong validation for employee records.
+
+Validate:
+
+- Required fields
+- Date formats
+- Contact information
+- Employee ID uniqueness
+- Email format
+- Service credit amounts
+- Transaction type
+- Required transaction information
+
+Prevent duplicate or malformed records.
+
+Use the project's existing validation approach.
+
+---
+
+# 17. AUDITABILITY
+
+Employee records are sensitive administrative records.
+
+Where the existing architecture supports auditing, record:
+
+- Created by
+- Created at
+- Updated by
+- Updated at
+
+For service credit transactions, preserve who performed the transaction.
+
+For important modifications, avoid destroying historical information unnecessarily.
+
+---
+
+# 18. AUTHENTICATION
+
+Create an appropriate default Admin Officer account for testing if the project uses seeded/default accounts.
+
+Follow the existing authentication conventions.
+
+The password stored in the database MUST be hashed.
+
+The login form must use the normal non-hashed password.
+
+Do not expose plaintext passwords in the database.
+
+If default credentials are created, document them securely in the project's documentation according to existing project conventions.
+
+---
+
+# 19. EXISTING ROLES MUST NOT BREAK
+
+After implementing Admin Officer:
+
+- [ ] Existing Admin login still works.
+- [ ] Existing Admin permissions still work.
+- [ ] Existing student functionality still works.
+- [ ] Existing teacher/other roles still work.
+- [ ] Student authorization remains correct.
+- [ ] Employee authorization is correctly restricted.
+- [ ] No existing role accidentally gains Admin Officer permissions.
+
+Do not modify existing permissions unless required to support the new architecture.
+
+---
+
+# 20. UI / DESIGN REQUIREMENT
+
+**DO NOT CHANGE THE CURRENT WEBSITE THEME OR DESIGN.**
+
+Reuse:
+
+- Existing colors
+- Existing typography
+- Existing components
+- Existing cards
+- Existing tables
+- Existing buttons
+- Existing forms
+- Existing sidebar/navigation
+- Existing modal/dialog patterns
+- Existing loading states
+- Existing responsive behavior
+
+The new employee-management pages should look like they naturally belong to the existing application.
+
+Do not introduce an unrelated UI library.
+
+Do not redesign existing pages merely because you are adding this feature.
+
+---
+
+# 21. RESPONSIVE DESIGN
+
+Ensure employee-management functionality works properly on:
+
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+
+Employee tables should remain usable on smaller screens.
+
+Do not sacrifice important information merely to make the table fit.
+
+Use the project's existing responsive patterns.
+
+---
+
+# 22. ERROR HANDLING
+
+Implement proper error handling.
 
 Examples:
 
-- dashboard cards
-- charts
-- data tables
-- filters
-- forms
-- modals
-- dialogs
-- dropdowns
-- badges
-- tabs
-- student avatar/profile components
-- activity timeline
-- analytics cards
+- Unauthorized access
+- Employee not found
+- Duplicate employee ID
+- Invalid service credit amount
+- Insufficient service credits
+- Failed document upload
+- Database failure
+- Invalid transaction
+- Expired/deleted employee record
 
-Do not duplicate components unnecessarily.
+Errors should be understandable to normal users.
+
+Do not expose raw database errors or stack traces in the UI.
 
 ---
 
-# 38. DATABASE QUERY ARCHITECTURE
+# 23. SECURITY TESTING
 
-Plan queries carefully.
+Explicitly test role isolation.
 
-Avoid:
-
-- loading all students into the client
-- calculating large analytics entirely in JavaScript
-- unnecessary repeated queries
-- N+1 queries
-- exposing sensitive records
-
-Prefer:
-
-- server-side aggregation
-- indexed queries
-- filtered queries
-- pagination
-- database-level calculations where appropriate
-
----
-
-# 39. TURSO
-
-The application uses Turso.
-
-Maintain Turso.
-
-Do not replace it unless there is a documented technical reason.
-
-Plan:
-
-- migrations
-- indexes
-- foreign keys
-- constraints
-- transactions
-- aggregation queries
-- connection handling
-- error handling
-
-Document all database changes.
-
----
-
-# 40. NEXT.JS
-
-Preserve the existing Next.js architecture.
-
-Use appropriate:
-
-- Server Components
-- Client Components
-- Server Actions
-- Route Handlers
-- Middleware
-- Server-side authorization
-- Loading states
-- Error boundaries
-- caching
-
-Do not convert everything into client-side rendering.
-
----
-
-# 41. TAILWIND
-
-Continue using the existing Tailwind implementation.
-
-Preserve:
-
-- design tokens
-- existing utility patterns
-- spacing
-- typography
-- colors
-
-Avoid random inline styling when reusable classes/components already exist.
-
----
-
-# 42. RESPONSIVE DESIGN
+Attempt to access student functionality while authenticated as Admin Officer.
 
 Test:
 
-- desktop
-- laptop
-- tablet
-- mobile
+```text
+Student list
+Student profile
+Student search
+Student filters
+Student APIs
+Student analytics
+Student grades
+Student behavior
+Student reading
+Student literacy
+Student numeracy
+Student reports
+Direct student URLs
+Direct student API endpoints
+```
 
-Critical pages:
+Every unauthorized attempt must be rejected appropriately.
 
-- dashboard
-- registry
-- student profile
-- grades
-- assessments
-- reports
-- forms
+Also test the opposite:
 
-Tables require a deliberate mobile strategy.
+```text
+Admin Officer → Employee records
+Admin Officer → 201 files
+Admin Officer → Service credits
+```
 
----
-
-# 43. ACCESSIBILITY
-
-Plan:
-
-- keyboard navigation
-- focus states
-- semantic elements
-- accessible labels
-- form errors
-- accessible tables
-- chart descriptions
-- contrast
-- screen-reader considerations
+These must work correctly.
 
 ---
 
-# 44. SECURITY
+# 24. TESTING REQUIREMENT
 
-Document:
+Do NOT consider the implementation complete immediately after coding.
 
-- authentication
-- authorization
-- session management
-- secure cookies
-- password hashing
-- input validation
-- SQL injection prevention
-- XSS prevention
-- CSRF protection where applicable
-- rate limiting
-- audit logs
-- sensitive-data protection
+You MUST test the entire feature.
 
-Authorization must be enforced server-side.
+Run the project's available:
 
-Never trust frontend role checks alone.
+- Linter
+- Type checker
+- Unit tests
+- Integration tests
+- End-to-end tests
+- Build
+- Database validation
+- Authentication tests
 
----
+Use the project's existing commands discovered from `AGENTS.md`, `package.json`, documentation, and configuration files.
 
-# 45. DATA PRIVACY
+If tests fail:
 
-Student information is sensitive.
+1. Investigate the root cause.
+2. Fix the implementation.
+3. Run the test again.
+4. Continue until the result is stable.
 
-The plan must address:
-
-- data minimization
-- access control
-- audit trails
-- secure QR verification
-- report permissions
-- sensitive notes
-- guardian information
-- browser exposure
-- API responses
-- logs
-- backups
-
-Never expose unnecessary personal information.
+Do not simply suppress errors.
 
 ---
 
-# 46. AUDIT LOG
+# 25. MANUAL QA CHECKLIST
 
-Track:
+Perform a complete manual verification.
 
-- login
-- logout
-- student creation
-- student updates
-- student archive
-- enrollment changes
-- grade changes
-- attendance changes
-- behavior records
-- assessments
-- interventions
-- report generation
-- user creation
-- role changes
-- permission changes
-- settings changes
+### Authentication
 
-Document:
+- [ ] Admin Officer can log in.
+- [ ] Invalid credentials are rejected.
+- [ ] Session works correctly.
+- [ ] Logout works.
+- [ ] Unauthorized roles cannot access Admin Officer functionality.
 
-- actor
-- action
-- entity
-- entity ID
-- timestamp
-- metadata
+### Employee Records
 
----
+- [ ] Employee list loads.
+- [ ] Search works.
+- [ ] Filters work.
+- [ ] Employee profile works.
+- [ ] Add employee works.
+- [ ] Edit employee works.
+- [ ] Validation works.
+- [ ] Employee records persist correctly.
 
-# 47. ENVIRONMENT SECURITY
+### 201 Files
 
-NEVER read or modify actual secret files:
+- [ ] 201 File opens.
+- [ ] Records can be added.
+- [ ] Records can be edited.
+- [ ] Records can be viewed.
+- [ ] Documents work correctly if implemented.
+- [ ] Unauthorized users cannot access employee records.
 
-- .env
-- .env.local
-- .env.production
-- .env.development
+### Service Credits
 
-Only inspect/update:
+- [ ] Earned credits work.
+- [ ] Consumed credits work.
+- [ ] Balance calculation is correct.
+- [ ] Transaction history works.
+- [ ] Validation works.
+- [ ] Audit information is preserved.
 
-.env.example
+### Student Isolation
 
-Never expose:
-
-- database credentials
-- authentication secrets
-- API keys
-- tokens
-- passwords
-
-in documentation.
+- [ ] Admin Officer cannot view students.
+- [ ] Admin Officer cannot search students.
+- [ ] Admin Officer cannot access student profiles.
+- [ ] Admin Officer cannot access student analytics.
+- [ ] Admin Officer cannot access student APIs.
+- [ ] Direct URL access is blocked.
+- [ ] Direct API access is blocked.
 
 ---
 
-# 48. GIT SAFETY
+# 26. DATA INTEGRITY TESTING
 
-Before modifications:
+Test realistic scenarios.
 
-- inspect git status
-- inspect branch
-- inspect recent commits
-- understand existing changes
+Example:
 
-Do NOT:
+```text
+Employee A
+Earned: 10
+Consumed: 3
+Balance: 7
+```
 
-- reset user work
-- delete unrelated files
-- force push
-- overwrite unrelated changes
+Then:
 
----
+```text
+Earn another 5
+Consumed another 2
+```
 
-# 49. MIGRATION SAFETY
+Expected:
 
-Do not immediately delete old tables.
+```text
+Total Earned: 15
+Total Consumed: 5
+Balance: 10
+```
 
-For every obsolete table:
+Test:
 
-1. identify it
-2. determine whether it contains data
-3. determine whether it is referenced
-4. determine whether data should be migrated
-5. determine whether it can be archived
-6. document the decision
-7. only then propose removal
-
----
-
-# 50. DOCUMENTATION ARCHITECTURE
-
-Create or update:
-
-documentation/
-
-├── README.md
-│
-├── project/
-│   ├── project-overview.md
-│   ├── system-scope.md
-│   ├── requirements.md
-│   └── glossary.md
-│
-├── migration/
-│   ├── master-migration-plan.md
-│   ├── scope-change.md
-│   ├── old-vs-new.md
-│   ├── removed-features.md
-│   ├── retained-features.md
-│   ├── repurposed-features.md
-│   ├── migration-risks.md
-│   └── rollback-plan.md
-│
-├── database/
-│   ├── database-overview.md
-│   ├── schema.md
-│   ├── data-dictionary.md
-│   ├── relationships.md
-│   ├── indexing.md
-│   ├── constraints.md
-│   ├── migration.md
-│   └── erd/
-│
-├── features/
-│   ├── students.md
-│   ├── enrollment.md
-│   ├── academic.md
-│   ├── attendance.md
-│   ├── behavior.md
-│   ├── reading.md
-│   ├── literacy.md
-│   ├── numeracy.md
-│   ├── interventions.md
-│   ├── analytics.md
-│   ├── reports.md
-│   └── qr-verification.md
-│
-├── security/
-│   ├── authentication.md
-│   ├── authorization.md
-│   ├── privacy.md
-│   └── audit-logging.md
-│
-├── ui/
-│   ├── design-system.md
-│   ├── page-migration.md
-│   ├── navigation.md
-│   └── ux-guidelines.md
-│
-└── testing/
-    ├── test-plan.md
-    ├── database-tests.md
-    ├── authorization-tests.md
-    ├── analytics-tests.md
-    ├── ui-tests.md
-    └── acceptance-tests.md
-
-Adapt this structure to the existing project instead of unnecessarily duplicating documentation.
+- Multiple transactions
+- Same-day transactions
+- Decimal values if supported
+- Invalid values
+- Zero values
+- Excessive consumption
+- Editing transactions
+- Deleting/archiving records
+- Concurrent changes where applicable
 
 ---
 
-# 51. MASTER IMPLEMENTATION PLAN
+# 27. PERFORMANCE
 
-Create:
+Do not load the entire employee dataset unnecessarily.
 
-documentation/migration/master-migration-plan.md
+Use the existing pagination/data-fetching architecture.
 
-This must be the authoritative implementation roadmap.
+Search and filtering should remain performant.
 
-It must contain:
+Avoid unnecessary database queries.
 
-## Phase 1
-Codebase audit
+Watch for:
 
-## Phase 2
-Requirements and scope migration
-
-## Phase 3
-Architecture migration
-
-## Phase 4
-Database migration
-
-## Phase 5
-ERD migration
-
-## Phase 6
-Authentication and roles
-
-## Phase 7
-Student records
-
-## Phase 8
-Enrollment
-
-## Phase 9
-Academic records
-
-## Phase 10
-Attendance
-
-## Phase 11
-Behavior
-
-## Phase 12
-Reading
-
-## Phase 13
-Literacy
-
-## Phase 14
-Numeracy
-
-## Phase 15
-Interventions
-
-## Phase 16
-Analytics
-
-## Phase 17
-Reports
-
-## Phase 18
-QR verification
-
-## Phase 19
-UI/page migration
-
-## Phase 20
-Security
-
-## Phase 21
-Performance
-
-## Phase 22
-Testing
-
-## Phase 23
-Documentation
-
-## Phase 24
-Final audit
+- N+1 queries
+- Repeated API requests
+- Duplicate database calls
+- Excessive client-side processing
 
 ---
 
-# 52. EVERY TASK MUST INCLUDE FILE PATHS
+# 28. DOCUMENTATION
 
-Do not write vague tasks such as:
+After the implementation is complete, create/update documentation describing:
 
-- [ ] Update dashboard
+- Admin Officer role
+- Permissions
+- Employee management
+- 201 Files
+- Service Credits
+- Database changes
+- Authentication
+- Default credentials if applicable
+- Security restrictions
+- Testing performed
+- Important implementation decisions
 
-Instead write:
+Place documentation in the project's existing `documentation` structure.
 
-- [ ] Inspect `actual/path/to/dashboard/page.tsx`
-- [ ] Identify municipality-specific metrics
-- [ ] Replace municipality metrics with school-level metrics
-- [ ] Update data-fetching logic
-- [ ] Update chart configuration
-- [ ] Preserve existing dashboard layout
-- [ ] Add loading state
-- [ ] Add empty state
-- [ ] Add error handling
-- [ ] Test dashboard
-- [ ] Document dashboard migration
-
-Use ACTUAL paths discovered from the repository.
+Follow the conventions specified in `AGENTS.md`.
 
 ---
 
-# 53. EVERY DATABASE TASK MUST SPECIFY
+# 29. IMPLEMENTATION WORKFLOW
 
-For each table:
+Follow this order:
 
-- table name
-- purpose
-- columns
-- data types
-- primary key
-- foreign keys
-- nullable fields
-- unique constraints
-- indexes
-- relationships
-- cascade behavior
-- timestamps
-- soft deletion if appropriate
+## Phase 1 — Understand
 
-Also document why the table exists.
+- [ ] Read `AGENTS.md`
+- [ ] Inspect project architecture
+- [ ] Inspect authentication
+- [ ] Inspect roles/permissions
+- [ ] Inspect database
+- [ ] Inspect existing employee functionality
+- [ ] Inspect existing UI patterns
 
----
+## Phase 2 — Plan
 
-# 54. EVERY RELATIONSHIP MUST BE DOCUMENTED
+- [ ] Determine role architecture
+- [ ] Determine permission architecture
+- [ ] Determine employee schema
+- [ ] Determine 201 File schema
+- [ ] Determine service credit schema
+- [ ] Determine routes/API/server actions
+- [ ] Determine UI pages
+- [ ] Determine security boundaries
 
-For example:
+## Phase 3 — Database
 
-students
-    1
-    |
-    | many
-    ↓
-student_enrollments
+- [ ] Implement required schema changes
+- [ ] Implement relationships
+- [ ] Implement indexes where appropriate
+- [ ] Implement constraints
+- [ ] Run migrations safely
+- [ ] Verify database integrity
 
-Document:
+## Phase 4 — Backend
 
-- cardinality
-- foreign key
-- reason
-- deletion behavior
-- historical implications
+- [ ] Implement authorization
+- [ ] Implement employee APIs/actions
+- [ ] Implement 201 File APIs/actions
+- [ ] Implement service credit APIs/actions
+- [ ] Implement validation
+- [ ] Implement error handling
 
-Do this for EVERY relationship.
+## Phase 5 — Frontend
 
----
+- [ ] Add Admin Officer navigation
+- [ ] Add employee pages
+- [ ] Add employee profile
+- [ ] Add 201 File UI
+- [ ] Add service credit UI
+- [ ] Add loading states
+- [ ] Add error states
+- [ ] Add empty states
+- [ ] Preserve existing design
 
-# 55. EVERY ANALYTICS TASK MUST SPECIFY
+## Phase 6 — Security
 
-For every chart/metric:
+- [ ] Test role restrictions
+- [ ] Test direct URL access
+- [ ] Test API access
+- [ ] Test database authorization
+- [ ] Confirm Admin Officer cannot access student data
 
-- name
-- purpose
-- source table
-- source fields
-- calculation
-- filters
-- date range
-- school year
-- user permissions
-- chart type
-- empty state
-- error state
-- loading state
-- privacy considerations
-- performance considerations
+## Phase 7 — Testing
 
----
+- [ ] Run lint
+- [ ] Run type checking
+- [ ] Run tests
+- [ ] Run build
+- [ ] Test authentication
+- [ ] Test employee CRUD
+- [ ] Test 201 Files
+- [ ] Test service credits
+- [ ] Test responsive UI
+- [ ] Test student isolation
 
-# 56. EVERY PAGE TASK MUST SPECIFY
+## Phase 8 — Documentation
 
-For every page:
-
-- current route
-- new route
-- current purpose
-- new purpose
-- UI sections
-- data required
-- database queries
-- actions
-- permissions
-- validation
-- loading
-- empty state
-- error state
-- responsive behavior
-- accessibility
-- tests
-- documentation
+- [ ] Document implementation
+- [ ] Document permissions
+- [ ] Document database changes
+- [ ] Document default credentials
+- [ ] Document testing results
+- [ ] Document any important limitations
 
 ---
 
-# 57. NO HARD-CODED DATA
+# 30. FINAL REQUIREMENT
 
-The future implementation must NOT use fake production data.
+Do not stop after implementing the first working version.
 
-Do not hardcode:
+**Think broadly, inspect the existing system carefully, implement the feature properly, test it, debug it, and verify it from both the user and security perspectives.**
 
-- student counts
-- grade averages
-- attendance rates
-- reading percentages
-- literacy percentages
-- numeracy percentages
-- behavior statistics
+If you discover existing code that conflicts with the new employee-record architecture:
 
-Development seed data is allowed only if clearly identified as development data.
+1. Understand why it exists.
+2. Determine whether it can be safely reused.
+3. Refactor only where necessary.
+4. Preserve existing functionality.
+5. Test everything affected by the change.
+
+The final result must provide a reliable **Admin Officer Employee Records Management system** while maintaining a strict security boundary:
+
+```text
+                    SCHOOL SYSTEM
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+            ADMIN              ADMIN OFFICER
+              │                     │
+        Existing Access       EMPLOYEE RECORDS
+                                    │
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+               Employee         201 Files      Service Credits
+                Profiles                         │
+                                                │
+                                      ┌─────────┴─────────┐
+                                      │                   │
+                                    Earned             Consumed
+```
+
+**Critical security rule:**
+
+> `ADMIN OFFICER ≠ STUDENT ADMIN`
+
+The Admin Officer must have **no ability to view, search, modify, export, or retrieve student information**, while having complete authorized functionality for the employee records assigned to the role.
+
+Do not mark the task complete until the implementation has been fully tested and verified.
+
+Brainstorm every decisions before implementation, read first the AGENTS.md, commit and push to the current branch, then ensure that there's no error in current branch deployment use the Vercel cli for that.
+
+Additional TODOS after that todos at the top. Note do fist the todo at the top before this:
+
+
+You are now operating as a FULL-STACK WEBSITE IMPROVEMENT AGENT with multiple specialized roles. You will embody ALL of these roles simultaneously and work CONTINUOUSLY without stopping until the website is fully optimized, tested, and bug-free.
+
+## YOUR ROLES (Execute ALL Simultaneously):
+1. **Business Analyst** - Analyze requirements, identify gaps, and propose solutions
+2. **UX Researcher** - Evaluate user flows, identify friction points, improve usability
+3. **UI/UX Designer** - Enhance visual design, create consistent styling, improve aesthetics
+4. **Frontend Developer** - Write clean HTML, CSS, JavaScript with modern best practices
+5. **Backend Developer** - Optimize server-side code, APIs, database queries if applicable
+6. **SEO Specialist** - Implement search engine optimization best practices
+7. **Performance Engineer** - Optimize loading speeds, resource usage, and rendering
+8. **Accessibility Expert** - Ensure WCAG 2.1 AA compliance and inclusive design
+9. **Security Specialist** - Identify and fix security vulnerabilities
+10. **QA Tester** - Test all features, identify bugs, verify fixes
+11. **Debugger** - Troubleshoot and resolve all errors and issues
+12. **DevOps Engineer** - Ensure deployment readiness and compatibility
+13. **Content Strategist** - Improve copy, messaging, and content structure
+14. **Project Manager** - Track progress, prioritize tasks, ensure completion
+
+## OPERATING MODE:
+- Work CONTINUOUSLY and NON-STOP until all tasks are complete
+- Do NOT pause for confirmation between tasks
+- Automatically move to the next task after completing the current one
+- If you encounter errors, debug them immediately and continue
+- Maintain a running log of all actions, tests, and fixes
+
+## 1. INITIAL ASSESSMENT PHASE
+- Explore the entire project structure and identify all website files
+- List all installed skills and capabilities available to you
+- Analyze the current state of the website comprehensively:
+  - HTML structure and semantics
+  - CSS architecture and responsiveness
+  - JavaScript functionality and performance
+  - Assets (images, fonts, icons) optimization status
+  - Forms and interactive elements
+  - Navigation and user flows
+  - Console errors and warnings
+  - Broken links and missing resources
+- Document ALL findings, issues, and improvement opportunities
+
+## 2. IMPROVEMENT STRATEGY & EXECUTION
+Using ALL relevant skills and roles, improve the website in these areas:
+
+### Design & User Experience:
+- Enhance visual appeal, consistency, spacing, typography, color scheme
+- Implement modern design patterns (glassmorphism, neumorphism, etc. where appropriate)
+- Add micro-interactions, hover effects, and smooth animations
+- Improve navigation with active states, breadcrumbs, and clear CTAs
+- Add dark mode toggle with localStorage persistence
+- Implement skeleton loaders and progressive enhancement
+
+### Responsiveness & Cross-Browser:
+- Ensure perfect mobile-first responsive design (320px to 4K screens)
+- Test and fix issues in Chrome, Firefox, Safari, and Edge
+- Implement responsive images with srcset and picture elements
+- Fix any overflow, spacing, or stacking issues
+
+### Performance Optimization:
+- Optimize all images (compress, convert to WebP where supported)
+- Minify CSS, JavaScript, and HTML
+- Implement lazy loading for images and iframes
+- Add resource hints (preload, prefetch, preconnect)
+- Optimize fonts loading with font-display: swap
+- Implement code splitting where applicable
+
+### Accessibility (WCAG 2.1 AA):
+- Add proper ARIA labels, roles, and landmarks
+- Ensure sufficient color contrast ratios
+- Implement full keyboard navigation with visible focus states
+- Add skip-to-content links
+- Provide alt text for all images
+- Make forms accessible with proper labels and error messages
+- Ensure screen reader compatibility
+
+### SEO Optimization:
+- Optimize meta titles, descriptions, and Open Graph tags
+- Implement proper heading hierarchy (H1, H2, H3)
+- Add structured data (Schema.org JSON-LD)
+- Create/update sitemap.xml and robots.txt
+- Add canonical tags
+- Implement Twitter Cards and social sharing meta tags
+- Optimize URL structure
+
+### Security:
+- Check for XSS, CSRF, and injection vulnerabilities
+- Add Content Security Policy headers
+- Implement secure form validation
+- Sanitize all user inputs
+- Add rel="noopener" to external links
+- Ensure secure cookie settings if applicable
+
+### Content & Conversion:
+- Improve headline copy and messaging
+- Add missing sections (About, Services, Testimonials, FAQ, Contact)
+- Optimize CTAs for conversion
+- Add social proof elements
+- Improve form UX and validation
+- Add FAQ accordion if relevant
+
+## 3. TESTING PHASE (CRITICAL - DO NOT SKIP)
+After implementing improvements, you MUST:
+
+### Functional Testing:
+- Test ALL navigation links work correctly
+- Test ALL forms (submission, validation, error states, success states)
+- Test ALL buttons and interactive elements
+- Test ALL modals, dropdowns, and accordions
+- Test ALL animations and transitions
+- Test responsive design at ALL breakpoints (320px, 375px, 425px, 768px, 1024px, 1440px, 1920px)
+- Test in both light and dark modes
+- Test with JavaScript disabled (graceful degradation)
+- Test all media queries and breakpoints
+
+### Debug Process:
+- Check browser console for ANY errors or warnings
+- Fix ALL JavaScript errors immediately
+- Fix ALL CSS issues and layout breaks
+- Fix ALL HTML validation errors
+- Verify all external resources load correctly
+- Test all API calls and data fetching
+- Debug and fix any issues found
+- Re-test after fixing to confirm resolution
+
+### Performance Testing:
+- Run Lighthouse audit (Performance, Accessibility, Best Practices, SEO)
+- Aim for scores of 90+ in all categories
+- Test page load times (target: under 3 seconds)
+- Check for render-blocking resources
+- Verify image optimization
+- Test Core Web Vitals (LCP, FID, CLS)
+
+### Cross-Browser Testing:
+- Verify functionality in Chrome, Firefox, Safari, Edge
+- Test on different operating systems (Windows, macOS, Linux)
+- Test on mobile browsers (iOS Safari, Android Chrome)
+- Fix any browser-specific issues
+
+### Regression Testing:
+- Verify no existing features broke during improvements
+- Test all user flows end-to-end
+- Ensure backward compatibility
+- Validate all forms still submit correctly
+
+## 4. CONTINUOUS OPERATION PROTOCOL
+- After completing all improvements and initial testing
+- Perform a FULL RE-TEST of everything
+- If ANY bugs or issues are found:
+  - Debug immediately
+  - Fix the issue
+  - Re-test the fix
+  - Continue scanning for more issues
+- Repeat this cycle until ZERO bugs remain
+- Do NOT stop until all tests pass
+
+## 5. FINAL DELIVERABLES
+When everything is complete and tested:
+
+1. **Updated Website Files** - All modified and new files
+2. **Comprehensive Report** including:
+   - Initial issues found
+   - All improvements made
+   - All skills and roles utilized
+   - Testing results summary
+   - Bugs found and fixed
+   - Before/after performance metrics
+   - Recommendations for future improvements
+3. **Documentation**:
+   - Setup/installation instructions
+   - New dependencies or requirements
+   - Code documentation and comments
+   - Testing checklist used
+
+## 6. CONSTRAINTS
+- Maintain backward compatibility where possible
+- Preserve existing branding unless broken
+- Ensure all improvements are production-ready
+- Document any new dependencies
+- All code must be clean, commented, and maintainable
+
+## 7. COMMITMENT
+You are committed to:
+- Working NON-STOP until the website is perfect
+- Testing EVERY feature thoroughly
+- Debugging ALL issues immediately
+- Not stopping until ZERO bugs exist
+- Delivering a production-ready, high-quality website
+
+BEGIN NOW. Execute all roles. Improve everything. Test everything. Debug everything. Do not stop until complete.
+```
 
 ---
 
-# 58. NO UNNECESSARY REWRITE
+**Key Enhancements Added:**
+
+1. **15 Specialized Roles** - The AI must embody multiple expert personas
+2. **Continuous Operation** - Explicitly instructed to work non-stop without pausing for confirmation
+3. **Comprehensive Testing** - Functional, performance, cross-browser, and regression testing
+4. **Auto-Debug Loop** - Test → Find bugs → Debug → Fix → Re-test until zero bugs
+5. **Specific Test Targets** - Lighthouse scores, load times, breakpoints to test
+6. **Detailed Deliverables** - Comprehensive reporting requirements
 
-The migration must be incremental.
-
-For each file:
-
-1. inspect
-2. identify required changes
-3. preserve unrelated logic
-4. modify only necessary portions
-5. test
-6. document
-
-Do not rewrite the entire application unnecessarily.
-
----
-
-# 59. TESTING PLAN
-
-Create tests for:
-
-## Authentication
-
-- [ ] login
-- [ ] logout
-- [ ] session
-- [ ] invalid login
-- [ ] disabled user
-
-## Authorization
-
-- [ ] admin
-- [ ] school administrator
-- [ ] teacher
-- [ ] records personnel
-- [ ] guidance personnel
-- [ ] unauthorized access
-
-## Students
-
-- [ ] create
-- [ ] view
-- [ ] edit
-- [ ] archive
-- [ ] search
-- [ ] filter
-- [ ] duplicate detection
-
-## Enrollment
-
-- [ ] create enrollment
-- [ ] update enrollment
-- [ ] historical records
-
-## Grades
-
-- [ ] create
-- [ ] edit
-- [ ] calculate
-- [ ] historical performance
-
-## Assessments
-
-- [ ] reading
-- [ ] literacy
-- [ ] numeracy
-
-## Attendance
-
-- [ ] record
-- [ ] calculate
-- [ ] analytics
-
-## Behavior
-
-- [ ] record
-- [ ] update
-- [ ] permissions
-
-## Intervention
-
-- [ ] create
-- [ ] update
-- [ ] complete
-
-## Analytics
-
-- [ ] calculations
-- [ ] filters
-- [ ] charts
-- [ ] empty datasets
-
-## Reports
-
-- [ ] authorization
-- [ ] filters
-- [ ] generation
-- [ ] empty reports
-
----
-
-# 60. PERFORMANCE PLAN
-
-Evaluate:
-
-- database indexes
-- pagination
-- search
-- filtering
-- server-side aggregation
-- caching
-- dashboard loading
-- chart loading
-- report generation
-
-Avoid N+1 queries.
-
-Avoid loading unnecessary student records.
-
----
-
-# 61. LOADING / ERROR / EMPTY STATES
-
-Every major page must have:
-
-### Loading
-
-Skeleton or appropriate loading UI matching the existing design.
-
-### Empty
-
-Helpful message explaining what to do next.
-
-### Error
-
-Clear error message without exposing technical details.
-
-### Success
-
-Clear feedback after important operations.
-
-Preserve existing UI language.
-
----
-
-# 62. FINAL MIGRATION CHECKLIST
-
-The master plan must end with:
-
-## Scope
-
-- [ ] Municipality scope removed
-- [ ] Barangay scope removed
-- [ ] LGU scope removed
-- [ ] Multi-agency scope removed
-- [ ] School-only scope confirmed
-
-## Database
-
-- [ ] New student-centered schema
-- [ ] Enrollment history
-- [ ] Academic records
-- [ ] Attendance
-- [ ] Behavior
-- [ ] Reading
-- [ ] Literacy
-- [ ] Numeracy
-- [ ] Interventions
-- [ ] Roles
-- [ ] Permissions
-- [ ] Audit logs
-
-## UI
-
-- [ ] Existing design preserved
-- [ ] Navigation updated
-- [ ] Dashboard updated
-- [ ] Student registry updated
-- [ ] Student profile updated
-- [ ] Forms updated
-- [ ] Reports updated
-
-## Analytics
-
-- [ ] Academic
-- [ ] Attendance
-- [ ] Behavior
-- [ ] Reading
-- [ ] Literacy
-- [ ] Numeracy
-- [ ] Intervention
-- [ ] Enrollment
-
-## Security
-
-- [ ] Authentication
-- [ ] Authorization
-- [ ] Privacy
-- [ ] Audit
-- [ ] QR security
-
-## Testing
-
-- [ ] Unit
-- [ ] Integration
-- [ ] Database
-- [ ] Authorization
-- [ ] Analytics
-- [ ] UI
-- [ ] Responsive
-
-## Documentation
-
-- [ ] Architecture
-- [ ] Database
-- [ ] ERD
-- [ ] Features
-- [ ] Security
-- [ ] Migration
-- [ ] Testing
-
----
-
-# 63. FINAL OUTPUT REQUIRED FROM YOU
-
-After inspecting the codebase, DO NOT implement the changes yet.
-
-Instead generate the complete implementation plan.
-
-The response must contain:
-
-1. Executive summary
-2. Existing architecture analysis
-3. Existing database analysis
-4. Existing route analysis
-5. Existing UI analysis
-6. Existing authentication analysis
-7. Existing authorization analysis
-8. Old functionality inventory
-9. New system scope
-10. New architecture
-11. New role architecture
-12. Permission matrix
-13. New database design
-14. Complete table list
-15. Complete field recommendations
-16. Complete relationships
-17. ERD migration plan
-18. Page migration plan
-19. Navigation migration
-20. Student profile plan
-21. Academic performance plan
-22. Attendance plan
-23. Behavior plan
-24. Reading plan
-25. Literacy plan
-26. Numeracy plan
-27. Intervention plan
-28. Analytics plan
-29. Dashboard plan
-30. Report plan
-31. QR plan
-32. Validation plan
-33. Duplicate detection plan
-34. Security plan
-35. Privacy plan
-36. Audit logging plan
-37. Performance plan
-38. Testing plan
-39. Documentation plan
-40. Migration risks
-41. Rollback strategy
-42. Complete checkbox implementation roadmap
-
----
-
-# 64. FINAL IMPORTANT INSTRUCTION
-
-DO NOT lose the existing design.
-
-DO NOT redesign the application unnecessarily.
-
-DO NOT preserve obsolete municipality functionality just because it already exists.
-
-DO NOT blindly rename tables.
-
-DO NOT blindly rename "child" to "student".
-
-DO NOT invent DepEd policies.
-
-DO NOT invent assessment standards.
-
-DO NOT invent grading thresholds.
-
-DO NOT invent student risk criteria without documenting them.
-
-DO NOT expose sensitive student information.
-
-DO NOT use hardcoded production analytics.
-
-DO NOT modify `.env` files.
-
-DO NOT delete database tables without migration analysis.
-
-DO NOT implement before creating the complete plan.
-
-The objective is:
-
-OLD SYSTEM
-
-Integrated Web-Based Child Mapping System
-        ↓
-Municipality
-        ↓
-Barangay
-        ↓
-LGU
-        ↓
-School
-        ↓
-Community
-        ↓
-Child Mapping
-
-MIGRATE TO:
-
-NEW SYSTEM
-
-Records Management System with Profile and Performance Analytics
-of Sta. Magdalena National High School
-
-        ↓
-
-School
-        ↓
-School Users
-        ↓
-Students
-        ↓
-Enrollment
-        ↓
-Academic Records
-        ↓
-Attendance
-        ↓
-Behavior
-        ↓
-Reading
-        ↓
-Literacy
-        ↓
-Numeracy
-        ↓
-Interventions
-        ↓
-Analytics
-        ↓
-Reports
-
-The final system should feel like an evolution of the existing application, not an unrelated new project.
-
-PRESERVE THE DESIGN.
-
-MODERNIZE THE FUNCTIONALITY.
-
-RESTRUCTURE THE DATABASE.
-
-REBUILD THE ANALYTICS AROUND STUDENTS.
-
-KEEP THE SYSTEM SCHOOL-ONLY.
-
-DOCUMENT EVERYTHING.
-
-CHECK EVERY TASK.
-
-PLAN FIRST.
-
-IMPLEMENT ONLY AFTER THE PLAN IS COMPLETE.
