@@ -52,7 +52,7 @@ export function MobileNavToggle({
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-4 py-4">
+          <div className="flex items-center gap-3 border-b border-brand-200 px-4 py-4">
             {/* Brand mark — single source of truth (see components/logo.tsx). */}
             <Logo size="md" asLink />
             <div className="min-w-0 flex-1 leading-tight">
@@ -73,7 +73,7 @@ export function MobileNavToggle({
 
           <SidebarNav sections={sections} links={links} onNavigate={() => setOpen(false)} />
 
-          <div className="border-t border-[#e5e7eb] px-4 py-3 text-[11px] text-brand-400">
+          <div className="border-t border-brand-200 px-4 py-3 text-[11px] text-brand-400">
             Sta. Magdalena NHS • School Records System
           </div>
         </div>

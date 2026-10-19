@@ -32,6 +32,7 @@ const navLinks: NavLink[] = [
   { label: "Activity Logs", href: "/activity-logs", icon: "activity", permission: "audit_logs.view" },
   { label: "Notifications", href: "/notifications", icon: "notifications", permission: "dashboard.view" },
   { label: "Users", href: "/users", icon: "users", permission: "users.view" },
+  { label: "Privacy Policy", href: "/privacy", icon: "verification", permission: "dashboard.view" },
   { label: "Settings", href: "/settings", icon: "settings", permission: "dashboard.view" },
 ];
 
@@ -39,7 +40,7 @@ const NAV_SECTIONS: { heading: string; items: string[] }[] = [
   { heading: "Core Modules", items: ["/dashboard", "/students", "/performance", "/development", "/health", "/verification", "/duplicates", "/reports"] },
   { heading: "Employee Records", items: ["/employees", "/service-credits"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
-  { heading: "System", items: ["/users", "/settings"] },
+  { heading: "System", items: ["/users", "/settings", "/privacy"] },
 ];
 
 export default async function AppShell({
@@ -53,7 +54,7 @@ export default async function AppShell({
   const unread = await unreadNotificationCount(user.id);
 
   return (
-    <div className="min-h-screen bg-[#f5f7fc]">
+    <div className="min-h-screen bg-brand-50">
       {/* Skip-to-content (WCAG 2.1 AA): first focusable element, becomes visible on focus. */}
       <a
         href="#main-content"
@@ -63,8 +64,8 @@ export default async function AppShell({
       </a>
 
       {/* ------------------------------ Sidebar ------------------------------ */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-[#e5e7eb] bg-white lg:flex">
-        <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-5 py-4">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-200 bg-white lg:flex">
+        <div className="flex items-center gap-3 border-b border-brand-200 px-5 py-4">
           {/* Brand mark — single source of truth (see components/logo.tsx). */}
           <Logo size="lg" asLink priority />
           <div className="min-w-0 leading-tight">
@@ -80,7 +81,7 @@ export default async function AppShell({
 
         <SidebarNav sections={NAV_SECTIONS} links={visibleLinks} />
 
-        <div className="border-t border-[#e5e7eb] px-5 py-3 text-[11px] leading-snug text-brand-400">
+        <div className="border-t border-brand-200 px-5 py-3 text-[11px] leading-snug text-brand-400">
           <div className="font-semibold text-brand-700">
             {user.firstName} {user.lastName}
           </div>
@@ -90,7 +91,7 @@ export default async function AppShell({
 
       <div className="flex min-h-screen flex-col lg:pl-60">
         {/* ------------------------------ Header ------------------------------ */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-[#e5e7eb] bg-white/90 backdrop-blur-sm px-3 sm:px-4 md:h-16 md:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-brand-200 bg-white/90 backdrop-blur-sm px-3 sm:px-4 md:h-16 md:px-6">
           <MobileNavToggle sections={NAV_SECTIONS} links={visibleLinks} />
 
           <div className="flex min-w-0 items-center gap-2">

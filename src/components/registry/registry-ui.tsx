@@ -401,7 +401,7 @@ export function StudentRegistryTable({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[820px] border-collapse text-left">
         <thead>
-          <tr className="bg-[#eef3ff] text-[11px] font-semibold uppercase tracking-wide text-brand-700">
+          <tr className="bg-brand-100 text-[11px] font-semibold uppercase tracking-wide text-brand-800">
             <SortHeader
               label={`Student No.${activeSort === "recent" ? " ↓" : activeSort === "oldest" ? " ↑" : ""}`}
               keyName={activeSort === "oldest" ? "oldest" : "recent"}

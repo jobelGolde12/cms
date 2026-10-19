@@ -133,7 +133,7 @@ export function DashIcon({
 
 const KPI_TONES: Record<Kpi["tone"], { icon: string; bar: string }> = {
   navy: { icon: "text-brand-800 bg-brand-100", bar: "bg-brand-700" },
-  blue: { icon: "text-sky-700 bg-sky-100", bar: "bg-sky-600" },
+  blue: { icon: "text-brand-600 bg-brand-100", bar: "bg-brand-500" },
   green: { icon: "text-emerald-700 bg-emerald-100", bar: "bg-emerald-600" },
   amber: { icon: "text-amber-700 bg-amber-100", bar: "bg-amber-500" },
   red: { icon: "text-red-700 bg-red-100", bar: "bg-red-600" },
@@ -346,7 +346,7 @@ export function RecordStatusCard({ rows }: { rows: DistributionRow[] }) {
 
 const EDU_BAR: Record<string, string> = {
   Active: "bg-emerald-600",
-  Completed: "bg-sky-600",
+  Completed: "bg-brand-600",
   Transferred: "bg-amber-500",
   Withdrawn: "bg-red-500",
 };
@@ -458,7 +458,7 @@ const ACTIVITY_TONE_STYLES: Record<"green" | "red" | "amber" | "blue" | "gray", 
   green: "bg-emerald-50 text-emerald-700",
   red: "bg-red-50 text-red-700",
   amber: "bg-amber-50 text-amber-700",
-  blue: "bg-sky-50 text-sky-700",
+  blue: "bg-brand-50 text-brand-600",
   gray: "bg-brand-100 text-brand-600",
 };
 

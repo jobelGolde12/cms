@@ -44,7 +44,7 @@ export default function ForecastChart({ data }: { data: ChartDatum[] }) {
             type="monotone"
             dataKey="actual"
             name="Historical"
-            stroke="#2563eb"
+            stroke="#1f3b99"
             strokeWidth={2}
             dot={{ r: 3 }}
             connectNulls
@@ -53,7 +53,7 @@ export default function ForecastChart({ data }: { data: ChartDatum[] }) {
             type="monotone"
             dataKey="forecast"
             name="Forecast"
-            stroke="#dc2626"
+            stroke="#d97706"
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={{ r: 3 }}
@@ -63,7 +63,7 @@ export default function ForecastChart({ data }: { data: ChartDatum[] }) {
             type="monotone"
             dataKey="lower"
             name="95% CI Lower"
-            stroke="rgba(220, 38, 38, 0.3)"
+            stroke="rgba(217, 119, 6, 0.3)"
             strokeWidth={1}
             dot={false}
             connectNulls
@@ -72,7 +72,7 @@ export default function ForecastChart({ data }: { data: ChartDatum[] }) {
             type="monotone"
             dataKey="upper"
             name="95% CI Upper"
-            stroke="rgba(220, 38, 38, 0.3)"
+            stroke="rgba(217, 119, 6, 0.3)"
             strokeWidth={1}
             dot={false}
             connectNulls
