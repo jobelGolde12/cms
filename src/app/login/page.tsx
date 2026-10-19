@@ -63,9 +63,6 @@ export default function LoginPage() {
           <h2 className="mt-1 text-lg font-medium tracking-[-0.01em] text-brand-900 sm:text-xl">
             Records Management System
           </h2>
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-action-700 sm:text-sm">
-            Student Records &amp; Performance Analytics Portal
-          </p>
         </div>
 
         {/* Login Card */}
