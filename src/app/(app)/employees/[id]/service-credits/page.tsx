@@ -68,7 +68,7 @@ export default async function ServiceCreditsPage({
           </h1>
           <p className="mt-1 text-sm text-[#64748B]">
             Auditable earned/consumed ledger for{" "}
-            <span className="font-medium text-brand-700">
+            <span className="font-medium text-[#263449]">
               {fullName} ({employee.employeeNumber})
             </span>
           </p>
@@ -109,7 +109,7 @@ export default async function ServiceCreditsPage({
                 id="sc-filter-type"
                 name="type"
                 defaultValue={typeFilter}
-                className="h-8 rounded-md border border-brand-200 bg-white px-2 text-xs text-brand-700"
+                className="h-8 rounded-md border border-brand-200 bg-white px-2 text-xs text-[#263449]"
               >
                 <option value="">All</option>
                 <option value="earned">Earned</option>
@@ -142,7 +142,7 @@ export default async function ServiceCreditsPage({
               />
             ) : (
               transactions.map((t) => (
-                <tr key={t.id} className="transition-colors hover:bg-brand-50">
+                <tr key={t.id} className="transition-colors hover:bg-[#F4F7FC]">
                   <Td className="numeric whitespace-nowrap">{fmtDate(t.transactionDate)}</Td>
                   <Td>
                     <span
@@ -165,8 +165,8 @@ export default async function ServiceCreditsPage({
                     {t.credits.toFixed(2)}
                   </Td>
                   <Td>{t.reason}</Td>
-                  <Td className="text-brand-600">{t.referenceDocument ?? "—"}</Td>
-                  <Td className="max-w-[220px] truncate text-brand-600" title={t.remarks ?? undefined}>
+                  <Td className="text-[#64748B]">{t.referenceDocument ?? "—"}</Td>
+                  <Td className="max-w-[220px] truncate text-[#64748B]" title={t.remarks ?? undefined}>
                     {t.remarks ?? "—"}
                   </Td>
                 </tr>

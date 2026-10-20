@@ -103,7 +103,7 @@ export default async function ServiceCreditsOverviewPage({
               />
             ) : (
               rows.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-brand-50">
+                <tr key={r.id} className="transition-colors hover:bg-[#F4F7FC]">
                   <Td className="numeric font-medium">{r.employeeNumber}</Td>
                   <Td>
                     <span className="font-medium text-brand-900">
@@ -118,7 +118,7 @@ export default async function ServiceCreditsOverviewPage({
                   <Td align="right">
                     <Link
                       href={`/employees/${r.id}/service-credits`}
-                      className="rounded-md px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-100 hover:text-brand-900"
+                      className="rounded-md px-2 py-1 text-xs font-medium text-[#263449] hover:bg-brand-100 hover:text-[#14295F]"
                     >
                       Open ledger
                     </Link>
