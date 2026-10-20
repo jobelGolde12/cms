@@ -287,6 +287,7 @@ export async function gradeLevelCounts(): Promise<Record<string, number>> {
 export type StudentProfile = {
   id: string;
   studentNumber: string;
+  lrn: string | null;
   firstName: string;
   middleName: string | null;
   lastName: string;
@@ -310,6 +311,7 @@ export async function getStudentProfile(studentId: string): Promise<StudentProfi
     .select({
       id: students.id,
       studentNumber: students.studentNumber,
+      lrn: students.lrn,
       firstName: students.firstName,
       middleName: students.middleName,
       lastName: students.lastName,
@@ -1169,6 +1171,57 @@ export async function listBehaviorRecords(
     .orderBy(desc(behaviorRecords.date))
     .limit(pageSize)
     .offset(offset);
+}
+
+export type StudentIncidentRow = {
+  behaviorId: string;
+  date: string;
+  incident: string;
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  lrn: string | null;
+  gradeLevel: string | null;
+  section: string | null;
+};
+
+/**
+ * Guidance roster: every behavior record with the student's registry basics
+ * (name, LRN, grade level, section) and the incident description. Confidential
+ * rows are included only for roles that may read them (guidance/admin).
+ */
+export async function listStudentIncidents(
+  user: SessionUser,
+  limit = 50,
+): Promise<StudentIncidentRow[]> {
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  const conditions: SQL[] = [scope];
+  const confidentialFilter = confidentialBehaviorFilter(user);
+  if (confidentialFilter) conditions.push(confidentialFilter);
+
+  return db
+    .select({
+      behaviorId: behaviorRecords.id,
+      date: behaviorRecords.date,
+      incident: behaviorRecords.description,
+      studentId: students.id,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      lrn: students.lrn,
+      gradeLevel: gradeLevels.name,
+      section: sections.name,
+    })
+    .from(behaviorRecords)
+    .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+    .leftJoin(
+      studentEnrollments,
+      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+    )
+    .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+    .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .where(and(...conditions))
+    .orderBy(desc(behaviorRecords.date), asc(students.lastName))
+    .limit(limit);
 }
 
 export async function listBehaviorCategories() {

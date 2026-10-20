@@ -4,7 +4,7 @@ import type { ReportCardData } from "../report-card";
 
 const base: ReportCardData = {
   hasEnrollment: true,
-  student: { id: "s1", studentNumber: "SM-2026-000001", fullName: "Maria Santos dela Cruz Jr.", age: 17, sex: "female" },
+  student: { id: "s1", studentNumber: "SM-2026-000001", lrn: null, fullName: "Maria Santos dela Cruz Jr.", age: 17, sex: "female" },
   schoolYear: "2026-2027",
   gradeLevel: "Grade 12",
   section: "Reyes",

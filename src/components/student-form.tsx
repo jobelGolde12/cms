@@ -23,6 +23,7 @@ export type StudentFormDefaults = {
   middleName?: string | null;
   lastName?: string;
   suffix?: string | null;
+  lrn?: string | null;
   birthDate?: string;
   sex?: string;
   contactNumber?: string | null;
@@ -201,6 +202,21 @@ export function StudentForm({
         </Field>
         <Field label="Suffix" htmlFor="suffix" error={err("suffix")}>
           <Input id="suffix" name="suffix" defaultValue={defaults.suffix ?? ""} maxLength={10} placeholder="Jr., III…" />
+        </Field>
+        <Field
+          label="LRN"
+          htmlFor="lrn"
+          error={err("lrn")}
+          hint="DepEd Learner Reference Number — 12 digits, exactly as issued."
+        >
+          <Input
+            id="lrn"
+            name="lrn"
+            defaultValue={defaults.lrn ?? ""}
+            inputMode="numeric"
+            maxLength={12}
+            aria-invalid={Boolean(err("lrn"))}
+          />
         </Field>
         <Field
           label="Birth date"

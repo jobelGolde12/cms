@@ -31,8 +31,9 @@ import { ageFromBirthDate } from "./utils";
  * - Final grade & remarks           → COMPUTED (not stored)
  * - Attendance                      → attendance_records aggregated by month
  *
- * Known gaps (documented in TODO.md): no `lrn` column (student_number is used
- * as identifier), no track/strand storage (rendered blank).
+ * Known gaps (documented in TODO.md): no track/strand storage (rendered blank).
+ * LRN now has its own column; the report card falls back to the student number
+ * when it has not been filed yet.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -176,6 +177,7 @@ export type ReportCardData = {
   student: {
     id: string;
     studentNumber: string;
+    lrn: string | null;
     fullName: string;
     age: number | null;
     sex: string;
@@ -298,6 +300,7 @@ export async function getReportCardData(
     .select({
       id: students.id,
       studentNumber: students.studentNumber,
+      lrn: students.lrn,
       firstName: students.firstName,
       middleName: students.middleName,
       lastName: students.lastName,
@@ -326,6 +329,7 @@ export async function getReportCardData(
     student: {
       id: studentRow.id,
       studentNumber: studentRow.studentNumber,
+      lrn: studentRow.lrn,
       fullName,
       age: ageFromBirthDate(studentRow.birthDate),
       sex: studentRow.sex,
@@ -428,6 +432,7 @@ export async function getReportCardData(
     student: {
       id: studentRow.id,
       studentNumber: studentRow.studentNumber,
+      lrn: studentRow.lrn,
       fullName,
       age: ageFromBirthDate(studentRow.birthDate),
       sex: studentRow.sex,

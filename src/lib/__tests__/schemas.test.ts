@@ -19,6 +19,28 @@ describe("studentFormSchema", () => {
     expect(success).toBe(false);
   });
 
+  describe("lrn", () => {
+    it("accepts submissions without an LRN (not yet filed)", () => {
+      expect(studentFormSchema.safeParse(validBase).success).toBe(true);
+      const parsed = studentFormSchema.safeParse({ ...validBase, lrn: "" });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) expect(parsed.data.lrn).toBeNull();
+    });
+
+    it("accepts an exactly 12-digit LRN", () => {
+      const parsed = studentFormSchema.safeParse({ ...validBase, lrn: " 136018051744 " });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) expect(parsed.data.lrn).toBe("136018051744");
+    });
+
+    it("rejects LRNs that are not exactly 12 digits", () => {
+      for (const bad of ["13601805174", "1360180517440", "1360-1805-17", "13a60b18051c744"]) {
+        const parsed = studentFormSchema.safeParse({ ...validBase, lrn: bad });
+        expect(parsed.success).toBe(false);
+      }
+    });
+  });
+
   it("rejects malformed birth dates", () => {
     const parsed = studentFormSchema.safeParse({ ...validBase, birthDate: "03/05/2012" });
     expect(parsed.success).toBe(false);

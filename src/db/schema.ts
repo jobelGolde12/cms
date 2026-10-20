@@ -187,6 +187,10 @@ export const students = sqliteTable(
     /** Application-generated stable public identifier, e.g. SM-2026-000001. */
     studentNumber: text("student_number").notNull(),
 
+    /** DepEd Learner Reference Number (12 digits) from the official learner
+     *  profile; null until supplied by Records (no generated fallback). */
+    lrn: text("lrn"),
+
     firstName: text("first_name").notNull(),
     middleName: text("middle_name"),
     lastName: text("last_name").notNull(),

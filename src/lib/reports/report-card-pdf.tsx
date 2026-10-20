@@ -256,8 +256,10 @@ const reportCardDoc = (data: ReportCardData) => (
         <Detail label="Name" value={data.student.fullName || "—"} />
         <Detail label="Age" value={fmtGrade(data.student.age)} />
         <Detail label="Sex" value={data.student.sex ? data.student.sex.charAt(0).toUpperCase() + data.student.sex.slice(1) : "—"} />
-        {/* No `lrn` column exists (documented gap) — student number is the identifier. */}
-        <Detail label="LRN / Student No." value={data.student.studentNumber} />
+        <Detail
+          label="LRN / Student No."
+          value={data.student.lrn || data.student.studentNumber}
+        />
         <Detail
           label="Grade & Section"
           value={data.gradeLevel ? `${data.gradeLevel}${data.section ? ` — ${data.section}` : ""}` : "—"}

@@ -101,8 +101,10 @@ export default async function ReportCardPage({ params }: { params: Promise<{ id:
               label="Sex"
               value={data.student.sex ? capitalize(data.student.sex) : "—"}
             />
-            {/* No `lrn` column exists (documented gap) — student number is the identifier. */}
-            <Detail label="LRN / Student No." value={data.student.studentNumber} />
+            <Detail
+              label="LRN / Student No."
+              value={data.student.lrn ?? data.student.studentNumber}
+            />
             <Detail
               label="Grade &amp; Section"
               value={

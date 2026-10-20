@@ -110,6 +110,15 @@ export const studentFormSchemaBase = z.object({
   middleName: optionalText(60),
   lastName: z.string().trim().min(1, "Last name is required").max(60),
   suffix: optionalText(10),
+  /** DepEd Learner Reference Number — exactly 12 digits when provided; empty
+   *  means "not yet filed" (imported rosters carry no LRN). */
+  lrn: z
+    .string()
+    .trim()
+    .regex(/^\d{12}$/, "LRN must be exactly 12 digits")
+    .or(z.literal(""))
+    .optional()
+    .transform((v) => (typeof v === "string" && v.length > 0 ? v : null)),
   /** Optional: the XLSX-imported roster carries no birth dates, so a record can
    *  be saved without one; a value must still pass the realistic-date window. */
   birthDate: z

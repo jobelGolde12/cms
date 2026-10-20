@@ -44,6 +44,7 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
         defaults={{
           id: student.id,
           studentNumber: student.studentNumber,
+          lrn: student.lrn,
           firstName: student.firstName,
           middleName: student.middleName,
           lastName: student.lastName,
