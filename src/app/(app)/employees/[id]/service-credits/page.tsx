@@ -58,7 +58,7 @@ export default async function ServiceCreditsPage({
         <div className="min-w-0">
           <Link
             href={`/employees/${employee.id}`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-brand-500 transition-colors hover:text-action-700"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] transition-colors hover:text-action-700"
           >
             <ChevronLeft aria-hidden="true" className="h-3.5 w-3.5" />
             Back to {fullName}
@@ -66,7 +66,7 @@ export default async function ServiceCreditsPage({
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
             Service Credits
           </h1>
-          <p className="mt-1 text-sm text-brand-500">
+          <p className="mt-1 text-sm text-[#64748B]">
             Auditable earned/consumed ledger for{" "}
             <span className="font-medium text-brand-700">
               {fullName} ({employee.employeeNumber})
@@ -86,7 +86,7 @@ export default async function ServiceCreditsPage({
                 <c.icon className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-xs font-medium text-brand-500">{c.label}</p>
+                <p className="text-xs font-medium text-[#64748B]">{c.label}</p>
                 <p className={`numeric text-xl font-bold tracking-tight ${c.tone}`}>
                   {c.value.toFixed(2)}
                 </p>
@@ -102,7 +102,7 @@ export default async function ServiceCreditsPage({
           description="Every entry preserves who created it and when. Corrections keep the audit trail."
           actions={
             <form action={`/employees/${employee.id}/service-credits`} method="GET" className="flex items-center gap-2">
-              <label htmlFor="sc-filter-type" className="text-xs text-brand-500">
+              <label htmlFor="sc-filter-type" className="text-xs text-[#64748B]">
                 Type
               </label>
               <select

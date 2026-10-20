@@ -72,7 +72,7 @@ export default async function DevelopmentBehaviorPage() {
                       href={`/students/${b.studentId}`}
                       className="font-medium text-brand-900 hover:text-action-700"
                     >
-                      <span className="numeric text-xs font-semibold text-brand-500">
+                      <span className="numeric text-xs font-semibold text-[#64748B]">
                         {b.studentNumber}
                       </span>
                       <span className="ml-2">

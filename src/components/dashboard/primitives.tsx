@@ -70,7 +70,7 @@ export function Panel({
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-brand-900">{title}</h2>
           {description ? (
-            <p className="mt-0.5 text-xs text-brand-500">{description}</p>
+            <p className="mt-0.5 text-xs text-[#64748B]">{description}</p>
           ) : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
@@ -155,7 +155,7 @@ export function KpiGrid({ kpis }: { kpis: Kpi[] }) {
             className="rounded-lg border border-brand-200 bg-white px-4 py-3.5 shadow-xs transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-brand-300"
           >
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-brand-500">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">
                 {kpi.label}
               </h3>
               <span
@@ -170,7 +170,7 @@ export function KpiGrid({ kpis }: { kpis: Kpi[] }) {
             <p className="numeric mt-1.5 text-3xl font-bold tracking-tight text-brand-900">
               {kpi.value}
             </p>
-            <p className="mt-0.5 truncate text-xs text-brand-500">
+            <p className="mt-0.5 truncate text-xs text-[#64748B]">
               {kpi.description}
             </p>
             {kpi.progress !== null ? (
@@ -289,7 +289,7 @@ export function BarangayDistribution({ rows }: { rows: GradeLevelRow[] }) {
             ))}
           </ul>
           {hidden > 0 ? (
-            <p className="mt-3 border-t border-brand-100 pt-2.5 text-xs text-brand-500">
+            <p className="mt-3 border-t border-brand-100 pt-2.5 text-xs text-[#64748B]">
               + {hidden} more grade level{hidden === 1 ? "" : "s"} in the{" "}
               <Link href="/students" className="font-medium text-action-700 hover:text-action-800">
                 full registry
@@ -390,7 +390,7 @@ export function EducationDistribution({ rows }: { rows: DistributionRow[] }) {
                   />
                   <span className="truncate">{row.label}</span>
                 </span>
-                <span className="shrink-0 text-xs text-brand-500">
+                <span className="shrink-0 text-xs text-[#64748B]">
                   <span className="numeric font-semibold text-brand-900">{row.value}</span>
                   <span className="numeric ml-1.5">
                     ({Math.round((row.value / total) * 100)}%)
@@ -559,7 +559,7 @@ export function SectionCoverageTable({ rows }: { rows: SectionCoverageRow[] }) {
                             style={{ width: `${Math.min(100, coverage)}%` }}
                           />
                         </div>
-                        <span className="numeric w-9 text-right text-brand-500">{coverage}%</span>
+                        <span className="numeric w-9 text-right text-[#64748B]">{coverage}%</span>
                       </div>
                     </td>
                   </tr>
@@ -722,7 +722,7 @@ export function RecentNotifications({
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className={cn("truncate text-xs", n.isRead ? "text-brand-500" : "font-medium text-brand-800")}>
+                <p className={cn("truncate text-xs", n.isRead ? "text-[#64748B]" : "font-medium text-brand-800")}>
                   {n.title}
                 </p>
                 {n.message ? (

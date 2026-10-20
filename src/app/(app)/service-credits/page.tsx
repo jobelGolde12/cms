@@ -46,7 +46,7 @@ export default async function ServiceCreditsOverviewPage({
         ].map((c) => (
           <Card key={c.label}>
             <CardBody className="py-3.5">
-              <p className="text-xs font-medium text-brand-500">{c.label}</p>
+              <p className="text-xs font-medium text-[#64748B]">{c.label}</p>
               <p className={`numeric mt-1 text-2xl font-bold tracking-tight ${c.tone}`}>
                 {c.value.toFixed(2)}
               </p>

@@ -60,7 +60,7 @@ export function OfficerDashboard({
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
             Employees, 201 Files &amp; Service Credits
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-brand-500">
+          <p className="mt-1 max-w-2xl text-sm text-[#64748B]">
             Personnel records managed by the Admin Officer at Sta. Magdalena
             National High School.
           </p>
@@ -77,7 +77,7 @@ export function OfficerDashboard({
         {kpis.map((k) => (
           <Card key={k.label}>
             <CardBody className="py-3.5">
-              <p className="text-xs font-medium text-brand-500">{k.label}</p>
+              <p className="text-xs font-medium text-[#64748B]">{k.label}</p>
               <p className={`numeric mt-1 text-2xl font-bold tracking-tight ${k.tone}`}>
                 {k.value.toLocaleString("en-PH")}
               </p>
@@ -97,7 +97,7 @@ export function OfficerDashboard({
                   <c.icon className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-xs font-medium text-brand-500">{c.label}</p>
+                  <p className="text-xs font-medium text-[#64748B]">{c.label}</p>
                   <p className={`numeric text-xl font-bold tracking-tight ${c.tone}`}>
                     {c.value.toFixed(2)}
                   </p>
@@ -190,7 +190,7 @@ export function OfficerDashboard({
                     <tr key={t.id} className="transition-colors hover:bg-brand-50">
                       <Td>
                         <span className="font-medium text-brand-900">{t.employeeName}</span>
-                        <span className="numeric ml-1.5 text-xs text-brand-500">{t.employeeNumber}</span>
+                        <span className="numeric ml-1.5 text-xs text-[#64748B]">{t.employeeNumber}</span>
                       </Td>
                       <Td>
                         <span
@@ -222,7 +222,7 @@ export function OfficerDashboard({
             <CardHeader title="By Employment Type" icon={<FileText aria-hidden="true" className="h-4 w-4" />} />
             <CardBody>
               {data.byEmploymentType.length === 0 ? (
-                <p className="px-2 py-6 text-center text-sm text-brand-500">No data yet.</p>
+                <p className="px-2 py-6 text-center text-sm text-[#64748B]">No data yet.</p>
               ) : (
                 <ul className="divide-y divide-brand-100">
                   {data.byEmploymentType.map((r) => (
@@ -240,7 +240,7 @@ export function OfficerDashboard({
             <CardHeader title="By Appointment Status" icon={<Activity aria-hidden="true" className="h-4 w-4" />} />
             <CardBody>
               {data.byAppointmentStatus.length === 0 ? (
-                <p className="px-2 py-6 text-center text-sm text-brand-500">No data yet.</p>
+                <p className="px-2 py-6 text-center text-sm text-[#64748B]">No data yet.</p>
               ) : (
                 <ul className="divide-y divide-brand-100">
                   {data.byAppointmentStatus.map((r) => (

@@ -22,7 +22,7 @@ export function LogoutButton() {
       disabled={pending}
       onClick={() => startTransition(() => logout())}
       aria-label="Sign out"
-      className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-brand-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-[#64748B] transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
     >
       <LogOut aria-hidden="true" className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">{pending ? "Signing out…" : "Sign out"}</span>

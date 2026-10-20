@@ -108,7 +108,7 @@ export default async function HealthPage() {
                     >
                       {fullName(r)}
                     </Link>
-                    <span className="numeric ml-2 text-xs text-brand-500">{r.studentNumber}</span>
+                    <span className="numeric ml-2 text-xs text-[#64748B]">{r.studentNumber}</span>
                   </Td>
                   <Td className="numeric text-xs text-brand-600">{formatDate(r.measurementDate)}</Td>
                   <Td className="numeric text-xs text-brand-700">{r.weightKg ?? "—"}</Td>
@@ -120,7 +120,7 @@ export default async function HealthPage() {
                         r.nutritionalStatus
                       : "—"}
                   </Td>
-                  <Td className="text-xs text-brand-500">
+                  <Td className="text-xs text-[#64748B]">
                     {r.recorderFirst ? `${r.recorderFirst} ${r.recorderLast}` : "—"}
                   </Td>
                 </tr>

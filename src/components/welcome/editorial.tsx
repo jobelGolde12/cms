@@ -61,7 +61,7 @@ export function Lede({ children, className }: { children: React.ReactNode; class
   return (
     <p
       className={cn(
-        "text-[15px] leading-[1.55] text-brand-500 md:text-base",
+        "text-[15px] leading-[1.55] text-[#64748B] md:text-base",
         className,
       )}
     >

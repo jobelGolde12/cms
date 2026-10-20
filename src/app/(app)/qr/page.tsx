@@ -103,7 +103,7 @@ export default async function QrPage() {
                   </Td>
                   <Td className="capitalize text-brand-600">{r.type}</Td>
                   <Td className="text-brand-600">{r.result}</Td>
-                  <Td className="text-brand-500">{formatDateTime(r.verifiedAt)}</Td>
+                  <Td className="text-[#64748B]">{formatDateTime(r.verifiedAt)}</Td>
                 </tr>
               ))
             )}

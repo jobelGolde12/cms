@@ -9,11 +9,6 @@ import { navIcon } from "./nav-icons";
 export type SidebarSection = { heading: string; items: string[] };
 export type SidebarLink = { label: string; href: string; icon: string };
 
-/**
- * Grouped sidebar navigation. Rendered inside the desktop sidebar and reused
- * by the mobile drawer so both stay visually identical. Items whose href is
- * not in the visible links (permission-filtered) are skipped automatically.
- */
 export function SidebarNav({
   sections,
   links,
@@ -38,7 +33,7 @@ export function SidebarNav({
 
         return (
           <div key={section.heading} className="mb-4 last:mb-0">
-            <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-brand-400">
+            <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#AFC4FF]">
               {section.heading}
             </p>
             <ul className="space-y-0.5">
@@ -55,8 +50,8 @@ export function SidebarNav({
                       className={cn(
                         "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-all duration-200 ease-out",
                         active
-                          ? "bg-brand-900 text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] translate-x-[1px]"
-                          : "text-brand-700 hover:bg-brand-100 hover:text-brand-900 hover:translate-x-[1px]",
+                          ? "bg-[#315EF7] text-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] translate-x-[1px]"
+                          : "text-[#E7EDFF] hover:bg-[#203B7A] hover:text-white hover:translate-x-[1px]",
                       )}
                     >
                       {createElement(navIcon(link.icon), {

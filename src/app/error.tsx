@@ -38,7 +38,7 @@ export default function ErrorPage({
         <h1 className="text-xl font-bold tracking-tight text-brand-900">
           Something went wrong
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-brand-500">
+        <p className="mt-2 text-sm leading-relaxed text-[#64748B]">
           The page could not be loaded. Your data is safe — please try again.
           If the problem persists, contact the system administrator.
         </p>

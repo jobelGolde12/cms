@@ -54,7 +54,7 @@ export function ArchiveStudentButton({
               </span>
               <div>
                 <h3 className="text-sm font-bold text-brand-950">Archive this record?</h3>
-                <p className="mt-1 text-xs leading-relaxed text-brand-500">
+                <p className="mt-1 text-xs leading-relaxed text-[#64748B]">
                   Record <strong className="text-brand-800">{studentNumber}</strong> will be hidden from active lists and its QR codes revoked. History is retained.
                 </p>
               </div>

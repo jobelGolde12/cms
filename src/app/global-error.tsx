@@ -18,7 +18,7 @@ export default function GlobalError({ error, reset }: { error: Error; reset: () 
             <Logo size="xl" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-brand-900">System Error</h1>
-          <p className="mt-2 text-sm text-brand-500">
+          <p className="mt-2 text-sm text-[#64748B]">
             A critical error occurred. Please refresh the page.
           </p>
           <Button type="button" onClick={reset} className="mt-6">

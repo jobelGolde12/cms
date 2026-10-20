@@ -24,7 +24,7 @@ export default async function VerifyTokenPage({
             <ShieldX className="h-7 w-7 text-status-error" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-brand-900">Invalid token format</h1>
-          <p className="mt-2 text-sm leading-relaxed text-brand-500">
+          <p className="mt-2 text-sm leading-relaxed text-[#64748B]">
             The verification token contains invalid characters or is too short. Please check the QR code and try again.
           </p>
           <Link href="/verify" className={`mt-6 inline-flex h-10 items-center gap-1.5 rounded-[3px] border border-brand-300 bg-white px-4 text-[13px] font-semibold text-brand-950 transition-colors hover:bg-brand-50`}>
@@ -84,7 +84,7 @@ export default async function VerifyTokenPage({
         {invalid ? (
           <>
             <h1 className="text-xl font-bold tracking-tight text-brand-900">Record not found</h1>
-            <p className="mt-2 text-sm leading-relaxed text-brand-500">
+            <p className="mt-2 text-sm leading-relaxed text-[#64748B]">
               This verification link is invalid or has been revoked. Please check with the
               school registrar.
             </p>
@@ -92,7 +92,7 @@ export default async function VerifyTokenPage({
         ) : resolved?.expired ? (
           <>
             <h1 className="text-xl font-bold tracking-tight text-brand-900">Verification link expired</h1>
-            <p className="mt-2 text-sm leading-relaxed text-brand-500">
+            <p className="mt-2 text-sm leading-relaxed text-[#64748B]">
               This QR code has expired. Request a new one from the school registrar.
             </p>
           </>
@@ -105,11 +105,11 @@ export default async function VerifyTokenPage({
             </p>
             <dl className="mt-5 space-y-2 rounded-[3px] border border-brand-100 bg-brand-50 p-4 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-brand-500">Student number</dt>
+                <dt className="text-[#64748B]">Student number</dt>
                 <dd className="numeric font-medium text-brand-900">{student!.studentNumber}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-brand-500">Record status</dt>
+                <dt className="text-[#64748B]">Record status</dt>
                 <dd className="font-medium text-status-verified">Verified</dd>
               </div>
             </dl>

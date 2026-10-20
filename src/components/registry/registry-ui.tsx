@@ -30,7 +30,7 @@ export function RegistryPageHeader({ stats }: { stats: RegistryStats }) {
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px] sm:leading-tight">
           Student Registry
         </h1>
-        <p className="mt-1 text-sm text-brand-500">
+        <p className="mt-1 text-sm text-[#64748B]">
           Official digital master ledger &bull; {SCHOOL.name}
         </p>
       </div>
@@ -74,11 +74,11 @@ function RegistryKpiCard({
 }) {
   return (
     <article className="rounded-lg border border-brand-200 bg-white px-4 py-3.5 shadow-xs">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-brand-500">{label}</h3>
+      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{label}</h3>
       <p className="numeric mt-1.5 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
         {value}
       </p>
-      <p className="mt-0.5 truncate text-xs text-brand-500">{supporting}</p>
+      <p className="mt-0.5 truncate text-xs text-[#64748B]">{supporting}</p>
       <span className={cn("sr-only", KPI_ICON_STYLES[tone])}>{supporting}</span>
     </article>
   );
@@ -159,7 +159,7 @@ function FilterSelect({
 }) {
   return (
     <div className="min-w-0">
-      <label htmlFor={id} className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500">
+      <label htmlFor={id} className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">
         {label}
       </label>
       <select id={id} name={name} defaultValue={value} className={inputClass}>
@@ -194,7 +194,7 @@ export function RegistryFilters({
       className="rounded-lg border border-brand-200 bg-white shadow-xs"
     >
       <div className="border-b border-brand-100 px-4 py-3">
-        <label htmlFor="registry-search" className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500">
+        <label htmlFor="registry-search" className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">
           Search
         </label>
         <div className="relative">
@@ -429,7 +429,7 @@ export function StudentRegistryTable({
                 <p className="text-sm font-semibold text-brand-800">
                   {hasFilters ? "No student records match your filters" : "No student records yet"}
                 </p>
-                <p className="mt-1 text-xs text-brand-500">
+                <p className="mt-1 text-xs text-[#64748B]">
                   {hasFilters
                     ? "Try adjusting or clearing your search and filters."
                     : "Records will appear here once students are enrolled."}
@@ -477,7 +477,7 @@ export function StudentRegistryTable({
                       <Link
                         href={`/students/${r.id}`}
                         aria-label={`View ${r.firstName} ${r.lastName}`}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-brand-500 transition-all duration-150 hover:bg-brand-100 hover:text-brand-900 hover:scale-105 active:scale-95"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[#64748B] transition-all duration-150 hover:bg-brand-100 hover:text-brand-900 hover:scale-105 active:scale-95"
                       >
                         <Eye aria-hidden="true" className="h-4 w-4" />
                       </Link>
@@ -487,7 +487,7 @@ export function StudentRegistryTable({
                         <Link
                           href={`/students/${r.id}/edit`}
                           aria-label={`Edit ${r.firstName} ${r.lastName}`}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-brand-500 transition-all duration-150 hover:bg-brand-100 hover:text-brand-900 hover:scale-105 active:scale-95"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[#64748B] transition-all duration-150 hover:bg-brand-100 hover:text-brand-900 hover:scale-105 active:scale-95"
                         >
                           <Pencil aria-hidden="true" className="h-4 w-4" />
                         </Link>
@@ -542,7 +542,7 @@ export function RegistryPagination({
   return (
     <div className="flex flex-col items-center justify-between gap-3 border-t border-brand-100 px-4 py-3 sm:flex-row">
       <div className="flex items-center gap-3">
-        <p className="text-xs text-brand-500">
+        <p className="text-xs text-[#64748B]">
           Showing <span className="numeric font-medium text-brand-700">{from}</span>–
           <span className="numeric font-medium text-brand-700">{to}</span> of{" "}
           <span className="numeric font-medium text-brand-700">{total.toLocaleString("en-PH")}</span> records
@@ -553,7 +553,7 @@ export function RegistryPagination({
               <input key={key} type="hidden" name={key} value={value} />
             ) : null,
           )}
-          <label htmlFor="page-size" className="text-xs text-brand-500">Rows:</label>
+          <label htmlFor="page-size" className="text-xs text-[#64748B]">Rows:</label>
           <select
             id="page-size"
             name="pageSize"
@@ -645,7 +645,7 @@ export function RegistryInformationCards() {
             </span>
             <h3 className="text-[13px] font-semibold text-brand-900">{card.title}</h3>
           </div>
-          <p className="mt-2 text-xs leading-relaxed text-brand-500">{card.body}</p>
+          <p className="mt-2 text-xs leading-relaxed text-[#64748B]">{card.body}</p>
         </section>
       ))}
     </div>

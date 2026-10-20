@@ -46,7 +46,7 @@ export default async function ReportsPage() {
               className="border-b-0"
             />
             <CardBody className="flex flex-1 flex-col justify-between gap-4">
-              <p className="text-xs leading-relaxed text-brand-500">
+              <p className="text-xs leading-relaxed text-[#64748B]">
                 Live query over verified and pending records in your scope.
               </p>
               <div className="flex flex-wrap gap-2">
@@ -94,7 +94,7 @@ export default async function ReportsPage() {
                     {REPORT_TYPE_LABELS[r.reportType as ReportType] ?? r.reportType}
                   </Td>
                   <Td className="capitalize text-brand-600">{r.scope}</Td>
-                  <Td className="text-brand-500">{formatDateTime(r.createdAt)}</Td>
+                  <Td className="text-[#64748B]">{formatDateTime(r.createdAt)}</Td>
                 </tr>
               ))
             )}

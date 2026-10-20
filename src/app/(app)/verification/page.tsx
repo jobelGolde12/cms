@@ -92,7 +92,7 @@ export default async function VerificationPage({
                 className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-brand-50/60"
               >
                 <div className="min-w-0">
-                  <div className="numeric text-[11px] font-semibold text-brand-500">
+                  <div className="numeric text-[11px] font-semibold text-[#64748B]">
                     {item.studentNumber}
                   </div>
                   <a
@@ -101,7 +101,7 @@ export default async function VerificationPage({
                   >
                     {item.lastName}, {item.firstName}
                   </a>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-brand-500">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-[#64748B]">
                     <span>DOB {formatDate(item.birthDate)}</span>
                     <span aria-hidden="true">•</span>
                     <span>Age {ageFromBirthDate(item.birthDate) ?? "—"}</span>

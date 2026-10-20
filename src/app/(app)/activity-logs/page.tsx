@@ -38,7 +38,7 @@ export default async function ActivityLogsPage() {
               <Th>Time</Th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-brand-100">
+          <tbody className="divide-y divide-[#DCE4F0]">
             {rows.length === 0 ? (
               <TableEmptyState
                 colSpan={4}
@@ -48,16 +48,16 @@ export default async function ActivityLogsPage() {
               />
             ) : (
               rows.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-brand-50/70">
-                  <Td className="numeric text-xs text-brand-700">{r.action}</Td>
-                  <Td className="text-xs text-brand-700">
+                <tr key={r.id} className="transition-colors hover:bg-[#F4F7FC]">
+                  <Td className="numeric text-xs text-[#263449]">{r.action}</Td>
+                  <Td className="text-xs text-[#263449]">
                     {r.entityType}
-                    {r.entityId ? <span className="text-brand-400"> · {r.entityId.slice(0, 8)}…</span> : null}
+                    {r.entityId ? <span className="text-[#64748B]"> · {r.entityId.slice(0, 8)}…</span> : null}
                   </Td>
-                  <Td className="text-xs text-brand-600">
+                  <Td className="text-xs text-[#263449]">
                     {r.userFirst ? `${r.userFirst} ${r.userLast}` : "system"}
                   </Td>
-                  <Td className="text-xs text-brand-500">{formatDateTime(r.createdAt)}</Td>
+                  <Td className="text-xs text-[#64748B]">{formatDateTime(r.createdAt)}</Td>
                 </tr>
               ))
             )}

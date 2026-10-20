@@ -90,7 +90,7 @@ export default async function NotificationsPage() {
                     </span>
                   )}
                 </div>
-                <p className="mt-1 pl-3.5 text-xs text-brand-500">{n.message ?? "—"}</p>
+                <p className="mt-1 pl-3.5 text-xs text-[#64748B]">{n.message ?? "—"}</p>
                 <p className="mt-0.5 pl-3.5 text-[11px] text-brand-400">{formatDateTime(n.createdAt)}</p>
               </li>
             ))}

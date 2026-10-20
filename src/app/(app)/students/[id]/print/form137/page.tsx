@@ -40,7 +40,7 @@ export default async function Form137Page({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-5 print:space-y-0">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-brand-500 print:hidden">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[#64748B] print:hidden">
         <Link href="/students" className="font-medium hover:text-brand-900">
           Registry
         </Link>
@@ -58,11 +58,11 @@ export default async function Form137Page({ params }: { params: Promise<{ id: st
 
       <div className="mx-auto max-w-3xl rounded-lg border border-brand-200 bg-white p-8 shadow-sm print:max-w-none print:shadow-none print:rounded-none print:border-none print:p-0">
         <div className="border-b-2 border-brand-900 pb-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-500">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">
             Republic of the Philippines · Department of Education
           </p>
           <h1 className="text-lg font-bold text-brand-900">{SCHOOL.name}</h1>
-          <p className="text-[11px] text-brand-500">{SCHOOL.address}</p>
+          <p className="text-[11px] text-[#64748B]">{SCHOOL.address}</p>
           <p className="mt-2 text-sm font-bold uppercase tracking-wide text-brand-900">
             Learner&apos;s Permanent Record (Form 137)
           </p>
@@ -70,19 +70,19 @@ export default async function Form137Page({ params }: { params: Promise<{ id: st
 
         <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-2 text-xs sm:grid-cols-2">
           <div className="flex justify-between gap-3">
-            <dt className="text-brand-500">Name</dt>
+            <dt className="text-[#64748B]">Name</dt>
             <dd className="font-semibold text-brand-900">{fullName(student)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-brand-500">Student No.</dt>
+            <dt className="text-[#64748B]">Student No.</dt>
             <dd className="numeric font-semibold text-brand-900">{student.studentNumber}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-brand-500">Sex</dt>
+            <dt className="text-[#64748B]">Sex</dt>
             <dd className="capitalize text-brand-800">{student.sex}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-brand-500">Birth Date</dt>
+            <dt className="text-[#64748B]">Birth Date</dt>
             <dd className="numeric text-brand-800">{formatDate(student.birthDate)}</dd>
           </div>
         </dl>
@@ -117,7 +117,7 @@ export default async function Form137Page({ params }: { params: Promise<{ id: st
           ))
         )}
 
-        <div className="mt-10 grid grid-cols-2 gap-8 text-center text-[10px] text-brand-500">
+        <div className="mt-10 grid grid-cols-2 gap-8 text-center text-[10px] text-[#64748B]">
           <div className="border-t border-brand-400 pt-1">Registrar</div>
           <div className="border-t border-brand-400 pt-1">School Principal</div>
         </div>

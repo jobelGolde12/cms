@@ -32,7 +32,7 @@ export function ValidationPageHeader({ stats }: { stats: VerificationStats }) {
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px] sm:leading-tight">
           Record Verification &amp; Duplicate Review
         </h1>
-        <p className="mt-1 max-w-2xl text-sm text-brand-500">
+        <p className="mt-1 max-w-2xl text-sm text-[#64748B]">
           Review submitted student records, resolve algorithmic duplicate
           conflicts, and verify learner information before records are
           confirmed for school reporting.
@@ -121,7 +121,7 @@ export function ValidationKpiGrid({ stats }: { stats: VerificationStats }) {
             className="rounded-lg border border-brand-200 bg-white px-4 py-3.5 shadow-xs"
           >
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-brand-500">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">
                 {card.label}
               </h3>
               <span
@@ -137,7 +137,7 @@ export function ValidationKpiGrid({ stats }: { stats: VerificationStats }) {
             <p className="numeric mt-1.5 text-3xl font-bold tracking-tight text-brand-900">
               {card.value.toLocaleString("en-PH")}
             </p>
-            <p className="mt-0.5 truncate text-xs text-brand-500">{card.supporting}</p>
+            <p className="mt-0.5 truncate text-xs text-[#64748B]">{card.supporting}</p>
             <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-brand-100">
               <div
                 className={cn("h-full rounded-full", card.bar)}
@@ -246,10 +246,10 @@ function FieldBlock({
   return (
     <div className={cn("rounded-md border px-3 py-2.5", styles)}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-wide text-brand-500">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-[#64748B]">
           {label}
         </span>
-        <span className="flex items-center gap-1 text-[10px] font-semibold text-brand-500">
+        <span className="flex items-center gap-1 text-[10px] font-semibold text-[#64748B]">
           <span aria-hidden="true" className={cn("h-1.5 w-1.5 rounded-full", dot)} />
           {stateLabel}
         </span>
@@ -264,7 +264,7 @@ function FieldBlock({
           <div className="text-[13px] font-medium text-brand-900">{incoming}</div>
         </div>
       </div>
-      {note ? <p className="mt-1.5 text-[11px] text-brand-500">{note}</p> : null}
+      {note ? <p className="mt-1.5 text-[11px] text-[#64748B]">{note}</p> : null}
     </div>
   );
 }
@@ -417,7 +417,7 @@ export function WorkspaceHint({ icon: Icon, children }: { icon: typeof GitCompar
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
       <Icon aria-hidden="true" className="h-10 w-10 text-brand-300" />
-      <p className="max-w-sm text-sm text-brand-500">{children}</p>
+      <p className="max-w-sm text-sm text-[#64748B]">{children}</p>
       <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-action-700">
         Select a conflict from the queue <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
       </span>

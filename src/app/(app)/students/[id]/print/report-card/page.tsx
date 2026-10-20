@@ -46,7 +46,7 @@ export default async function ReportCardPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-5 print:space-y-0">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-brand-500 print:hidden">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[#64748B] print:hidden">
         <Link href="/students" className="font-medium hover:text-brand-900">
           Registry
         </Link>
@@ -386,7 +386,7 @@ function SignatureLines({ count, leftLabel }: { count: number; leftLabel: string
     <div className="space-y-2">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex justify-between gap-2 text-[9px]">
-          <span className="text-brand-500">
+          <span className="text-[#64748B]">
             {leftLabel} {i + 1}
           </span>
           <span className="min-w-[70%] border-b border-brand-400" />
@@ -398,7 +398,7 @@ function SignatureLines({ count, leftLabel }: { count: number; leftLabel: string
 
 function EmptyState({ schoolYear }: { schoolYear: string }) {
   return (
-    <div className="mt-6 border border-dashed border-brand-300 px-4 py-6 text-center text-[10px] text-brand-500">
+    <div className="mt-6 border border-dashed border-brand-300 px-4 py-6 text-center text-[10px] text-[#64748B]">
       No enrollment record found for this learner
       {schoolYear ? ` in School Year ${schoolYear}` : " in the selected school year"}. No academic
       or attendance data is shown until an enrollment exists.

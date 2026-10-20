@@ -51,7 +51,7 @@ export function WelcomeHero() {
               Records Management System.
             </h1>
 
-            <p className="rise rise-d2 mt-8 max-w-[42ch] text-[14px] leading-[1.6] text-brand-500 md:text-base">
+            <p className="rise rise-d2 mt-8 max-w-[42ch] text-[14px] leading-[1.6] text-[#64748B] md:text-base">
               The official platform for{" "}
               <strong className="font-medium text-brand-800">
                 {SCHOOL.name}

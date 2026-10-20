@@ -54,7 +54,7 @@ export default async function AppDashboardPage() {
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
             Enrollment &amp; Performance Overview
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-brand-500">
+          <p className="mt-1 max-w-2xl text-sm text-[#64748B]">
             Current enrollment, record verification, academic performance, and
             student development at {SCHOOL.shortName}.
           </p>

@@ -11,7 +11,7 @@ export default function NotFound() {
           <Logo size="xl" />
         </div>
         <h1 className="text-xl font-bold tracking-tight text-brand-900">Page not found</h1>
-        <p className="mt-2 text-sm text-brand-500">
+        <p className="mt-2 text-sm text-[#64748B]">
           The page you are looking for doesn&rsquo;t exist or may have been moved.
         </p>
         <Link href="/" className={`mt-6 ${buttonStyles("secondary", "md")}`}>

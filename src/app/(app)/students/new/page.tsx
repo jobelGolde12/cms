@@ -24,7 +24,7 @@ export default async function NewStudentPage() {
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
           Add Student Record
         </h1>
-        <p className="mt-1 text-sm text-brand-500">
+        <p className="mt-1 text-sm text-[#64748B]">
           Save as a draft or submit the record for school verification. The
           student number is generated automatically.
         </p>

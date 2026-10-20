@@ -29,7 +29,7 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-5 print:space-y-0">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-brand-500 print:hidden">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[#64748B] print:hidden">
         <Link href="/students" className="font-medium hover:text-brand-900">
           Registry
         </Link>
@@ -48,11 +48,11 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
       {/* Card sheet — 1:1 preview of the printed artifact */}
       <div className="mx-auto max-w-md rounded-lg border-2 border-brand-900 bg-white p-6 shadow-sm print:max-w-none print:shadow-none print:rounded-none">
         <div className="border-b border-brand-900 pb-3 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-500">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-[#64748B]">
             Republic of the Philippines · Department of Education
           </p>
           <p className="text-sm font-bold text-brand-900">{SCHOOL.name}</p>
-          <p className="text-[11px] text-brand-500">{SCHOOL.address}</p>
+          <p className="text-[11px] text-[#64748B]">{SCHOOL.address}</p>
         </div>
 
         <div className="mt-4 text-center">
@@ -60,7 +60,7 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
             Official Student Card
           </p>
           <h1 className="mt-1 text-xl font-bold text-brand-900">{fullName(student)}</h1>
-          <p className="numeric mt-0.5 text-xs text-brand-500">
+          <p className="numeric mt-0.5 text-xs text-[#64748B]">
             {student.studentNumber} · {student.sex === "male" ? "Male" : "Female"} ·{" "}
             {ageFromBirthDate(student.birthDate) ?? "—"} yrs
           </p>
@@ -68,15 +68,15 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
 
         <dl className="mt-4 space-y-1.5 text-xs">
           <div className="flex justify-between gap-2">
-            <dt className="text-brand-500">Birth Date</dt>
+            <dt className="text-[#64748B]">Birth Date</dt>
             <dd className="numeric text-brand-800">{formatDate(student.birthDate)}</dd>
           </div>
           <div className="flex justify-between gap-2">
-            <dt className="text-brand-500">Record Status</dt>
+            <dt className="text-[#64748B]">Record Status</dt>
             <dd className="capitalize text-brand-800">{student.recordStatus.replace(/_/g, " ")}</dd>
           </div>
           <div className="flex justify-between gap-2">
-            <dt className="text-brand-500">Address</dt>
+            <dt className="text-[#64748B]">Address</dt>
             <dd className="text-right text-brand-800">{student.address ?? "—"}</dd>
           </div>
         </dl>

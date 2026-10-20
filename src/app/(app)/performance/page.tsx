@@ -105,10 +105,10 @@ export default async function PerformancePage() {
                           <span className="text-brand-400"> / {failing.total}</span>
                         </span>
                       ) : (
-                        <span className="text-brand-500">0{failing ? ` / ${failing.total}` : ""}</span>
+                        <span className="text-[#64748B]">0{failing ? ` / ${failing.total}` : ""}</span>
                       )}
                     </Td>
-                    <Td className="numeric text-right text-brand-500">{r.count}</Td>
+                    <Td className="numeric text-right text-[#64748B]">{r.count}</Td>
                   </tr>
                 );
               })
@@ -232,7 +232,7 @@ export default async function PerformancePage() {
                 <tr key={r.label} className="transition-colors hover:bg-brand-50/70">
                   <Td className="font-medium text-brand-900">{r.label}</Td>
                   <Td className="numeric text-right text-brand-700">{r.present}</Td>
-                  <Td className="numeric text-right text-brand-500">{r.total}</Td>
+                  <Td className="numeric text-right text-[#64748B]">{r.total}</Td>
                   <Td className="numeric text-right">
                     <span className={r.rate >= 90 ? "font-semibold text-emerald-700" : "font-semibold text-amber-700"}>
                       {r.rate}%

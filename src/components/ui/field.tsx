@@ -7,7 +7,7 @@ import type {
 import { cn } from "@/lib/utils";
 
 const controlBase =
-  "w-full rounded-lg border border-brand-300 bg-white px-3 text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 disabled:bg-brand-100 disabled:text-brand-500";
+  "w-full rounded-lg border border-brand-300 bg-white px-3 text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 disabled:bg-brand-100 disabled:text-[#64748B]";
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
@@ -66,7 +66,7 @@ export function Field({
         ) : null}
       </Label>
       {children}
-      {hint ? <p className="text-xs text-brand-500">{hint}</p> : null}
+      {hint ? <p className="text-xs text-[#64748B]">{hint}</p> : null}
       <FieldError message={error} />
     </div>
   );

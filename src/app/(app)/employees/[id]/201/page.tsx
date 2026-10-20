@@ -38,7 +38,7 @@ export default async function Employee201Page({
         <div className="min-w-0">
           <Link
             href={`/employees/${employee.id}`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-brand-500 transition-colors hover:text-action-700"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#64748B] transition-colors hover:text-action-700"
           >
             <ChevronLeft aria-hidden="true" className="h-3.5 w-3.5" />
             Back to {fullName}
@@ -46,7 +46,7 @@ export default async function Employee201Page({
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
             201 File
           </h1>
-          <p className="mt-1 text-sm text-brand-500">
+          <p className="mt-1 text-sm text-[#64748B]">
             Personnel record of{" "}
             <span className="font-medium text-brand-700">
               {fullName} ({employee.employeeNumber})

@@ -41,7 +41,7 @@ export default function LoginPage() {
               <p className="truncate text-[11px] font-bold uppercase tracking-wide text-brand-900">
                 Republic of the Philippines
               </p>
-              <p className="truncate text-[10px] font-medium text-brand-500">
+              <p className="truncate text-[10px] font-medium text-[#64748B]">
                 STA. MAGDALENA NHS • DEPED SORSOGON DIVISION
               </p>
             </div>
@@ -121,7 +121,7 @@ export default function LoginPage() {
                   className="h-11 w-full rounded-[3px] border border-brand-300 bg-white pl-10 pr-3 text-sm text-brand-950 placeholder:text-brand-400 transition-colors focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/20"
                 />
               </div>
-              <p id={emailHintId} className="text-xs text-brand-500">
+              <p id={emailHintId} className="text-xs text-[#64748B]">
                 Use your school-issued DepEd email.
               </p>
             </div>
@@ -213,7 +213,7 @@ export default function LoginPage() {
 
         {/* Security Notice */}
         <div className="mt-6 text-center">
-          <div className="inline-flex max-w-full items-center gap-2 px-4 py-2 text-xs text-brand-500">
+          <div className="inline-flex max-w-full items-center gap-2 px-4 py-2 text-xs text-[#64748B]">
             <ShieldCheck
               aria-hidden="true"
               className="h-3.5 w-3.5 shrink-0 text-action-700"

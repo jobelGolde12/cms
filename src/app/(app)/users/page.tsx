@@ -61,7 +61,7 @@ export default async function UsersPage() {
                       {r.isActive ? "Active" : "Disabled"}
                     </Badge>
                   </Td>
-                  <Td className="text-xs text-brand-500">
+                  <Td className="text-xs text-[#64748B]">
                     {r.lastLoginAt ? formatDateTime(r.lastLoginAt) : "—"}
                   </Td>
                 </tr>

@@ -48,24 +48,24 @@ export function MobileNavToggle({
         />
         {/* Drawer — same institutional styling as the desktop sidebar */}
         <div
-          className={`absolute inset-y-0 left-0 flex w-64 transform flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+          className={`absolute inset-y-0 left-0 flex w-64 transform flex-col bg-[#14295F] shadow-2xl transition-transform duration-300 ease-in-out ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex items-center gap-3 border-b border-brand-200 px-4 py-4">
+          <div className="flex items-center gap-3 border-b border-[#203B7A]/40 px-4 py-4">
             {/* Brand mark — single source of truth (see components/logo.tsx). */}
-            <Logo size="md" asLink />
+            <Logo size="md" asLink tone="onDark" />
             <div className="min-w-0 flex-1 leading-tight">
-              <div className="truncate text-xs font-bold uppercase tracking-wide text-brand-900">
+              <div className="truncate text-xs font-bold uppercase tracking-wide text-white">
                 Sta. Magdalena
               </div>
-              <div className="text-[11px] font-medium text-brand-500">Records Management</div>
+              <div className="text-[11px] font-medium text-[#AFC4FF]">Records Management</div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close navigation menu"
-              className="inline-flex items-center justify-center rounded-md p-2 text-brand-500 transition-colors hover:bg-brand-100 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
+              className="inline-flex items-center justify-center rounded-md p-2 text-[#D7E2FF] transition-colors hover:bg-[#203B7A] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
             >
               <X className="h-4.5 w-4.5" />
             </button>
@@ -73,7 +73,7 @@ export function MobileNavToggle({
 
           <SidebarNav sections={sections} links={links} onNavigate={() => setOpen(false)} />
 
-          <div className="border-t border-brand-200 px-4 py-3 text-[11px] text-brand-400">
+          <div className="border-t border-[#203B7A]/40 px-4 py-3 text-[11px] text-[#AFC4FF]">
             Sta. Magdalena NHS • School Records System
           </div>
         </div>

@@ -15,7 +15,7 @@ export default async function VerifyPage() {
             <Logo size="lg" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-brand-900">QR Verification</h1>
-          <p className="mt-2 text-sm text-brand-500">
+          <p className="mt-2 text-sm text-[#64748B]">
             Enter a verification token or scan a QR code to confirm a student
             record is registered with the school.
           </p>

@@ -40,7 +40,7 @@ function FormSectionHeader({ title, hint }: { title: string; hint?: string }) {
   return (
     <>
       <h2 className="text-sm font-semibold text-brand-900">{title}</h2>
-      {hint ? <p className="mt-1 text-xs text-brand-500">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-[#64748B]">{hint}</p> : null}
     </>
   );
 }

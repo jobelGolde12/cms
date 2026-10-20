@@ -91,7 +91,7 @@ export default async function SettingsPage() {
               icon={<Settings2 aria-hidden="true" className="h-4 w-4" />}
             />
             <div className="space-y-5 px-4 py-4">
-              <p className="text-xs leading-relaxed text-brand-500">
+              <p className="text-xs leading-relaxed text-[#64748B]">
                 Configuration only — secrets (passwords, API keys, tokens) live in environment
                 variables, never here.
               </p>

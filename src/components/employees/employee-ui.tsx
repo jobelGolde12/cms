@@ -24,14 +24,14 @@ export function EmployeeKpiGrid({
     { label: "Total Employees", value: stats.total, tone: "text-brand-900" },
     { label: "Active", value: stats.active, tone: "text-emerald-700" },
     { label: "Inactive", value: stats.inactive, tone: "text-amber-700" },
-    { label: "Archived", value: stats.archived, tone: "text-brand-500" },
+    { label: "Archived", value: stats.archived, tone: "text-[#64748B]" },
   ];
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {kpis.map((k) => (
         <Card key={k.label}>
           <CardBody className="py-3.5">
-            <p className="text-xs font-medium text-brand-500">{k.label}</p>
+            <p className="text-xs font-medium text-[#64748B]">{k.label}</p>
             <p className={`mt-1 text-2xl font-bold tracking-tight ${k.tone}`}>
               {k.value.toLocaleString("en-PH")}
             </p>
@@ -262,7 +262,7 @@ export function EmployeePagination({
 
   return (
     <div className="flex flex-col items-center justify-between gap-3 border-t border-brand-100 px-4 py-3 sm:flex-row">
-      <p className="text-xs text-brand-500">
+      <p className="text-xs text-[#64748B]">
         Showing <span className="numeric font-medium text-brand-700">{from}</span>–
         <span className="numeric font-medium text-brand-700">{to}</span> of{" "}
         <span className="numeric font-medium text-brand-700">{total.toLocaleString("en-PH")}</span> employees
@@ -320,7 +320,7 @@ export function EmployeeModuleInfo() {
     <Card>
       <CardHeader title="About employee records" icon={<Users aria-hidden="true" className="h-4 w-4" />} />
       <CardBody>
-        <p className="text-xs leading-relaxed text-brand-500">
+        <p className="text-xs leading-relaxed text-[#64748B]">
           Employee records cover personal information, employment details, government/personnel
           identifiers, 201 files and service credits. This module is strictly limited to
           authorized employee-records personnel; student records live in separate, access-controlled

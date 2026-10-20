@@ -1,15 +1,21 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { AddStudentModal } from "@/components/add-student-modal";
 import {
   listStudents,
   listGradeLevels,
   listSections,
+  listStudentIncidents,
   registryStats,
   gradeLevelCounts,
 } from "@/lib/queries";
+import { formatDate } from "@/lib/utils";
 import { hasPermission } from "@/lib/permissions";
 import { RECORD_STATUS_LABELS, type RecordStatus } from "@/lib/constants";
+import { Card, CardHeader } from "@/components/ui/card";
+import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
 import {
   ActiveFilterChips,
   StudentRegistryTable,
@@ -47,7 +53,7 @@ export default async function StudentsPage({
   const page = parseInt(str("page"), 10) || 1;
   const pageSize = parseInt(str("pageSize"), 10) || 10;
 
-  const [result, gradeLevels, sections, stats, gradeCounts] = await Promise.all([
+  const [result, gradeLevels, sections, stats, gradeCounts, incidents] = await Promise.all([
     listStudents(user, {
       q,
       status,
@@ -63,6 +69,8 @@ export default async function StudentsPage({
     listSections(),
     registryStats(user),
     gradeLevelCounts(),
+    // Guidance-only roster: students with recorded incidents.
+    user.role === "guidance" ? listStudentIncidents(user) : Promise.resolve([]),
   ]);
 
   const canEdit = hasPermission(user.role, "students.update");
@@ -79,6 +87,56 @@ export default async function StudentsPage({
       <RegistryPageHeader stats={stats} />
 
       <RegistryKpiGrid stats={stats} />
+
+      {/* ------------------- Guidance incident roster -------------------- */}
+      {user.role === "guidance" ? (
+        <Card>
+          <CardHeader
+            title="Guidance: Student Incidents"
+            description="Students with recorded behavior incidents (latest first)."
+            icon={<ShieldCheck aria-hidden="true" className="h-4 w-4" />}
+          />
+          <TableWrap minWidth={820}>
+            <thead>
+              <tr>
+                <Th>Name</Th>
+                <Th>LRN</Th>
+                <Th>Grade Level</Th>
+                <Th>Section</Th>
+                <Th>Incident</Th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brand-100">
+              {incidents.length === 0 ? (
+                <TableEmptyState
+                  colSpan={5}
+                  icon={<ShieldCheck className="h-10 w-10" />}
+                  title="No incidents recorded"
+                  description="Behavior incidents appear here once recorded on student profiles."
+                />
+              ) : (
+                incidents.map((row) => (
+                  <tr key={row.behaviorId} className="transition-colors hover:bg-brand-50/70">
+                    <Td>
+                      <Link
+                        href={`/students/${row.studentId}`}
+                        className="font-medium text-brand-900 hover:text-action-700"
+                      >
+                        {row.lastName}, {row.firstName}
+                      </Link>
+                      <span className="ml-2 text-xs text-[#94A3B8]">{formatDate(row.date)}</span>
+                    </Td>
+                    <Td className="numeric text-xs text-brand-700">{row.lrn ?? "—"}</Td>
+                    <Td className="text-xs text-brand-700">{row.gradeLevel ?? "—"}</Td>
+                    <Td className="text-xs text-brand-700">{row.section ?? "—"}</Td>
+                    <Td className="max-w-md text-xs text-[#263449]">{row.incident}</Td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </TableWrap>
+        </Card>
+      ) : null}
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <ActiveFilterChips

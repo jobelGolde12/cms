@@ -34,7 +34,7 @@ export function ClinicalRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="clinical-date"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Date
           </label>
@@ -50,7 +50,7 @@ export function ClinicalRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="clinical-category"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Category
           </label>
@@ -73,7 +73,7 @@ export function ClinicalRecordForm({ studentId }: { studentId: string }) {
       <div>
         <label
           htmlFor="clinical-description"
-          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
         >
           Description
         </label>
@@ -92,7 +92,7 @@ export function ClinicalRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="clinical-assessment"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Assessment / observation
           </label>
@@ -106,7 +106,7 @@ export function ClinicalRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="clinical-action"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Action taken
           </label>
@@ -122,7 +122,7 @@ export function ClinicalRecordForm({ studentId }: { studentId: string }) {
       <div>
         <label
           htmlFor="clinical-remarks"
-          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
         >
           Remarks (optional)
         </label>

@@ -62,7 +62,7 @@ export function WelcomeHowItWorks() {
               <h3 className="mt-3 text-base font-medium tracking-[-0.01em] text-brand-950">
                 {step.title}
               </h3>
-              <p className="mt-2 max-w-[38ch] text-[14px] leading-[1.6] text-brand-500">
+              <p className="mt-2 max-w-[38ch] text-[14px] leading-[1.6] text-[#64748B]">
                 {step.description}
               </p>
             </article>

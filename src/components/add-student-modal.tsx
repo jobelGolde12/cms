@@ -116,7 +116,7 @@ export function AddStudentModal() {
                 <h2 id={titleId} className="text-base font-semibold text-brand-950">
                   Add Student Record
                 </h2>
-                <p className="mt-0.5 text-xs text-brand-500">
+                <p className="mt-0.5 text-xs text-[#64748B]">
                   Save as a draft or submit for verification. The student number
                   is generated automatically.
                 </p>
@@ -125,7 +125,7 @@ export function AddStudentModal() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close dialog"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-brand-500 transition-colors hover:bg-brand-100 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#64748B] transition-colors hover:bg-brand-100 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
               >
                 <X className="h-4.5 w-4.5" />
               </button>

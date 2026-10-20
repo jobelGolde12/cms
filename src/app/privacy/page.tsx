@@ -465,7 +465,7 @@ export default async function PrivacyPage() {
         </CardBody>
       </Card>
 
-      <div className="text-xs text-brand-500">
+      <div className="text-xs text-[#64748B]">
         <p>
           This policy is a living document. For the current version, effective
           date, and last-updated date, see the policy header above. This document

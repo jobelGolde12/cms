@@ -35,7 +35,7 @@ export function HealthRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="health-date"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Measurement date
           </label>
@@ -51,7 +51,7 @@ export function HealthRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="health-status"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Nutritional status
           </label>
@@ -72,7 +72,7 @@ export function HealthRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="health-weight"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Weight (kg)
           </label>
@@ -90,7 +90,7 @@ export function HealthRecordForm({ studentId }: { studentId: string }) {
         <div>
           <label
             htmlFor="health-height"
-            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
           >
             Height (cm)
           </label>
@@ -110,7 +110,7 @@ export function HealthRecordForm({ studentId }: { studentId: string }) {
       <div>
         <label
           htmlFor="health-remarks"
-          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
         >
           Remarks (optional)
         </label>

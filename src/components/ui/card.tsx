@@ -48,14 +48,14 @@ export function CardHeader({
     >
       <div className="flex min-w-0 items-center gap-2">
         {icon ? (
-          <span aria-hidden="true" className="shrink-0 text-brand-500">
+          <span aria-hidden="true" className="shrink-0 text-[#64748B]">
             {icon}
           </span>
         ) : null}
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-brand-900">{title}</h2>
           {description ? (
-            <p className="mt-0.5 text-xs text-brand-500">{description}</p>
+            <p className="mt-0.5 text-xs text-[#64748B]">{description}</p>
           ) : null}
         </div>
       </div>

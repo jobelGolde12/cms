@@ -34,7 +34,7 @@ export function ValidationReviewForm({ studentId }: { studentId: string }) {
       <div>
         <label
           htmlFor="review-remarks"
-          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-brand-500"
+          className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
         >
           Review remarks (optional)
         </label>

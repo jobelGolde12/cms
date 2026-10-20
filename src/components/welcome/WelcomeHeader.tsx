@@ -49,7 +49,7 @@ function Drawer({
             type="button"
             onClick={onClose}
             aria-label="Close navigation menu"
-            className="inline-flex items-center justify-center rounded-md p-2 text-brand-500 transition-colors hover:bg-brand-100 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
+            className="inline-flex items-center justify-center rounded-md p-2 text-[#64748B] transition-colors hover:bg-brand-100 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
           >
             <X className="h-4.5 w-4.5" />
           </button>

@@ -41,7 +41,7 @@ export function Th({
     <th
       scope="col"
       className={cn(
-        "border-b border-brand-100 bg-brand-100/60 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-brand-700",
+        "border-b border-[#DCE4F0] bg-[#EEF4FF]/40 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#14295F]",
         align === "right" && "text-right",
         className,
       )}
@@ -69,7 +69,7 @@ export function Td({
       colSpan={colSpan}
       title={title}
       className={cn(
-        "border-b border-brand-100 px-4 py-2.5 text-[13px] text-brand-800",
+        "border-b border-[#DCE4F0] px-4 py-2.5 text-[13px] text-[#263449]",
         align === "right" && "text-right",
         className,
       )}

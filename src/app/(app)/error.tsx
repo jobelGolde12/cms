@@ -20,7 +20,7 @@ export default function AppError({
         <TriangleAlert aria-hidden="true" className="h-6 w-6 text-red-700" />
       </div>
       <p className="text-base font-semibold text-brand-900">Something went wrong</p>
-      <p className="max-w-md text-sm text-brand-500">
+      <p className="max-w-md text-sm text-[#64748B]">
         This page could not be loaded. Your data is safe — please try again.
       </p>
       <Button type="button" onClick={reset} className="mt-1" size="sm">

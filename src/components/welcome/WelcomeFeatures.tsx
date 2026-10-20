@@ -91,7 +91,7 @@ export function FeatureCard({ feature }: { feature: Feature }) {
       <h3 className="mt-4 text-base font-medium tracking-[-0.01em] text-brand-950">
         {feature.title}
       </h3>
-      <p className="mt-2.5 text-[14px] leading-[1.6] text-brand-500">
+      <p className="mt-2.5 text-[14px] leading-[1.6] text-[#64748B]">
         {feature.description}
       </p>
     </article>

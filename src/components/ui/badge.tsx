@@ -19,8 +19,8 @@ const tones: Record<Tone, string> = {
   verified: "bg-emerald-50 text-emerald-800 border-emerald-200",
   pending: "bg-amber-50 text-amber-800 border-amber-200",
   error: "bg-red-50 text-red-800 border-red-200",
-  info: "bg-sky-50 text-sky-800 border-sky-200",
-  neutral: "bg-brand-100 text-brand-700 border-brand-200",
+  info: "bg-[#E0EAFF] text-[#14295F] border-[#C9D8FF]",
+  neutral: "bg-[#F4F7FC] text-[#64748B] border-[#DCE4F0]",
 };
 
 const icons: Record<Tone, ReactNode> = {

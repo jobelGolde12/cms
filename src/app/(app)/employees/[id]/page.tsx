@@ -27,7 +27,7 @@ function formatDateTime(d: Date | null): string {
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5 border-b border-brand-100 py-2 last:border-none sm:flex-row sm:items-baseline sm:justify-between">
-      <dt className="text-xs font-medium text-brand-500">{label}</dt>
+      <dt className="text-xs font-medium text-[#64748B]">{label}</dt>
       <dd className="text-[13px] text-brand-900">{value ?? "—"}</dd>
     </div>
   );
@@ -71,7 +71,7 @@ export default async function EmployeeProfilePage({
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
             {fullName}
           </h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-brand-500">
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#64748B]">
             <span className="numeric font-medium text-brand-700">{employee.employeeNumber}</span>
             <span aria-hidden="true">•</span>
             <EmployeeStatusBadge status={employee.status} />

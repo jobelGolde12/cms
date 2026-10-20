@@ -84,7 +84,7 @@ export function WelcomeAbout() {
                     <h3 className="text-base font-medium text-brand-950">
                       {item.title}
                     </h3>
-                    <p className="mt-1.5 max-w-[44ch] text-sm leading-[1.55] text-brand-500">
+                    <p className="mt-1.5 max-w-[44ch] text-sm leading-[1.55] text-[#64748B]">
                       {item.desc}
                     </p>
                   </div>
@@ -105,7 +105,7 @@ export function WelcomeAbout() {
                   <dt className="text-[12px] font-medium uppercase tracking-[0.12em] text-brand-950">
                     {item.label}
                   </dt>
-                  <dd className="mt-2 max-w-[42ch] text-[14px] leading-[1.6] text-brand-500">
+                  <dd className="mt-2 max-w-[42ch] text-[14px] leading-[1.6] text-[#64748B]">
                     {item.desc}
                   </dd>
                 </div>

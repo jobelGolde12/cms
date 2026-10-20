@@ -182,7 +182,7 @@ export default async function DuplicatesPage({
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="text-[11px] font-semibold text-brand-500">
+                            <div className="text-[11px] font-semibold text-[#64748B]">
                               {item.studentNumber} vs {item.possibleNumber}
                             </div>
                             <div className="mt-0.5 truncate text-[13px] font-semibold text-brand-900">
@@ -229,7 +229,7 @@ export default async function DuplicatesPage({
                           : "Possible duplicate detected"}
                       </h2>
                     </div>
-                    <p className="mt-0.5 text-xs text-brand-500">
+                    <p className="mt-0.5 text-xs text-[#64748B]">
                       The detector requires at least two independent identifiers to agree
                       before flagging a candidate pair.
                     </p>
@@ -289,14 +289,14 @@ export default async function DuplicatesPage({
                         </form>
                       </div>
                     ) : (
-                      <p className="mt-3 text-xs text-brand-500">
+                      <p className="mt-3 text-xs text-[#64748B]">
                         This conflict has been resolved as{" "}
                         <strong>{DUPLICATE_STATUS_LABELS[selected.status as DuplicateStatus]}</strong>.
                         Switch to the All tab to review it again.
                       </p>
                     )
                   ) : (
-                    <p className="mt-3 text-xs text-brand-500">
+                    <p className="mt-3 text-xs text-[#64748B]">
                       You do not have permission to resolve duplicate conflicts. Contact the
                       school administrator.
                     </p>

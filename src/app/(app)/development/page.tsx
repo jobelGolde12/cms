@@ -88,7 +88,7 @@ export default async function DevelopmentPage() {
                         href={`/students/${a.studentId}`}
                         className="font-medium text-brand-900 hover:text-action-700"
                       >
-                        <span className="numeric text-xs font-semibold text-brand-500">
+                        <span className="numeric text-xs font-semibold text-[#64748B]">
                           {a.studentNumber}
                         </span>
                         <span className="ml-2">
@@ -151,7 +151,7 @@ export default async function DevelopmentPage() {
                         href={`/students/${b.studentId}`}
                         className="font-medium text-brand-900 hover:text-action-700"
                       >
-                        <span className="numeric text-xs font-semibold text-brand-500">
+                        <span className="numeric text-xs font-semibold text-[#64748B]">
                           {b.studentNumber}
                         </span>
                         <span className="ml-2">
@@ -210,7 +210,7 @@ export default async function DevelopmentPage() {
                         href={`/students/${i.studentId}`}
                         className="font-medium text-brand-900 hover:text-action-700"
                       >
-                        <span className="numeric text-xs font-semibold text-brand-500">
+                        <span className="numeric text-xs font-semibold text-[#64748B]">
                           {i.studentNumber}
                         </span>
                         <span className="ml-2">

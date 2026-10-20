@@ -64,16 +64,16 @@ export default async function AppShell({
       </a>
 
       {/* ------------------------------ Sidebar ------------------------------ */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-200 bg-white lg:flex">
-        <div className="flex items-center gap-3 border-b border-brand-200 px-5 py-4">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-800/40 bg-brand-900 lg:flex">
+        <div className="flex items-center gap-3 border-b border-brand-800/40 px-5 py-4">
           {/* Brand mark — single source of truth (see components/logo.tsx). */}
           <Logo size="lg" asLink priority />
           <div className="min-w-0 leading-tight">
-            <div className="truncate text-xs font-bold uppercase tracking-wide text-brand-900">
+            <div className="truncate text-xs font-bold uppercase tracking-wide text-white">
               {SCHOOL.shortName}
             </div>
-            <div className="text-[11px] font-medium text-brand-500">Records Management</div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-400">
+            <div className="text-[11px] font-medium text-[#AFC4FF]">Records Management</div>
+            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#7EA2FF]">
               {SCHOOL.region}
             </div>
           </div>
@@ -81,11 +81,11 @@ export default async function AppShell({
 
         <SidebarNav sections={NAV_SECTIONS} links={visibleLinks} />
 
-        <div className="border-t border-brand-200 px-5 py-3 text-[11px] leading-snug text-brand-400">
-          <div className="font-semibold text-brand-700">
+        <div className="border-t border-[#203B7A]/40 px-5 py-3 text-[11px] leading-snug text-[#D7E2FF]">
+          <div className="font-semibold text-white">
             {user.firstName} {user.lastName}
           </div>
-          <div>{ROLE_LABELS[user.role]}</div>
+          <div className="text-[#AFC4FF]">{ROLE_LABELS[user.role]}</div>
         </div>
       </aside>
 
@@ -155,7 +155,7 @@ export default async function AppShell({
             <Link
               href="/settings"
               aria-label="Help and settings"
-              className="hidden rounded-md px-2 py-2 text-[11px] font-medium text-brand-500 transition-colors hover:bg-brand-100 hover:text-brand-900 sm:inline-flex"
+              className="hidden rounded-md px-2 py-2 text-[11px] font-medium text-[#64748B] transition-colors hover:bg-brand-100 hover:text-brand-900 sm:inline-flex"
             >
               Help
             </Link>
@@ -167,7 +167,7 @@ export default async function AppShell({
                 <div className="max-w-[160px] truncate text-xs font-semibold text-brand-900">
                   {user.firstName} {user.lastName}
                 </div>
-                <div className="text-[11px] text-brand-500">{ROLE_LABELS[user.role]}</div>
+                <div className="text-[11px] text-[#64748B]">{ROLE_LABELS[user.role]}</div>
               </div>
               <div
                 aria-label={`User avatar for ${user.firstName} ${user.lastName}`}

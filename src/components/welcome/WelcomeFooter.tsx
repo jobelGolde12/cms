@@ -15,7 +15,7 @@ export function WelcomeFooter() {
           {/* Brand + mission */}
           <div className="md:col-span-6">
             <Logo size="md" variant="lockup" asLink />
-            <p className="mt-5 max-w-md text-[13px] leading-[1.6] text-brand-500">
+            <p className="mt-5 max-w-md text-[13px] leading-[1.6] text-[#64748B]">
               Student records and performance analytics platform for{" "}
               {SCHOOL.name}, {SCHOOL.province}, {SCHOOL.region}. Compliant with
               RA 10173 (Data Privacy Act) and the DepEd Child Protection Policy.

@@ -3,37 +3,76 @@
 /* ---------------------------------------------------------------------------
    Sta. Magdalena National High School — Institutional Blue Visual Identity
    Style: "Accessible & Ethical" (UI/UX Pro Max) — high contrast, WCAG-first.
-   Palette: deep royal blue (from school logo) + gold/yellow accents on cool
-   off-white surfaces. Semantic colors preserved for accessibility.
+   Palette: deep royal blue (from school logo) + restrained gold/yellow
+   accents on cool off-white surfaces. Semantic colors preserved.
 --------------------------------------------------------------------------- */
 
 @theme {
-  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
 
-  /* Brand — deep royal blue institutional ramp (logo-derived) */
-  --color-brand-50: #f0f5ff;
-  --color-brand-100: #e0ebff;
-  --color-brand-200: #c7d8fe;
-  --color-brand-300: #99bdf8;
-  --color-brand-400: #6b9cf5;
-  --color-brand-500: #4265d4;
-  --color-brand-600: #2d4ebf;
-  --color-brand-700: #1f3b99;   /* logo primary blue ~#03379e */
-  --color-brand-800: #163278;
-  --color-brand-900: #0e2358;
-  --color-brand-950: #07163e;
+  /* -------------------------------------------------------------------------
+     Design tokens — centralized palette (see TODO.md §3)
+     ------------------------------------------------------------------------- */
 
-  /* Action — institutional royal blue for primary CTAs, links, focus rings */
-  --color-action-50: #f0f5ff;
-  --color-action-100: #e0ebff;
-  --color-action-200: #c7d8fe;
-  --color-action-500: #4265d4;
-  --color-action-600: #2d4ebf;
-  --color-action-700: #1f3b99;
-  --color-action-800: #163278;
+  /* Primary brand blue */
+  --color-primary: #315EF7;
+  --color-primary-hover: #2449D8;
+  --color-primary-light: #EEF4FF;
+  --color-primary-border: #C9D8FF;
 
-  /* Gold / yellow accent — restrained institutional highlight */
+  /* Sidebar navy + active bright blue */
+  --color-sidebar: #14295F;
+  --color-sidebar-hover: #203B7A;
+  --color-sidebar-active: #315EF7;
+
+  /* Page & surface */
+  --color-page: #F4F7FC;
+  --color-surface: #FFFFFF;
+
+  /* Typography */
+  --color-heading: #14295F;
+  --color-text: #263449;
+  --color-muted: #64748B;
+  --color-muted-secondary: #7B879B;
+  --color-disabled: #94A3B8;
+
+  /* Borders & dividers */
+  --color-border: #DCE4F0;
+  --color-divider: #E8EDF5;
+
+  /* Brand ramp (mapped to standard tokens for backward compat) */
+  --color-brand-50: #F4F7FC;
+  --color-brand-100: #EEF4FF;
+  --color-brand-200: #C9D8FF;
+  --color-brand-300: #99BDF8;
+  --color-brand-400: #6B9CF5;
+  --color-brand-500: #315EF7;   /* primary */
+  --color-brand-600: #2449D8;   /* primary hover */
+  --color-brand-700: #315EF7;   /* active / action */
+  --color-brand-800: #203B7A;   /* sidebar hover */
+  --color-brand-900: #14295F;   /* sidebar / dark navy */
+  --color-brand-950: #07163E;
+
+  /* Action (primary interactive) */
+  --color-action-50: #EEF4FF;
+  --color-action-100: #C9D8FF;
+  --color-action-200: #99BDF8;
+  --color-action-500: #315EF7;
+  --color-action-600: #2449D8;
+  --color-action-700: #315EF7;
+  --color-action-800: #203B7A;
+
+  /* Semantic status */
+  --color-success: #059669;
+  --color-success-bg: #D1FAE5;
+  --color-warning: #D97706;
+  --color-warning-bg: #FEF3C7;
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEE2E2;
+  --color-info-bg: #E0EAFF;
+
+  /* Gold / yellow accent (restrained institutional highlight) */
   --color-gold-50: #fffbeb;
   --color-gold-100: #fef3c7;
   --color-gold-200: #fde68a;
@@ -42,16 +81,6 @@
   --color-gold-500: #f59e0b;
   --color-gold-600: #d97706;
   --color-gold-700: #b45309;
-
-  /* Semantic status colors (always paired with icons/labels, never color-only) */
-  --color-status-verified: #047857;
-  --color-status-verified-bg: #ecfdf5;
-  --color-status-pending: #b45309;
-  --color-status-pending-bg: #fffbeb;
-  --color-status-error: #b91c1c;
-  --color-status-error-bg: #fef2f2;
-  --color-status-info: #1f3b99;
-  --color-status-info-bg: #f0f5ff;
 }
 
 html {
@@ -71,28 +100,29 @@ html {
 }
 
 body {
-  background-color: var(--color-brand-50);
-  color: var(--color-brand-950);
+  background-color: var(--color-page);
+  color: var(--color-text);
   font-family: var(--font-sans);
 }
 
 /* Visible, high-contrast focus ring for keyboard navigation (3px). */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid var(--color-action-700);
+  outline: 3px solid var(--color-action-600);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
-/* Numeric data (child codes, counts) renders in the mono ramp. */
+/* Numeric data renders in the mono ramp. */
 .numeric {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
 /* ---------------------------------------------------------------------------
-   Editorial landing-page utilities (see design.md §4, §9, §33, §41).
---------------------------------------------------------------------------- */
+   Design token utility classes (optional direct access)
+-------------------------------------------------------------------------- */
 
+/* Editorial landing-page utilities */
 .eyebrow {
   font-size: 10px;
   font-weight: 500;
