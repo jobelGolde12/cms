@@ -47,6 +47,19 @@ function getLogoSrc(): string | null {
   return logoSrc;
 }
 
+/** DepEd logo asset (public/deped_logo_kagawaran_ng_edukasyon.jpg). */
+let depedLogoSrc: string | null = null;
+function getDepEdLogoSrc(): string | null {
+  if (depedLogoSrc !== null) return depedLogoSrc;
+  try {
+    const file = path.join(process.cwd(), "public", "deped_logo_kagawaran_ng_edukasyon.jpg");
+    depedLogoSrc = fs.readFileSync(file).toString("base64");
+  } catch {
+    depedLogoSrc = "";
+  }
+  return depedLogoSrc;
+}
+
 const styles = StyleSheet.create({
   page: {
     paddingTop: 26,
@@ -60,7 +73,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
   },
-  logo: { height: 46, width: 46 * LOGO_ASPECT, marginRight: 6 },
+  logoLeft: { height: 70, width: 70, marginRight: 8 },
+  logoRight: { height: 70, width: 70, marginLeft: 8 },
   letterheadText: {
     flex: 1,
     textAlign: "center",
@@ -370,20 +384,16 @@ function SignatureBlock({
 /* -------------------------------------------------------------------------- */
 
 const reportCardDoc = (data: ReportCardData) => {
-  const logo = getLogoSrc();
   const capitalize = (s: string | null | undefined) =>
     s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
 
   return (
     <Document title={`Learner's Performance Report — ${data.student.fullName}`}>
       <Page size="A4" style={styles.page}>
-        {/* Official letterhead — school seal + DepEd hierarchy (CARD.docx) */}
+        {/* Official letterhead — left DepEd logo, center info, right school logo */}
         <View style={styles.letterhead}>
-          {logo ? (
-            // @react-pdf's Image is not an HTML <img>; the jsx-a11y/alt-text
-            // rule does not apply (ImageProps has no alt prop at all).
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <Image src={`data:image/png;base64,${logo}`} style={styles.logo} />
+          {getDepEdLogoSrc() ? (
+            <Image src={`data:image/jpeg;base64,${getDepEdLogoSrc()}`} style={styles.logoLeft} />
           ) : null}
           <View style={styles.letterheadText}>
             <Text>Republic of the Philippines</Text>
@@ -393,6 +403,9 @@ const reportCardDoc = (data: ReportCardData) => {
             <Text style={styles.schoolName}>{SCHOOL.name.toUpperCase()}</Text>
             <Text>{SCHOOL.address}</Text>
           </View>
+          {getLogoSrc() ? (
+            <Image src={`data:image/png;base64,${getLogoSrc()}`} style={styles.logoRight} />
+          ) : null}
         </View>
 
         {/* Report title */}
