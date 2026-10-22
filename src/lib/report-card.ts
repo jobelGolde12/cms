@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   attendanceRecords,
@@ -213,6 +213,9 @@ export async function getSectionAdviser(sectionId: string | null): Promise<strin
 
 /** First active admin-tier user shown as principal on official documents. */
 export async function getPrincipalName(): Promise<string | null> {
+  // roles.name stores human labels in this database (e.g. "System
+  // Administrator"), but older seeds/slugs (admin/school_admin) are still
+  // matched case-insensitively so the principal line never renders blank.
   const rows = await db
     .select({
       first: users.firstName,
@@ -221,7 +224,12 @@ export async function getPrincipalName(): Promise<string | null> {
     })
     .from(users)
     .innerJoin(roles, eq(roles.id, users.roleId))
-    .where(and(inArray(roles.name, ["admin", "school_admin"]), eq(users.isActive, true)))
+    .where(
+      and(
+        sql`lower(${roles.name}) in ('system administrator', 'school administrator', 'admin', 'school admin')`,
+        eq(users.isActive, true),
+      ),
+    )
     .orderBy(asc(users.createdAt))
     .limit(1);
   const r = rows[0];

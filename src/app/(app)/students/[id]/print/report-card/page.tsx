@@ -1,18 +1,15 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight, Download } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
-import {
-  REPORT_CARD_MONTHS,
-  getReportCardData,
-  type ReportCardData,
-  type ReportCardSubject,
-} from "@/lib/report-card";
+import { getReportCardData, REPORT_CARD_MONTHS } from "@/lib/report-card";
 import { SCHOOL } from "@/lib/constants";
 import { buttonStyles } from "@/components/ui/button";
 import { PrintButton } from "@/components/ui/print-button";
+import schoolLogo from "../../../../../../../public/logo.png";
 
 export const metadata = { title: "Learner's Performance Report" };
 
@@ -21,17 +18,43 @@ export const metadata = { title: "Learner's Performance Report" };
  * STRICTLY read-only — rendering this document never mutates student data
  * (same guarantee as the student card and Form 137).
  *
- * Visual reference is CARD.docx: A4 portrait, government header, student
- * details, learning-progress table, descriptor scale, attendance and
- * certificates. Uses print modifiers so browser `window.print()` output
- * matches the on-screen document.
+ * Visual source of truth is the official CARD.docx template (project root):
+ * DepEd letterhead with the school seal, ruled learner-information fields,
+ * "Dear Parents" note, the grouped Learning Progress and Achievement table
+ * (Learning Areas | TERM 1/2/3 | Final Grade | Remarks), grading scale,
+ * attendance record, signature areas and transfer certificate.
+ *
+ * This page is the 1:1 screen/print preview of the downloaded PDF
+ * (`/api/report-card/[id]` → src/lib/reports/report-card-pdf.tsx): same
+ * section order, same typography, same ruled-line fields, formal black lines
+ * on white only. Fields the system does not store (track/strand, teacher
+ * comments) render as blank ruled lines — no values are invented.
  */
 
-const fmt = (n: number | null | undefined) =>
-  n == null ? "" : String(n);
+const TIMES = '"Times New Roman", Times, serif';
 
-const grade = (n: number | null) =>
-  n == null ? "" : String(n);
+const fmt = (n: number | null | undefined) => (n == null ? "" : String(n));
+const orBlank = (s: string | null | undefined) => s ?? "";
+
+/* Ruled "Label: ____value____" display field (never a web-form control). */
+function FieldValue({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <span className={`flex items-end gap-0 ${className}`}>
+      <span className="shrink-0">{label}: </span>
+      <span className="flex h-[15px] min-w-0 flex-1 items-center justify-center border-b border-neutral-900 px-1 text-center">
+        {value}
+      </span>
+    </span>
+  );
+}
 
 export default async function ReportCardPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -43,6 +66,13 @@ export default async function ReportCardPage({ params }: { params: Promise<{ id:
 
   const data = await getReportCardData(id);
   if (!data) redirect("/students");
+
+  const sex = data.student.sex
+    ? data.student.sex.charAt(0).toUpperCase() + data.student.sex.slice(1)
+    : "";
+  const gradeSection = data.gradeLevel
+    ? `${data.gradeLevel}${data.section ? ` - ${data.section}` : ""}`
+    : "";
 
   return (
     <div className="space-y-5 print:space-y-0">
@@ -71,114 +101,263 @@ export default async function ReportCardPage({ params }: { params: Promise<{ id:
 
       {/* A4 sheet — 1:1 preview of the printed artifact (CARD.docx) */}
       <div
-        className="mx-auto rounded-lg border border-brand-200 bg-white shadow-sm print:max-w-none print:shadow-none print:rounded-none print:border-none"
+        className="mx-auto rounded-lg border border-brand-200 bg-white shadow-sm print:max-w-none print:rounded-none print:border-none print:shadow-none"
         style={{ maxWidth: "210mm" }}
       >
-        <div className="px-[14mm] py-[12mm] font-serif text-[10px] leading-snug text-brand-900">
-          {/* Government header */}
-          <header className="text-center">
-            <p>Republic of the Philippines</p>
-            <p className="font-semibold tracking-wide">DEPARTMENT OF EDUCATION</p>
-            <p>Region V</p>
-            <p className="font-semibold tracking-wide">SCHOOLS DIVISION OF SORSOGON</p>
-            <p className="mt-1 font-bold uppercase">{SCHOOL.name}</p>
-            <p>{SCHOOL.address}</p>
-            <h1 className="mt-3 text-sm font-bold tracking-wide">
-              LEARNER&apos;S PERFORMANCE REPORT
-            </h1>
-            <p className="mt-1">
-              {data.schoolYear
-                ? `School Year ${data.schoolYear}`
-                : "School Year —"}
-            </p>
+        <div
+          className="px-[15mm] pb-[14mm] pt-[10mm] text-[10.5px] leading-snug text-neutral-900"
+          style={{ fontFamily: TIMES }}
+        >
+          {/* Official letterhead — school seal + DepEd hierarchy */}
+          <header className="flex items-start">
+            <Image
+              src={schoolLogo}
+              alt="School seal"
+              width={62}
+              height={42}
+              className="mr-1.5 shrink-0"
+              style={{ width: 62, height: 42, objectFit: "contain" }}
+            />
+            <div className="min-w-0 flex-1 text-center leading-tight">
+              <p>Republic of the Philippines</p>
+              <p>Department of Education</p>
+              <p>Region V</p>
+              <p>SCHOOLS DIVISION OF SORSOGON</p>
+              <p className="text-[11.5px] font-bold">{SCHOOL.name.toUpperCase()}</p>
+              <p>{SCHOOL.address}</p>
+            </div>
           </header>
 
-          {/* Learner details */}
-          <section className="mt-4 grid grid-cols-1 gap-x-10 gap-y-1 sm:grid-cols-2">
-            <Detail label="Name" value={data.student.fullName || "—"} />
-            <Detail label="Age" value={fmt(data.student.age)} />
-            <Detail
-              label="Sex"
-              value={data.student.sex ? capitalize(data.student.sex) : "—"}
-            />
-            <Detail
-              label="LRN / Student No."
-              value={data.student.lrn ?? data.student.studentNumber}
-            />
-            <Detail
-              label="Grade &amp; Section"
-              value={
-                data.gradeLevel
-                  ? `${data.gradeLevel}${data.section ? ` — ${data.section}` : ""}`
-                  : "—"
-              }
-            />
-            <Detail label="Track" value="" note="not tracked in the system" />
+          {/* Report title */}
+          <div className="mt-2 text-center">
+            <h1 className="text-[13px] font-bold tracking-wide">
+              LEARNER&apos;S PERFORMANCE REPORT
+            </h1>
+            <p className="mt-0.5 text-[11px]">
+              School Year {data.schoolYear || "—"}
+            </p>
+          </div>
+
+          {/* Learner information — ruled fields */}
+          <section>
+            <div className="mt-2.5 flex items-end gap-4">
+              <FieldValue label="Name" value={data.student.fullName || ""} className="w-[46%]" />
+              <FieldValue label="Age" value={fmt(data.student.age)} className="w-[13%]" />
+              <FieldValue label="Sex" value={sex} className="w-[16%]" />
+            </div>
+            <div className="mt-1.5 flex items-end gap-4">
+              <FieldValue label="LRN" value={orBlank(data.student.lrn)} className="w-[42%]" />
+              <FieldValue label="Grade & Section" value={gradeSection} className="w-[41%]" />
+            </div>
+            {/* Track/strand is not stored anywhere in the system — ruled blank line */}
+            <div className="mt-1.5 flex items-end">
+              <FieldValue label="Track" value="" className="w-[59%]" />
+            </div>
           </section>
 
           {!data.hasEnrollment ? (
-            <EmptyState schoolYear={data.schoolYear} />
+            <div className="mt-4 border border-neutral-900 px-4 py-5 text-center">
+              No enrollment record found for this learner
+              {data.schoolYear ? ` in School Year ${data.schoolYear}` : ""}. No academic or
+              attendance data is shown until an enrollment exists.
+            </div>
           ) : (
             <>
-              <p className="mt-4 text-center text-[9px] leading-relaxed text-brand-700">
-                Dear Parents, this report serves as the school&apos;s official record of the
-                learner&apos;s comparative progress and achievement in the learning areas and
-                the values demonstrated during the grading period(s). This will serve as basis
-                in monitoring the learner&apos;s development in school.
-              </p>
+              {/* Note to parents (CARD.docx wording) */}
+              <section>
+                <p className="mt-2.5 text-[11px]">Dear Parents,</p>
+                <p className="mt-1 text-justify leading-relaxed">
+                  This Performance Report shows the ability and progress your child has made in
+                  the different learning areas as well as his/her core values. The school welcomes
+                  you should you desire to know more about your child&apos;s progress.
+                </p>
+              </section>
 
               {/* Learning Progress and Achievement */}
-              <GradeTable subjects={data.subjects} generalAverage={data.generalAverage} />
+              <h2 className="mt-3 text-center text-[11px] font-bold uppercase" style={{ letterSpacing: "0.02em" }}>
+                Learning Progress and Achievement
+              </h2>
+              <table className="mt-1 w-full table-fixed border-collapse text-[10px]">
+                <colgroup>
+                  <col className="w-[36%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[22%]" />
+                </colgroup>
+                <thead>
+                  {/* Grouped header: Learning Areas | TERM (1 2 3) | Final Grade | Remarks */}
+                  <tr>
+                    <th rowSpan={2} className="border border-neutral-900 px-1 py-0.5 text-center font-bold align-middle">
+                      Learning Areas
+                    </th>
+                    <th colSpan={3} className="border border-neutral-900 px-1 py-0.5 text-center font-bold">
+                      TERM
+                    </th>
+                    <th rowSpan={2} className="border border-neutral-900 px-1 py-0.5 text-center font-bold align-middle">
+                      Final Grade
+                    </th>
+                    <th rowSpan={2} className="border border-neutral-900 px-1 py-0.5 text-center font-bold align-middle">
+                      Remarks
+                    </th>
+                  </tr>
+                  <tr>
+                    <th className="border border-neutral-900 px-1 py-0.5 text-center font-bold">1</th>
+                    <th className="border border-neutral-900 px-1 py-0.5 text-center font-bold">2</th>
+                    <th className="border border-neutral-900 px-1 py-0.5 text-center font-bold">3</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.subjects.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="border border-neutral-900 px-2 py-2 text-center text-neutral-600">
+                        No grades recorded for this learner yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    <>
+                      {data.subjects.map((s) => (
+                        <tr key={s.subjectCode} className="break-inside-avoid">
+                          <td className="border border-neutral-900 px-1.5 py-0.5 text-left">{s.subjectName}</td>
+                          {[0, 1, 2].map((i) => (
+                            <td key={i} className="border border-neutral-900 px-1 py-0.5 text-center">
+                              {fmt(s.termGrades[i])}
+                            </td>
+                          ))}
+                          <td className="border border-neutral-900 px-1 py-0.5 text-center font-medium">
+                            {fmt(s.finalGrade)}
+                          </td>
+                          <td className="border border-neutral-900 px-1 py-0.5 text-center">
+                            {orBlank(s.remark)}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="break-inside-avoid font-bold">
+                        <td className="border border-neutral-900 px-1.5 py-0.5 text-left">General Average</td>
+                        <td className="border border-neutral-900" />
+                        <td className="border border-neutral-900" />
+                        <td className="border border-neutral-900" />
+                        <td className="border border-neutral-900 px-1 py-0.5 text-center">
+                          {fmt(data.generalAverage)}
+                        </td>
+                        <td className="border border-neutral-900" />
+                      </tr>
+                    </>
+                  )}
+                </tbody>
+              </table>
 
-              {/* Descriptor scale */}
-              <DescriptorScale />
+              {/* Performance descriptors / grading scale */}
+              <h2 className="mt-3 text-center text-[11px] font-bold uppercase">
+                Performance Descriptors
+              </h2>
+              <table className="mt-1 w-full border-collapse text-[10px]">
+                <colgroup>
+                  <col className="w-[20%]" />
+                  <col className="w-[40%]" />
+                  <col className="w-[40%]" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="border border-neutral-900 px-1 py-0.5 text-center font-bold">Grading Scale</th>
+                    <th className="border border-neutral-900 px-1 py-0.5 text-center font-bold">Description</th>
+                    <th className="border border-neutral-900 px-1 py-0.5 text-center font-bold">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {GRADING_SCALE.map(([range, descriptor, remark]) => (
+                    <tr key={range}>
+                      <td className="border border-neutral-900 px-1 py-0.5 text-center">{range}</td>
+                      <td className="border border-neutral-900 px-1 py-0.5 text-center">{descriptor}</td>
+                      <td className="border border-neutral-900 px-1 py-0.5 text-center">{remark}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-              {/* Attendance */}
-              <AttendanceTable data={data} />
+              {/* Attendance record */}
+              <h2 className="mt-3 text-center text-[11px] font-bold uppercase">
+                Attendance Record
+              </h2>
+              <table className="mt-1 w-full table-fixed border-collapse text-[9px]">
+                <colgroup>
+                  <col className="w-[18%]" />
+                  {REPORT_CARD_MONTHS.map((m) => (
+                    <col key={m} className="w-[6.36%]" />
+                  ))}
+                  <col className="w-[12%]" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="border border-neutral-900 px-0.5 text-left font-normal">Month</th>
+                    {REPORT_CARD_MONTHS.map((m) => (
+                      <th key={m} className="border border-neutral-900 px-0.5 py-0.5 text-center font-bold">
+                        {m}
+                      </th>
+                    ))}
+                    <th className="border border-neutral-900 px-1 py-0.5 text-center font-bold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ATTENDANCE_ROWS.map((r) => (
+                    <tr key={r.key}>
+                      <td className="border border-neutral-900 px-1 py-0.5 text-left">{r.label}</td>
+                      {REPORT_CARD_MONTHS.map((m) => {
+                        const v = data.attendance.months.find((mv) => mv.month === m);
+                        return (
+                          <td key={m} className="border border-neutral-900 px-0.5 py-0.5 text-center">
+                            {v ? fmt(v[r.key]) : ""}
+                          </td>
+                        );
+                      })}
+                      <td className="border border-neutral-900 px-1 py-0.5 text-center font-bold">
+                        {fmt(r.totalOf(data.attendance))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-              {/* Comments and signatures */}
-              <section className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <p className="mb-2 font-semibold">Teacher&apos;s Remarks</p>
-                  <SignatureLines count={3} leftLabel="Term" />
-                </div>
-                <div>
-                  <p className="mb-2 font-semibold">Parents&apos;/Guardian&apos;s Signature</p>
-                  <SignatureLines count={3} leftLabel="Term" />
-                </div>
-              </section>
+              {/* Teacher's comments / remarks — blank ruled lines (no stored values) */}
+              <h3 className="mt-3 font-bold uppercase">Teacher&apos;s Comments/Remarks</h3>
+              <TermSignatureRow />
+              <h3 className="mt-2.5 font-bold uppercase">Parents/Guardian&apos;s Signature</h3>
+              <TermSignatureRow />
 
               {/* Certificate of transfer */}
-              <section className="mt-5 border-t border-brand-900 pt-3">
-                <p className="font-semibold uppercase tracking-wide">Certificate of Transfer (if applicable)</p>
-                <div className="mt-2 space-y-1.5">
-                  <UnderlineField label="Admitted to Grade" />
-                  <UnderlineField label="Eligible for Admission to Grade" />
-                  <UnderlineField label="Cancelled — Eligibility to Transfer (Admitted in)" />
-                  <UnderlineField label="Date" />
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-8 text-center text-[10px]">
-                  <div>
-                    <p className="border-t border-brand-400 pt-1 font-semibold">
-                      {data.adviser ?? "\u00a0"}
-                    </p>
-                    <p className="text-[9px] text-brand-600">Adviser</p>
-                  </div>
-                  <div>
-                    <p className="border-t border-brand-400 pt-1 font-semibold">
-                      {data.principal ?? "\u00a0"}
-                    </p>
-                    <p className="text-[9px] text-brand-600">Principal</p>
-                  </div>
-                </div>
-              </section>
+              <h3 className="mt-3 font-bold uppercase">Certificate of Transfer</h3>
+              <p className="mt-1 leading-relaxed">
+                This is to certify that the above-named learner has satisfactorily completed the
+                requirements for the grade level indicated.
+              </p>
+              <div className="mt-2 flex items-end">
+                <FieldValue label="Admitted to Grade" value="" className="w-[40%]" />
+              </div>
+              <div className="mt-1.5 flex items-end">
+                <FieldValue label="Eligible for Admission to Grade" value="" className="w-[43%]" />
+              </div>
+              <p className="mt-2.5">Approved:</p>
+              <div className="mt-1 flex justify-between">
+                <SignatureBlock name={data.principal ?? ""} role="Secondary School Principal III" />
+                <SignatureBlock name={data.adviser ?? ""} role="Adviser" />
+              </div>
+
+              {/* Cancellation of eligibility to transfer */}
+              <h3 className="mt-3 font-bold uppercase">Cancellation of Eligibility to Transfer</h3>
+              <div className="mt-1.5 flex items-end gap-5">
+                <FieldValue label="Admitted in" value="" className="w-[32%]" />
+                <FieldValue label="Date" value="" className="w-[34%]" />
+              </div>
+              <div className="mt-1 flex justify-start">
+                <SignatureBlock name={data.principal ?? ""} role="Secondary School Principal III" />
+              </div>
             </>
           )}
 
           <p className="mt-6 text-center text-[9px] text-brand-400 print:hidden">
-            Generated by {user.firstName} {user.lastName} ({user.role}) on{" "}
-            {new Date().toLocaleDateString("en-PH")} — read-only document; no student data is
-            modified.
+            Generated by {user.firstName} {user.lastName} ({user.role}) — read-only document; no
+            student data is modified.
           </p>
         </div>
       </div>
@@ -190,220 +369,44 @@ export default async function ReportCardPage({ params }: { params: Promise<{ id:
 /*  Small building blocks                                                     */
 /* -------------------------------------------------------------------------- */
 
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function Detail({ label, value, note }: { label: string; value: string; note?: string }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <span className="text-brand-600">{label}:</span>
-      <span className="min-w-[45%] border-b border-brand-400 text-right font-medium">
-        {note ? <span className="text-brand-300">{note}</span> : value || "\u00a0"}
-      </span>
-    </div>
-  );
-}
-
-function UnderlineField({ label }: { label: string }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <span className="text-brand-600">{label}:</span>
-      <span className="min-w-[55%] border-b border-brand-400" />
-    </div>
-  );
-}
-
-function GradeTable({
-  subjects,
-  generalAverage,
-}: {
-  subjects: ReportCardSubject[];
-  generalAverage: number | null;
-}) {
-  return (
-    <section className="mt-4">
-      <p className="mb-1 font-semibold uppercase tracking-wide">
-        Learning Progress and Achievement
-      </p>
-      <table className="w-full table-fixed border-collapse">
-        <colgroup>
-          <col className="w-[38%]" />
-          <col className="w-[10%]" />
-          <col className="w-[10%]" />
-          <col className="w-[10%]" />
-          <col className="w-[15%]" />
-          <col className="w-[17%]" />
-        </colgroup>
-        <thead>
-          <tr className="bg-brand-50/60 text-center align-middle">
-            <th className="border border-brand-900 px-1 py-1 font-semibold">Learning Areas</th>
-            <th className="border border-brand-900 px-1 py-1 font-semibold">Term 1</th>
-            <th className="border border-brand-900 px-1 py-1 font-semibold">Term 2</th>
-            <th className="border border-brand-900 px-1 py-1 font-semibold">Term 3</th>
-            <th className="border border-brand-900 px-1 py-1 font-semibold">Final Grade</th>
-            <th className="border border-brand-900 px-1 py-1 font-semibold">Remarks</th>
-          </tr>
-        </thead>
-        <tbody>
-          {subjects.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="border border-brand-900 px-2 py-3 text-center text-brand-400">
-                No grades recorded for this learner yet.
-              </td>
-            </tr>
-          ) : (
-            <>
-              {subjects.map((s) => (
-                <tr key={s.subjectCode} className="border border-brand-900">
-                  <td className="border border-brand-900 px-1.5 py-0.5 text-left">{s.subjectName}</td>
-                  <Cell value={s.termGrades[0]} />
-                  <Cell value={s.termGrades[1]} />
-                  <Cell value={s.termGrades[2]} />
-                  <Cell value={s.finalGrade} />
-                  <td className="border border-brand-900 px-1 py-0.5 text-center">
-                    {s.remark ?? ""}
-                  </td>
-                </tr>
-              ))}
-              <tr className="border border-brand-900 font-semibold">
-                <td className="border border-brand-900 px-1.5 py-0.5 text-left">General Average</td>
-                <Cell value={generalAverage} bold />
-                <td className="border border-brand-900" />
-                <td className="border border-brand-900" />
-                <td className="border border-brand-900" />
-                <td className="border border-brand-900" />
-              </tr>
-            </>
-          )}
-        </tbody>
-      </table>
-    </section>
-  );
-}
-
-function Cell({ value, bold = false }: { value: number | null; bold?: boolean }) {
-  return (
-    <td className={`border border-brand-900 px-1 py-0.5 text-center ${bold ? "font-semibold" : ""}`}>
-      {grade(value)}
-    </td>
-  );
-}
-
-const DESCRIPTOR_SCALE: [string, string, string][] = [
-  ["90 – 100", "Advancing", "Passed"],
-  ["80 – 89", "Benchmarking", "Passed"],
-  ["75 – 79", "Connecting", "Passed"],
-  ["65 – 74", "Developing", "Failed"],
-  ["0 – 64", "Emerging", "Failed"],
+const GRADING_SCALE: [string, string, string][] = [
+  ["90-100", "Advancing", "Passed"],
+  ["80-89", "Benchmarking", "Passed"],
+  ["75-79", "Connecting", "Passed"],
+  ["65-74", "Developing", "Failed"],
+  ["0-64", "Emerging", "Failed"],
 ];
 
-function DescriptorScale() {
-  return (
-    <section className="mt-4">
-      <p className="mb-1 font-semibold uppercase tracking-wide">
-        Learner&apos;s Performance Descriptor
-      </p>
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="border border-brand-900 bg-brand-50/60">
-            <th className="border border-brand-900 px-1 py-0.5 font-semibold">Grade Level Range</th>
-            <th className="border border-brand-900 px-1 py-0.5 font-semibold">Descriptor</th>
-            <th className="border border-brand-900 px-1 py-0.5 font-semibold">Remarks</th>
-          </tr>
-        </thead>
-        <tbody>
-          {DESCRIPTOR_SCALE.map(([range, descriptor, remark]) => (
-            <tr key={range} className="border border-brand-900 text-center">
-              <td className="border border-brand-900 px-1 py-0.5">{range}</td>
-              <td className="border border-brand-900 px-1 py-0.5">{descriptor}</td>
-              <td className="border border-brand-900 px-1 py-0.5">{remark}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
-  );
-}
+const ATTENDANCE_ROWS: {
+  key: "schoolDays" | "present" | "absent";
+  label: string;
+  totalOf: (a: {
+    totalSchoolDays: number;
+    totalPresent: number;
+    totalAbsent: number;
+  }) => number;
+}[] = [
+  { key: "schoolDays", label: "No. of Class Days", totalOf: (a) => a.totalSchoolDays },
+  { key: "present", label: "No. of Days Present", totalOf: (a) => a.totalPresent },
+  { key: "absent", label: "No. of Days Absent", totalOf: (a) => a.totalAbsent },
+];
 
-function AttendanceTable({ data }: { data: ReportCardData }) {
-  const { months } = data.attendance;
-  const byMonth = new Map(months.map((m) => [m.month, m]));
-  const rows: { label: string; key: "schoolDays" | "present" | "absent" }[] = [
-    { label: "No. of Class Days", key: "schoolDays" },
-    { label: "No. of Days Present", key: "present" },
-    { label: "No. of Days Absent", key: "absent" },
-  ];
-  const totalKey: Record<string, number> = {
-    schoolDays: data.attendance.totalSchoolDays,
-    present: data.attendance.totalPresent,
-    absent: data.attendance.totalAbsent,
-  };
-
+/** "Term 1 ______  Term 2 ______  Term 3 ______" (blank ruled lines). */
+function TermSignatureRow() {
   return (
-    <section className="mt-4">
-      <p className="mb-1 font-semibold uppercase tracking-wide">Attendance Report</p>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[120mm] border-collapse">
-          <thead>
-            <tr className="border border-brand-900 bg-brand-50/60 text-center">
-              <th className="border border-brand-900 px-1 py-0.5 text-left font-normal">Month</th>
-              {REPORT_CARD_MONTHS.map((m) => (
-                <th key={m} className="border border-brand-900 px-0.5 py-0.5 font-semibold">
-                  {m}
-                </th>
-              ))}
-              <th className="border border-brand-900 px-1 py-0.5 font-semibold">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key} className="border border-brand-900">
-                <td className="border border-brand-900 px-1 py-0.5 text-left text-[9px]">{r.label}</td>
-                {REPORT_CARD_MONTHS.map((m) => {
-                  const v = byMonth.get(m);
-                  return (
-                    <td key={m} className="border border-brand-900 px-0.5 py-0.5 text-center">
-                      {v ? (v[r.key] || "") : ""}
-                    </td>
-                  );
-                })}
-                <td className="border border-brand-900 px-1 py-0.5 text-center font-semibold">
-                  {totalKey[r.key] || ""}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="mt-1 text-[8px] text-brand-400">
-        No. of class days = days with recorded attendance (no school-calendar table available).
-      </p>
-    </section>
-  );
-}
-
-function SignatureLines({ count, leftLabel }: { count: number; leftLabel: string }) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex justify-between gap-2 text-[9px]">
-          <span className="text-[#64748B]">
-            {leftLabel} {i + 1}
-          </span>
-          <span className="min-w-[70%] border-b border-brand-400" />
-        </div>
+    <div className="mt-1 flex gap-4">
+      {[1, 2, 3].map((i) => (
+        <FieldValue key={i} label={`Term ${i}`} value="" className="flex-1" />
       ))}
     </div>
   );
 }
 
-function EmptyState({ schoolYear }: { schoolYear: string }) {
+function SignatureBlock({ name, role }: { name: string; role: string }) {
   return (
-    <div className="mt-6 border border-dashed border-brand-300 px-4 py-6 text-center text-[10px] text-[#64748B]">
-      No enrollment record found for this learner
-      {schoolYear ? ` in School Year ${schoolYear}` : " in the selected school year"}. No academic
-      or attendance data is shown until an enrollment exists.
+    <div className="w-[45%] text-center">
+      <p className="text-[11px] font-semibold">{name || "\u00a0"}</p>
+      <p className="text-[9.5px]">{role}</p>
     </div>
   );
 }

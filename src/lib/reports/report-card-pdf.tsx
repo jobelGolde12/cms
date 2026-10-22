@@ -1,147 +1,245 @@
-import { Document, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
+import fs from "node:fs";
+import path from "node:path";
+import {
+  Document,
+  Image,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+  renderToBuffer,
+} from "@react-pdf/renderer";
 import { REPORT_CARD_MONTHS, type ReportCardData } from "@/lib/report-card";
 import { SCHOOL } from "@/lib/constants";
 
 /**
- * Server-side PDF rendering for the Learner's Performance Report Card,
+ * Server-side PDF rendering for the Learner's Performance Report,
  * using the same stack as `src/lib/reports/pdf.tsx` (@react-pdf/renderer —
  * already a project dependency, works in Node/serverless, no native deps).
  *
- * Layout mirrors `src/app/(app)/students/[id]/print/report-card/page.tsx`
- * (which is the CARD.docx reference): A4 portrait, Times-Roman to match the
- * document's serif typography, identical table column ratios, same section
- * order. Read-only — renders a buffer only, never writes to the database.
+ * Visual source of truth is the official CARD.docx template at the project
+ * root (and its rendered screenshot): DepEd letterhead with the school seal,
+ * ruled learner-information fields, a "Dear Parents" note, the grouped
+ * Learning Progress and Achievement table (Learning Areas | TERM 1/2/3 |
+ * Final Grade | Remarks), the grading scale, the attendance record,
+ * teacher/parent signature areas and the transfer certificate.
+ *
+ * Every displayed value comes from `ReportCardData` (database-derived via
+ * `src/lib/report-card.ts`) — nothing about the learner is hardcoded. Fields
+ * the system does not store (track/strand, teacher comments) render as blank
+ * ruled lines, exactly like the printed form. Times serif to match the
+ * official-document typography. Read-only — renders a buffer only.
  */
 
 const FONT = "Times-Roman";
 
+/** School seal asset (public/logo.png, 1516x1038) at its natural ratio. */
+const LOGO_ASPECT = 1516 / 1038;
+let logoSrc: string | null = null;
+function getLogoSrc(): string | null {
+  if (logoSrc !== null) return logoSrc;
+  try {
+    const file = path.join(process.cwd(), "public", "logo.png");
+    logoSrc = fs.readFileSync(file).toString("base64");
+  } catch {
+    logoSrc = ""; // header renders text-only when the asset cannot be read
+  }
+  return logoSrc;
+}
+
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 34,
+    paddingTop: 26,
     paddingBottom: 34,
-    paddingHorizontal: 40, // ~14mm
-    fontSize: 8.5,
+    paddingHorizontal: 44, // ~15mm
+    fontSize: 9.5,
     fontFamily: FONT,
-    color: "#0f172a",
+    color: "#111111",
   },
-  header: { textAlign: "center" },
-  title: { fontSize: 12, fontWeight: "bold", marginTop: 8 },
-  schoolYear: { marginTop: 2, fontSize: 9 },
-  details: {
-    marginTop: 10,
+  letterhead: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    fontSize: 8.5,
+    alignItems: "flex-start",
   },
-  detail: { width: "48%", flexDirection: "row", justifyContent: "space-between", marginBottom: 3 },
-  detailLabel: { color: "#475569" },
-  detailValue: { borderBottom: "0.5pt solid #94a3b8", minWidth: "55%", textAlign: "right" },
-  notice: {
-    marginTop: 8,
-    fontSize: 7.5,
-    color: "#334155",
+  logo: { height: 46, width: 46 * LOGO_ASPECT, marginRight: 6 },
+  letterheadText: {
+    flex: 1,
     textAlign: "center",
-    lineHeight: 1.3,
+    fontSize: 10.5,
+    lineHeight: 1.25,
   },
-  sectionTitle: { fontSize: 9, fontWeight: "bold", textTransform: "uppercase", marginTop: 12, marginBottom: 3 },
-  tableRow: { flexDirection: "row", border: "0.5pt solid #0f172a" },
-  tableHeaderRow: { flexDirection: "row", border: "0.5pt solid #0f172a", backgroundColor: "#f1f5f9" },
-  th: {
-    fontSize: 8,
+  schoolName: { fontSize: 11.5, fontWeight: "bold" },
+  titleBlock: { marginTop: 8, textAlign: "center" },
+  title: { fontSize: 13, fontWeight: "bold", letterSpacing: 0.4 },
+  schoolYear: { marginTop: 2, fontSize: 10 },
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginTop: 9,
+  },
+  fieldLabel: { fontSize: 10 },
+  fieldLine: {
+    borderBottom: "0.7pt solid #111111",
+    height: 13,
+    justifyContent: "center",
+  },
+  fieldValue: { fontSize: 10, textAlign: "center" },
+
+  intro: { marginTop: 10, fontSize: 9.5, lineHeight: 1.35 },
+  salutation: { fontSize: 10.5, marginTop: 10 },
+
+  sectionTitle: {
+    fontSize: 10,
     fontWeight: "bold",
-    padding: 2,
+    textTransform: "uppercase",
     textAlign: "center",
-    borderRight: "0.5pt solid #0f172a",
-  },
-  td: {
-    fontSize: 8,
-    padding: 2,
-    textAlign: "center",
-    borderRight: "0.5pt solid #0f172a",
-  },
-  tdLeft: { fontSize: 8, padding: 2, textAlign: "left", borderRight: "0.5pt solid #0f172a" },
-  lastCol: { borderRight: "none" },
-  signatures: {
-    marginTop: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 24,
-  },
-  sigCol: { width: "48%" },
-  sigLine: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    fontSize: 7,
-    color: "#475569",
-    marginBottom: 5,
-  },
-  sigBlank: { borderTop: "0.5pt solid #94a3b8", width: "70%" },
-  certs: { marginTop: 12, borderTop: "0.5pt solid #0f172a", paddingTop: 6 },
-  certLine: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    fontSize: 8,
+    marginTop: 11,
     marginBottom: 4,
   },
-  certBlank: { borderTop: "0.5pt solid #94a3b8", width: "55%" },
-  names: {
+  subSectionTitle: {
+    fontSize: 9.5,
+    fontWeight: "bold",
+    marginTop: 12,
+  },
+
+  tableRow: { flexDirection: "row", border: "0.6pt solid #111111" },
+  th: {
+    fontSize: 9,
+    fontWeight: "bold",
+    paddingVertical: 2.5,
+    paddingHorizontal: 3,
+    textAlign: "center",
+    borderRight: "0.6pt solid #111111",
+  },
+  td: {
+    fontSize: 9,
+    paddingVertical: 2,
+    paddingHorizontal: 3,
+    textAlign: "center",
+    borderRight: "0.6pt solid #111111",
+  },
+  tdLeft: { fontSize: 9, textAlign: "left", paddingVertical: 2, paddingHorizontal: 3, borderRight: "0.6pt solid #111111" },
+  lastCol: { borderRight: "none" },
+  emptyRow: {
+    border: "0.6pt solid #111111",
+    padding: 8,
+    fontSize: 9,
+    color: "#444444",
+    textAlign: "center",
+  },
+  emptyBox: {
+    marginTop: 12,
+    border: "0.6pt solid #111111",
+    padding: 12,
+    fontSize: 9.5,
+    textAlign: "center",
+  },
+
+  certText: { fontSize: 9.5, lineHeight: 1.35 },
+  certField: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginTop: 8,
+  },
+  approved: { fontSize: 10, marginTop: 10 },
+  sigRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 10,
-    textAlign: "center",
-    fontSize: 8.5,
+    marginTop: 2,
   },
-  nameCol: { width: "48%" },
-  nameLine: { borderTop: "0.5pt solid #64748b", paddingTop: 2, fontWeight: "bold" },
-  nameRole: { fontSize: 7, color: "#64748b" },
-  empty: {
-    marginTop: 16,
-    border: "0.5pt solid #cbd5e1",
-    padding: 12,
-    fontSize: 8,
-    color: "#64748b",
+  sigName: {
+    fontSize: 10,
+    fontWeight: "bold",
     textAlign: "center",
   },
+  sigRole: { fontSize: 8.5, textAlign: "center" },
 });
 
 const fmtGrade = (n: number | null | undefined) => (n == null ? "" : String(n));
-const orBlank = (s: string | null | undefined) => (s ? s : "\u00a0");
+const orBlank = (s: string | null | undefined) => s ?? "";
 
-function Detail({ label, value }: { label: string; value: string }) {
+/* -------------------------------------------------------------------------- */
+/*  Building blocks                                                           */
+/* -------------------------------------------------------------------------- */
+
+/** "Label: ______value______" with the value written on the ruled line. */
+function FieldValue({
+  label,
+  value,
+  width,
+}: {
+  label: string;
+  value: string;
+  width: string;
+}) {
   return (
-    <View style={styles.detail}>
-      <Text style={styles.detailLabel}>{label}:</Text>
-      <Text style={styles.detailValue}>{orBlank(value)}</Text>
+    <>
+      <Text style={styles.fieldLabel}>{label}: </Text>
+      <View style={[styles.fieldLine, { width }]}>
+        <Text style={styles.fieldValue}>{value}</Text>
+      </View>
+    </>
+  );
+}
+
+const GRADE_COL_WIDTHS = ["36%", "9%", "9%", "9%", "15%", "22%"];
+
+function GradeTableHeader() {
+  return (
+    <View>
+      {/* Grouped header: Learning Areas | TERM (1 2 3) | Final Grade | Remarks */}
+      <View style={[styles.tableRow, { borderBottom: "none" }]}>
+        <Text style={[styles.th, { width: GRADE_COL_WIDTHS[0], height: 17 }]}>Learning Areas</Text>
+        <Text
+          style={[
+            styles.th,
+            {
+              width: `${27}%`,
+              height: 17,
+            },
+          ]}
+        >
+          TERM
+        </Text>
+        <Text style={[styles.th, { width: GRADE_COL_WIDTHS[4], height: 17 }]}>Final Grade</Text>
+        <Text style={[styles.th, { width: GRADE_COL_WIDTHS[5], height: 17, borderRight: "none" }]}>Remarks</Text>
+      </View>
+      {/* Sub-header row: term numbers under the TERM group */}
+      <View style={[styles.tableRow, { borderTop: "none" }]}>
+        <Text style={[styles.th, { width: GRADE_COL_WIDTHS[0], fontSize: 8, paddingTop: 0 }]}> </Text>
+        {["1", "2", "3"].map((t, i) => (
+          <Text
+            key={t}
+            style={[styles.th, { width: GRADE_COL_WIDTHS[i + 1], fontSize: 8, paddingTop: 0 }]}
+          >
+            {t}
+          </Text>
+        ))}
+        <Text style={[styles.th, { width: GRADE_COL_WIDTHS[4], fontSize: 8, paddingTop: 0 }]}> </Text>
+        <Text style={[styles.th, { width: GRADE_COL_WIDTHS[5], fontSize: 8, paddingTop: 0, borderRight: "none" }]}> </Text>
+      </View>
     </View>
   );
 }
 
-const GRADE_COL_WIDTHS = ["38%", "9%", "9%", "9%", "16%", "19%"];
-
-function GradeTable({ subjects, generalAverage }: { subjects: ReportCardData["subjects"]; generalAverage: number | null }) {
-  const headers = ["Learning Areas", "Term 1", "Term 2", "Term 3", "Final Grade", "Remarks"];
+function GradeTable({
+  subjects,
+  generalAverage,
+}: {
+  subjects: ReportCardData["subjects"];
+  generalAverage: number | null;
+}) {
   return (
     <View>
-      <View style={styles.tableHeaderRow}>
-        {headers.map((h, i) => (
-          <Text
-            key={h}
-            style={[styles.th, { width: GRADE_COL_WIDTHS[i] }, i === headers.length - 1 ? styles.lastCol : undefined]}
-          >
-            {h}
-          </Text>
-        ))}
-      </View>
-
+      <GradeTableHeader />
       {subjects.length === 0 ? (
-        <View style={styles.tableRow}>
-          <Text style={[styles.tdLeft, { width: "100%" }]}>No grades recorded for this learner yet.</Text>
+        <View style={styles.emptyRow}>
+          <Text>No grades recorded for this learner yet.</Text>
         </View>
       ) : (
         <>
           {subjects.map((s) => (
-            <View key={s.subjectCode} style={styles.tableRow}>
+            <View key={s.subjectCode} style={styles.tableRow} wrap={false}>
               <Text style={[styles.tdLeft, { width: GRADE_COL_WIDTHS[0] }]}>{s.subjectName}</Text>
               {[s.termGrades[0], s.termGrades[1], s.termGrades[2]].map((g, i) => (
                 <Text key={i} style={[styles.td, { width: GRADE_COL_WIDTHS[i + 1] }]}>
@@ -149,19 +247,16 @@ function GradeTable({ subjects, generalAverage }: { subjects: ReportCardData["su
                 </Text>
               ))}
               <Text style={[styles.td, { width: GRADE_COL_WIDTHS[4] }]}>{fmtGrade(s.finalGrade)}</Text>
-              <Text style={[styles.td, { width: GRADE_COL_WIDTHS[5] }, styles.lastCol]}>
-                {s.remark ?? ""}
-              </Text>
+              <Text style={[styles.td, { width: GRADE_COL_WIDTHS[5] }, styles.lastCol]}>{s.remark ?? ""}</Text>
             </View>
           ))}
-          <View style={styles.tableRow}>
-            <Text style={[styles.tdLeft, { width: GRADE_COL_WIDTHS[0], fontWeight: "bold" }]}>
-              General Average
-            </Text>
-            <Text style={[styles.td, { width: GRADE_COL_WIDTHS[1], fontWeight: "bold" }]}>
-              {fmtGrade(generalAverage)}
-            </Text>
-            <Text style={[styles.td, styles.lastCol, { width: "53%" }]} />
+          <View style={styles.tableRow} wrap={false}>
+            <Text style={[styles.tdLeft, { width: GRADE_COL_WIDTHS[0], fontWeight: "bold" }]}>General Average</Text>
+            {[0, 1, 2].map((i) => (
+              <Text key={i} style={[styles.td, { width: GRADE_COL_WIDTHS[i + 1] }]} />
+            ))}
+            <Text style={[styles.td, { width: GRADE_COL_WIDTHS[4], fontWeight: "bold" }]}>{fmtGrade(generalAverage)}</Text>
+            <Text style={[styles.td, { width: GRADE_COL_WIDTHS[5] }, styles.lastCol]} />
           </View>
         </>
       )}
@@ -169,29 +264,30 @@ function GradeTable({ subjects, generalAverage }: { subjects: ReportCardData["su
   );
 }
 
-const DESCRIPTOR_SCALE: [string, string, string][] = [
-  ["90 – 100", "Advancing", "Passed"],
-  ["80 – 89", "Benchmarking", "Passed"],
-  ["75 – 79", "Connecting", "Passed"],
-  ["65 – 74", "Developing", "Failed"],
-  ["0 – 64", "Emerging", "Failed"],
+const GRADING_SCALE: [string, string, string][] = [
+  ["90-100", "Advancing", "Passed"],
+  ["80-89", "Benchmarking", "Passed"],
+  ["75-79", "Connecting", "Passed"],
+  ["65-74", "Developing", "Failed"],
+  ["0-64", "Emerging", "Failed"],
 ];
 
-function DescriptorScale() {
+function GradingScale() {
+  const widths = ["20%", "40%", "40%"];
   return (
     <View>
-      <View style={styles.tableHeaderRow}>
-        {["Grade Level Range", "Descriptor", "Remarks"].map((h) => (
-          <Text key={h} style={[styles.th, { width: "33.33%" }]}>
+      <View style={styles.tableRow}>
+        {["Grading Scale", "Description", "Remarks"].map((h, i) => (
+          <Text key={h} style={[styles.th, { width: widths[i] }, i === 2 ? styles.lastCol : undefined]}>
             {h}
           </Text>
         ))}
       </View>
-      {DESCRIPTOR_SCALE.map(([range, descriptor, remark]) => (
-        <View key={range} style={styles.tableRow}>
-          <Text style={[styles.td, { width: "33.33%" }]}>{range}</Text>
-          <Text style={[styles.td, { width: "33.33%" }]}>{descriptor}</Text>
-          <Text style={[styles.td, styles.lastCol, { width: "33.33%" }]}>{remark}</Text>
+      {GRADING_SCALE.map(([range, descriptor, remark]) => (
+        <View key={range} style={styles.tableRow} wrap={false}>
+          <Text style={[styles.td, { width: widths[0] }]}>{range}</Text>
+          <Text style={[styles.td, { width: widths[1] }]}>{descriptor}</Text>
+          <Text style={[styles.td, styles.lastCol, { width: widths[2] }]}>{remark}</Text>
         </View>
       ))}
     </View>
@@ -205,145 +301,206 @@ function AttendanceTable({ data }: { data: ReportCardData }) {
     { label: "No. of Days Present", key: "present", total: data.attendance.totalPresent },
     { label: "No. of Days Absent", key: "absent", total: data.attendance.totalAbsent },
   ];
-  const monthWidth = `${(62 / (REPORT_CARD_MONTHS.length + 1)).toFixed(2)}%`;
+  const labelWidth = "18%";
+  const monthWidth = `${((82 - 12) / 11).toFixed(2)}%`;
+  const totalWidth = "12%";
 
   return (
     <View>
-      <View style={styles.tableHeaderRow}>
-        <Text style={[styles.th, { width: "24%", textAlign: "left" }]}>Month</Text>
+      <View style={styles.tableRow}>
+        <Text style={[styles.th, { width: labelWidth, textAlign: "left", borderRight: "none" }]}>Month</Text>
         {REPORT_CARD_MONTHS.map((m) => (
-          <Text key={m} style={[styles.th, { width: monthWidth }]}>
+          <Text key={m} style={[styles.th, { width: monthWidth, borderRight: "none" }]}>
             {m}
           </Text>
         ))}
-        <Text style={[styles.th, styles.lastCol, { width: "14%" }]}>Total</Text>
+        <Text style={[styles.th, { width: totalWidth, borderLeft: "0.6pt solid #111111" }]}>Total</Text>
       </View>
       {rows.map((r) => (
-        <View key={r.key} style={styles.tableRow}>
-          <Text style={[styles.tdLeft, { width: "24%", fontSize: 6.5 }]}>{r.label}</Text>
+        <View key={r.key} style={styles.tableRow} wrap={false}>
+          <Text style={[styles.tdLeft, { width: labelWidth, fontSize: 7.5, borderRight: "none" }]}>{r.label}</Text>
           {REPORT_CARD_MONTHS.map((m) => {
             const v = byKey.get(m);
             return (
-              <Text key={m} style={[styles.td, { width: monthWidth }]}>
-                {v ? fmtGrade(v[r.key] as number) : ""}
+              <Text key={m} style={[styles.td, { width: monthWidth, borderRight: "none" }]}>
+                {v && (v.schoolDays > 0 || v.present > 0 || v.absent > 0) ? fmtGrade(v[r.key]) : ""}
               </Text>
             );
           })}
-          <Text style={[styles.td, styles.lastCol, { width: "14%" }]}>{fmtGrade(r.total)}</Text>
+          <Text style={[styles.td, { width: totalWidth, borderLeft: "0.6pt solid #111111" }]}>{fmtGrade(r.total)}</Text>
         </View>
       ))}
     </View>
   );
 }
 
-const reportCardDoc = (data: ReportCardData) => (
-  <Document title={`Learner's Performance Report — ${data.student.fullName}`}>
-    <Page size="A4" style={styles.page}>
-      {/* Government header (CARD.docx) */}
-      <View style={styles.header}>
-        <Text>Republic of the Philippines</Text>
-        <Text style={{ fontWeight: "bold" }}>DEPARTMENT OF EDUCATION</Text>
-        <Text>Region V</Text>
-        <Text style={{ fontWeight: "bold" }}>SCHOOLS DIVISION OF SORSOGON</Text>
-        <Text style={{ fontWeight: "bold", marginTop: 2 }}>{SCHOOL.name}</Text>
-        <Text>{SCHOOL.address}</Text>
-        <Text style={styles.title}>LEARNER&apos;S PERFORMANCE REPORT</Text>
-        <Text style={styles.schoolYear}>{data.schoolYear ? `School Year ${data.schoolYear}` : "School Year —"}</Text>
-      </View>
+/** "Term 1 ______  Term 2 ______  Term 3 ______" (blank ruled lines). */
+function TermSignatureRow() {
+  return (
+    <View style={{ flexDirection: "row", marginTop: 4, gap: 14 }}>
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={{ flex: 1, flexDirection: "row", alignItems: "flex-end" }}>
+          <Text style={{ fontSize: 9 }}>Term {i} </Text>
+          <View style={[styles.fieldLine, { flex: 1, width: "auto" }]} />
+        </View>
+      ))}
+    </View>
+  );
+}
 
-      {/* Learner details */}
-      <View style={styles.details}>
-        <Detail label="Name" value={data.student.fullName || "—"} />
-        <Detail label="Age" value={fmtGrade(data.student.age)} />
-        <Detail label="Sex" value={data.student.sex ? data.student.sex.charAt(0).toUpperCase() + data.student.sex.slice(1) : "—"} />
-        <Detail
-          label="LRN / Student No."
-          value={data.student.lrn || data.student.studentNumber}
-        />
-        <Detail
-          label="Grade & Section"
-          value={data.gradeLevel ? `${data.gradeLevel}${data.section ? ` — ${data.section}` : ""}` : "—"}
-        />
-        <Detail label="Track" value="not tracked in the system" />
-      </View>
+function SignatureBlock({
+  name,
+  role,
+  width,
+}: {
+  name: string;
+  role: string;
+  width: string;
+}) {
+  return (
+    <View style={{ width, alignItems: "center" }}>
+      <Text style={styles.sigName}>{orBlank(name) || "\u00a0"}</Text>
+      <Text style={styles.sigRole}>{role}</Text>
+    </View>
+  );
+}
 
-      {!data.hasEnrollment ? (
-        <View style={styles.empty}>
-          <Text>
-            No enrollment record found for this learner
-            {data.schoolYear ? ` in School Year ${data.schoolYear}` : ""}. No academic or
-            attendance data is shown until an enrollment exists.
+/* -------------------------------------------------------------------------- */
+/*  Document                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const reportCardDoc = (data: ReportCardData) => {
+  const logo = getLogoSrc();
+  const capitalize = (s: string | null | undefined) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+
+  return (
+    <Document title={`Learner's Performance Report — ${data.student.fullName}`}>
+      <Page size="A4" style={styles.page}>
+        {/* Official letterhead — school seal + DepEd hierarchy (CARD.docx) */}
+        <View style={styles.letterhead}>
+          {logo ? (
+            // @react-pdf's Image is not an HTML <img>; the jsx-a11y/alt-text
+            // rule does not apply (ImageProps has no alt prop at all).
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image src={`data:image/png;base64,${logo}`} style={styles.logo} />
+          ) : null}
+          <View style={styles.letterheadText}>
+            <Text>Republic of the Philippines</Text>
+            <Text>Department of Education</Text>
+            <Text>Region V</Text>
+            <Text>SCHOOLS DIVISION OF SORSOGON</Text>
+            <Text style={styles.schoolName}>{SCHOOL.name.toUpperCase()}</Text>
+            <Text>{SCHOOL.address}</Text>
+          </View>
+        </View>
+
+        {/* Report title */}
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>LEARNER&apos;S PERFORMANCE REPORT</Text>
+          <Text style={styles.schoolYear}>
+            School Year {data.schoolYear || "—"}
           </Text>
         </View>
-      ) : (
-        <>
-          <Text style={styles.notice}>
-            Dear Parents, this report serves as the school&apos;s official record of the
-            learner&apos;s comparative progress and achievement in the learning areas and the
-            values demonstrated during the grading period(s). This will serve as basis in
-            monitoring the learner&apos;s development in school.
-          </Text>
 
-          <Text style={styles.sectionTitle}>Learning Progress and Achievement</Text>
-          <GradeTable subjects={data.subjects} generalAverage={data.generalAverage} />
+        {/* Learner information — ruled fields (CARD.docx) */}
+        <View style={styles.infoRow}>
+          <FieldValue label="Name" width="43%" value={data.student.fullName || ""} />
+          <FieldValue label="Age" width="9%" value={fmtGrade(data.student.age)} />
+          <FieldValue label="Sex" width="12%" value={capitalize(data.student.sex)} />
+        </View>
+        <View style={styles.infoRow}>
+          <FieldValue label="LRN" width="38%" value={orBlank(data.student.lrn)} />
+          <FieldValue
+            label="Grade & Section"
+            width="37%"
+            value={
+              data.gradeLevel
+                ? `${data.gradeLevel}${data.section ? ` - ${data.section}` : ""}`
+                : ""
+            }
+          />
+        </View>
+        <View style={styles.infoRow}>
+          {/* Track/strand is not stored anywhere in the system — ruled blank
+              line, as on the printed form (no invented values). */}
+          <FieldValue label="Track" width="55%" value="" />
+        </View>
 
-          <Text style={styles.sectionTitle}>Learner&apos;s Performance Descriptor</Text>
-          <DescriptorScale />
-
-          <Text style={styles.sectionTitle}>Attendance Report</Text>
-          <AttendanceTable data={data} />
-
-          <View style={styles.signatures}>
-            <View style={styles.sigCol}>
-              <Text style={styles.sectionTitle}>Teacher&apos;s Remarks</Text>
-              {[1, 2, 3].map((i) => (
-                <View key={i} style={styles.sigLine}>
-                  <Text>Term {i}</Text>
-                  <View style={styles.sigBlank} />
-                </View>
-              ))}
-            </View>
-            <View style={styles.sigCol}>
-              <Text style={styles.sectionTitle}>Parents&apos;/Guardian&apos;s Signature</Text>
-              {[1, 2, 3].map((i) => (
-                <View key={i} style={styles.sigLine}>
-                  <Text>Term {i}</Text>
-                  <View style={styles.sigBlank} />
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.certs}>
-            <Text style={{ fontWeight: "bold", textTransform: "uppercase", fontSize: 8.5 }}>
-              Certificate of Transfer (if applicable)
+        {!data.hasEnrollment ? (
+          <View style={styles.emptyBox}>
+            <Text>
+              No enrollment record found for this learner
+              {data.schoolYear ? ` in School Year ${data.schoolYear}` : ""}. No academic or
+              attendance data is shown until an enrollment exists.
             </Text>
-            <View style={{ marginTop: 6 }}>
-              {["Admitted to Grade", "Eligible for Admission to Grade", "Cancelled — Eligibility to Transfer (Admitted in)", "Date"].map(
-                (label) => (
-                  <View key={label} style={styles.certLine}>
-                    <Text>{label}:</Text>
-                    <View style={styles.certBlank} />
-                  </View>
-                ),
-              )}
-            </View>
-            <View style={styles.names}>
-              <View style={styles.nameCol}>
-                <Text style={styles.nameLine}>{orBlank(data.adviser)}</Text>
-                <Text style={styles.nameRole}>Adviser</Text>
-              </View>
-              <View style={styles.nameCol}>
-                <Text style={styles.nameLine}>{orBlank(data.principal)}</Text>
-                <Text style={styles.nameRole}>Principal</Text>
-              </View>
-            </View>
           </View>
-        </>
-      )}
-    </Page>
-  </Document>
-);
+        ) : (
+          <>
+            {/* Note to parents (CARD.docx wording) */}
+            <Text style={styles.salutation}>Dear Parents,</Text>
+            <Text style={styles.intro}>
+              This Performance Report shows the ability and progress your child has made in the
+              different learning areas as well as his/her core values. The school welcomes you
+              should you desire to know more about your child&apos;s progress.
+            </Text>
+
+            {/* Learning Progress and Achievement */}
+            <Text style={styles.sectionTitle}>Learning Progress and Achievement</Text>
+            <GradeTable subjects={data.subjects} generalAverage={data.generalAverage} />
+
+            {/* Performance descriptors / grading scale */}
+            <Text style={styles.sectionTitle}>Performance Descriptors</Text>
+            <GradingScale />
+
+            {/* Attendance record */}
+            <Text style={styles.sectionTitle}>Attendance Record</Text>
+            <AttendanceTable data={data} />
+
+            {/* Teacher's comments and parent signature (no stored values — ruled lines) */}
+            <Text style={styles.subSectionTitle}>TEACHER&apos;S COMMENTS/REMARKS</Text>
+            <TermSignatureRow />
+            <Text style={styles.subSectionTitle}>PARENTS/GUARDIAN&apos;S SIGNATURE</Text>
+            <TermSignatureRow />
+
+            {/* Certificate of transfer — kept together across page breaks */}
+            <View wrap={false}>
+              <Text style={styles.subSectionTitle}>CERTIFICATE OF TRANSFER</Text>
+              <Text style={styles.certText}>
+                This is to certify that the above-named learner has satisfactorily completed the
+                requirements for the grade level indicated.
+              </Text>
+              <View style={styles.certField}>
+                <FieldValue label="Admitted to Grade" width="34%" value="" />
+              </View>
+              <View style={styles.certField}>
+                <FieldValue label="Eligible for Admission to Grade" width="37%" value="" />
+              </View>
+              <Text style={styles.approved}>Approved:</Text>
+              <View style={styles.sigRow}>
+                <SignatureBlock name={data.principal ?? ""} role="Secondary School Principal III" width="45%" />
+                <SignatureBlock name={data.adviser ?? ""} role="Adviser" width="45%" />
+              </View>
+            </View>
+
+            {/* Cancellation of eligibility to transfer — kept together across page breaks */}
+            <View wrap={false}>
+              <Text style={styles.subSectionTitle}>CANCELLATION OF ELIGIBILITY TO TRANSFER</Text>
+              <View style={{ flexDirection: "row", alignItems: "flex-end", marginTop: 6 }}>
+                <FieldValue label="Admitted in" width="28%" value="" />
+                <Text style={styles.fieldLabel}>{"    "}</Text>
+                <FieldValue label="Date" width="30%" value="" />
+              </View>
+              <View style={[styles.sigRow, { justifyContent: "flex-start" }]}>
+                <SignatureBlock name={data.principal ?? ""} role="Secondary School Principal III" width="45%" />
+              </View>
+            </View>
+          </>
+        )}
+      </Page>
+    </Document>
+  );
+};
 
 export async function renderReportCardPdf(data: ReportCardData): Promise<Uint8Array> {
   return renderToBuffer(reportCardDoc(data));
