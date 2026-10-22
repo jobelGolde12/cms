@@ -10,6 +10,7 @@ import { SCHOOL } from "@/lib/constants";
 import { buttonStyles } from "@/components/ui/button";
 import { PrintButton } from "@/components/ui/print-button";
 import schoolLogo from "../../../../../../../public/logo.png";
+import depedLogo from "../../../../../../../public/deped_logo_kagawaran_ng_edukasyon.jpg";
 
 export const metadata = { title: "Student Card" };
 
@@ -89,15 +90,15 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
           className="px-[15mm] pb-[14mm] pt-[10mm] text-[10.5px] leading-snug text-neutral-900"
           style={{ fontFamily: TIMES }}
         >
-          {/* Official letterhead */}
-          <header className="flex items-start">
+          {/* Official letterhead — left DepEd logo, center info, right school logo */}
+          <header className="flex items-start gap-4">
             <Image
-              src={schoolLogo}
-              alt="School seal"
-              width={62}
-              height={42}
-              className="mr-1.5 shrink-0"
-              style={{ width: 62, height: 42, objectFit: "contain" }}
+              src={depedLogo}
+              alt="DepEd Logo"
+              width={90}
+              height={90}
+              className="shrink-0"
+              style={{ width: 90, height: 90, objectFit: "contain" }}
             />
             <div className="min-w-0 flex-1 text-center leading-tight">
               <p>Republic of the Philippines</p>
@@ -107,6 +108,14 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
               <p className="text-[11.5px] font-bold">{SCHOOL.name.toUpperCase()}</p>
               <p>{SCHOOL.address}</p>
             </div>
+            <Image
+              src={schoolLogo}
+              alt="School seal"
+              width={90}
+              height={90}
+              className="shrink-0"
+              style={{ width: 90, height: 90, objectFit: "contain" }}
+            />
           </header>
 
           {/* Document title */}
