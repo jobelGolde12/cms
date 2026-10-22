@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { Card, CardHeader, CardBody } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SCHOOL } from "@/lib/constants";
+import { PrivacyDocumentationLayout } from "./PrivacyDocumentationLayout";
 
-/**
- * Effective date / version of this Privacy Policy document.
- * Update ONLY when the policy text is materially revised and republished.
- */
 const POLICY_VERSION = "1.0";
 const POLICY_EFFECTIVE_DATE = "December 10, 2026";
 const POLICY_LAST_UPDATED = "December 10, 2026";
@@ -27,7 +23,7 @@ const sections: PrivacySection[] = [
     id: "introduction",
     heading: "1. Introduction",
     paragraphs: [
-      "This Privacy Policy explains how the Sta. Magdalena NHS Records Management System (the \"System\") collects, uses, stores, and protects personal information. The System is operated by Sta. Magdalena National High School, Sorsogon, Philippines (the \"School\").",
+      'This Privacy Policy explains how the Sta. Magdalena NHS Records Management System (the "System") collects, uses, stores, and protects personal information. The System is operated by Sta. Magdalena National High School, Sorsogon, Philippines (the "School").',
       "This document is written in plain language. It describes the actual practices of the System as implemented. If there is any difference between this Policy and the System's behavior, the System's behavior governs.",
     ],
   },
@@ -166,7 +162,7 @@ const sections: PrivacySection[] = [
         items: [
           "Purpose: maintain an authenticated session after sign-in.",
           "Classification: strictly necessary (essential).",
-          "Duration: the cookie expires 8 hours after the sign-in, or after 7 days if the user selected the \"Remember me\" option.",
+          'Duration: the cookie expires 8 hours after the sign-in, or after 7 days if the user selected the "Remember me" option.',
           "Security: the cookie is set with the HttpOnly flag (blocked from JavaScript access), the SameSite attribute to help prevent cross-site request forgery, and the Secure flag in production environments.",
         ],
       },
@@ -411,67 +407,31 @@ export default async function PrivacyPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Legal Information"
-        title="Privacy Policy"
-        description={
-          "How " +
-          SCHOOL.name +
-          " handles personal information in the Records Management System."
-        }
-      />
-
-      <Card>
-        <CardHeader
+    <div className="min-h-full">
+      {/* Page Header */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-4">
+        <PageHeader
+          eyebrow="Legal Information"
           title="Privacy Policy"
           description={
-            "Version " +
-            POLICY_VERSION +
-            " — Effective " +
-            POLICY_EFFECTIVE_DATE +
-            " — Last updated " +
-            POLICY_LAST_UPDATED
+            "How " +
+            SCHOOL.name +
+            " handles personal information in the Records Management System."
           }
         />
-        <CardBody className="space-y-6">
-          {sections.map((section) => (
-            <section key={section.id} id={section.id} className="scroll-mt-6">
-              <h2 className="text-lg font-semibold text-brand-900">
-                {section.heading}
-              </h2>
-              {section.paragraphs.map((paragraph, idx) => (
-                <p key={idx} className="text-sm text-brand-800 leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
-              {section.subSections &&
-                section.subSections.map((subSection) => (
-                  <div key={subSection.heading} className="mt-4 space-y-2">
-                    <h3 className="text-base font-medium text-brand-900">
-                      {subSection.heading}
-                    </h3>
-                    <ul className="list-inside list-disc space-y-1.5 pl-1">
-                      {subSection.items.map((item, idx) => (
-                        <li key={idx} className="text-sm text-brand-800 leading-relaxed">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-            </section>
-          ))}
-        </CardBody>
-      </Card>
+      </div>
 
-      <div className="text-xs text-[#64748B]">
-        <p>
-          This policy is a living document. For the current version, effective
-          date, and last-updated date, see the policy header above. This document
-          describes the system&apos;s technical and operational practices as
-          implemented; it is not a substitute for professional legal review.
-        </p>
+      {/* Main documentation layout */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-12 pt-6">
+        <PrivacyDocumentationLayout
+          sections={sections}
+          metadata={{
+            version: POLICY_VERSION,
+            effectiveDate: POLICY_EFFECTIVE_DATE,
+            lastUpdatedDate: POLICY_LAST_UPDATED,
+            title: "Privacy Policy",
+          }}
+        />
       </div>
     </div>
   );

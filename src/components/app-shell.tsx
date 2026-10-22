@@ -69,7 +69,7 @@ export default async function AppShell({
           {/* Brand mark — single source of truth (see components/logo.tsx). */}
           <Logo size="lg" asLink priority />
           <div className="min-w-0 leading-tight">
-            <div className="truncate text-xs font-bold uppercase tracking-wide text-white">
+            <div className="text-xs font-bold uppercase tracking-wide text-white whitespace-nowrap">
               {SCHOOL.shortName}
             </div>
             <div className="text-[11px] font-medium text-[#AFC4FF]">Records Management</div>
