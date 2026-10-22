@@ -6,7 +6,7 @@
 
 export const SCHOOL = {
   name: "Sta. Magdalena National High School",
-  shortName: "Sta. Magdalena NHS",
+  shortName: "Sta. Magdalena National High School",
   address: "Sta. Magdalena, Sorsogon",
   province: "Province of Sorsogon",
   region: "Region V — Bicol",
