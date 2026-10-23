@@ -39,15 +39,15 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Optimize heavy imports (tree-shakeable libs)
+  // @react-pdf/renderer must run from node_modules on the server: bundling it
+  // (Turbopack/webpack) breaks its internal reconciler/scheduler ESM interop
+  // and every PDF route fails with "Cannot read properties of undefined
+  // (reading 'S')" inside createRenderer. Also drop the broken
+  // optimizePackageImports entry — it forces bundling and was the trigger.
+  serverExternalPackages: ["@react-pdf/renderer"],
+
   experimental: {
-    optimizePackageImports: [
-      "lucide-react",
-      "@react-pdf/renderer",
-      "recharts",
-      "lodash",
-      "moment",
-    ],
+    optimizePackageImports: ["lucide-react", "recharts", "lodash", "moment"],
   },
 
   webpack: (config) => {
