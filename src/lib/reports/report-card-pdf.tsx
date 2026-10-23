@@ -33,8 +33,7 @@ import { SCHOOL } from "@/lib/constants";
 
 const FONT = "Times-Roman";
 
-/** School seal asset (public/logo.png, 1516x1038) at its natural ratio. */
-const LOGO_ASPECT = 1516 / 1038;
+/** School seal asset (public/logo.png, 512x512 PNG). */
 let logoSrc: string | null = null;
 function getLogoSrc(): string | null {
   if (logoSrc !== null) return logoSrc;

@@ -27,6 +27,7 @@ const check = (ok: boolean, label: string, info: string) => {
 };
 
 try {
+  await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(TOKEN)));
   await db.insert(sessions).values({
     id: crypto.randomUUID(),
     tokenHash: hashToken(TOKEN),

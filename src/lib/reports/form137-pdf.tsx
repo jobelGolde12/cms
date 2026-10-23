@@ -31,8 +31,8 @@ import { formatDate } from "@/lib/utils";
 
 const FONT = "Times-Roman";
 
-/** School seal asset (public/logo.png, 1516x1038) at its natural ratio. */
-const LOGO_ASPECT = 1516 / 1038;
+/** School seal asset (public/logo.png, 512x512 PNG) — square, so width = height. */
+const LOGO_ASPECT = 1;
 let logoSrc: string | null = null;
 function getLogoSrc(): string | null {
   if (logoSrc !== null) return logoSrc;
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
   },
-  logo: { height: 40, width: 40 * LOGO_ASPECT, marginRight: 6 },
+  logo: { height: 40, width: 40 * LOGO_ASPECT, marginRight: 6, objectFit: "contain" },
   letterheadText: {
     flex: 1,
     textAlign: "center",
