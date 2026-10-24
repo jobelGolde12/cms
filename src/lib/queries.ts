@@ -1254,21 +1254,82 @@ export type PerformanceOverview = {
   failingCounts: { subject: string; below75: number; total: number }[];
 };
 
+export type PerformanceFilters = {
+  /** Restrict aggregates to one grading period (by id). */
+  periodId?: string;
+  /** Restrict aggregates to one grade level (by id). */
+  gradeLevelId?: string;
+  /** Restrict aggregates to one subject (by id) or match it via `q`. */
+  subjectId?: string;
+  /** Case-insensitive subject name/code contains search. */
+  q?: string;
+};
+
+/**
+ * Pure WHERE builder for studentGrades-rooted performance aggregate queries
+ * (subject averages and below-75 counts) within a school year. Exported so
+ * each predicate can be unit-tested offline with drizzle's SQLite dialect.
+ * Renders to `undefined` when no filter is active.
+ */
+export function performanceFilters(filters: PerformanceFilters): SQL | undefined {
+  const conditions: SQL[] = [];
+
+  // Search across subject name and code (and, when set, pin to one subject).
+  if (filters.subjectId) {
+    conditions.push(eq(studentGrades.subjectId, filters.subjectId));
+  } else if (filters.q) {
+    const needle = `%${filters.q}%`;
+    conditions.push(
+      sql`(${subjects.name} LIKE ${needle} OR ${subjects.code} LIKE ${needle})`,
+    );
+  }
+
+  if (filters.periodId) {
+    conditions.push(eq(studentGrades.gradingPeriodId, filters.periodId));
+  }
+
+  if (filters.gradeLevelId) {
+    conditions.push(
+      sql`exists (
+        select 1 from ${studentEnrollments}
+        where ${studentEnrollments.id} = ${studentGrades.enrollmentId}
+          and ${studentEnrollments.gradeLevelId} = ${filters.gradeLevelId}
+      )`,
+    );
+  }
+
+  return conditions.length ? and(...conditions) : undefined;
+}
+
 /**
  * School-wide performance aggregates for the current (or given) school year.
  * Averages use SQLite `avg` over recorded grades; attendance rate counts
- * present/late rows over all rows of the year.
+ * present/late rows over all rows of the year. Optional `filters` narrow every
+ * grade breakdown server-side (grading period, grade level, subject).
  */
-export async function performanceOverview(schoolYearId?: string): Promise<PerformanceOverview> {
-  const current = await getCurrentSchoolYear();
-  const yearId = schoolYearId ?? current?.id ?? "";
-  const yearLabel = current?.year ?? null;
+export async function performanceOverview(
+  schoolYearId?: string,
+  filters: PerformanceFilters = {},
+): Promise<PerformanceOverview> {
+  // Resolve the requested year label so an explicit historical year id shows
+  // that cycle's figures rather than silently falling back to the current year.
+  const years = await db
+    .select({ id: schoolYears.id, year: schoolYears.year, isCurrent: schoolYears.isCurrent })
+    .from(schoolYears);
+  const resolved =
+    years.find((y) => y.id === schoolYearId) ??
+    years.find((y) => y.isCurrent) ??
+    years[0];
+  const yearId = resolved?.id ?? "";
+  const yearLabel = resolved?.year ?? null;
 
   const enrollmentScope = db
     .select({ id: studentEnrollments.id })
     .from(studentEnrollments)
     .where(eq(studentEnrollments.schoolYearId, yearId))
     .as("sy_enrollments");
+
+  const filtersCond = performanceFilters(filters);
 
   const [subjectRows, gradeRows, periodRows, attendanceRows, levelRows, failingRows] =
     await Promise.all([
@@ -1285,6 +1346,7 @@ export async function performanceOverview(schoolYearId?: string): Promise<Perfor
           sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
         )
         .innerJoin(subjects, eq(subjects.id, studentGrades.subjectId))
+        .where(and(sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`, filtersCond))
         .groupBy(subjects.id)
         .orderBy(asc(subjects.code)),
 
@@ -1301,6 +1363,16 @@ export async function performanceOverview(schoolYearId?: string): Promise<Perfor
         )
         .innerJoin(studentEnrollments, eq(studentEnrollments.id, studentGrades.enrollmentId))
         .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+        .where(
+          filters.gradeLevelId || filters.periodId || filters.subjectId
+            ? and(
+                sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+                filters.gradeLevelId ? eq(studentEnrollments.gradeLevelId, filters.gradeLevelId) : undefined,
+                filters.periodId ? eq(studentGrades.gradingPeriodId, filters.periodId) : undefined,
+                filters.subjectId ? eq(studentGrades.subjectId, filters.subjectId) : undefined,
+              )
+            : sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+        )
         .groupBy(gradeLevels.id)
         .orderBy(asc(gradeLevels.orderIndex)),
 
@@ -1316,6 +1388,21 @@ export async function performanceOverview(schoolYearId?: string): Promise<Perfor
           sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
         )
         .innerJoin(gradingPeriods, eq(gradingPeriods.id, studentGrades.gradingPeriodId))
+        .where(
+          filters.periodId || filters.gradeLevelId
+            ? and(
+                sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+                filters.periodId ? eq(studentGrades.gradingPeriodId, filters.periodId) : undefined,
+                filters.gradeLevelId
+                  ? sql`exists (
+                      select 1 from ${studentEnrollments}
+                      where ${studentEnrollments.id} = ${studentGrades.enrollmentId}
+                        and ${studentEnrollments.gradeLevelId} = ${filters.gradeLevelId}
+                    )`
+                  : undefined,
+              )
+            : sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+        )
         .groupBy(gradingPeriods.id)
         .orderBy(asc(gradingPeriods.orderIndex)),
 
@@ -1333,6 +1420,14 @@ export async function performanceOverview(schoolYearId?: string): Promise<Perfor
         )
         .innerJoin(studentEnrollments, eq(studentEnrollments.id, attendanceRecords.enrollmentId))
         .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+        .where(
+          filters.gradeLevelId
+            ? and(
+                sql`${enrollmentScope.id} = ${attendanceRecords.enrollmentId}`,
+                eq(studentEnrollments.gradeLevelId, filters.gradeLevelId),
+              )
+            : sql`${enrollmentScope.id} = ${attendanceRecords.enrollmentId}`,
+        )
         .groupBy(gradeLevels.id)
         .orderBy(asc(gradeLevels.orderIndex)),
 
@@ -1359,6 +1454,12 @@ export async function performanceOverview(schoolYearId?: string): Promise<Perfor
           sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
         )
         .innerJoin(subjects, eq(subjects.id, studentGrades.subjectId))
+        .where(
+          and(
+            sql`${enrollmentScope.id} = ${studentGrades.enrollmentId}`,
+            performanceFilters(filters),
+          ),
+        )
         .groupBy(subjects.id)
         .orderBy(asc(subjects.code)),
     ]);

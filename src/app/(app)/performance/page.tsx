@@ -2,11 +2,17 @@ import { redirect } from "next/navigation";
 import { TrendingUp, ClipboardList, CalendarDays, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { performanceOverview } from "@/lib/queries";
+import {
+  performanceOverview,
+  listSchoolYears,
+  listGradeLevels,
+  listGradingPeriods,
+} from "@/lib/queries";
 import { Card, CardHeader, CardBody } from "@/components/ui/card";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/states";
+import { PerformanceFilters, PerformanceActiveFilterChips } from "@/components/performance/performance-filters";
 
 export const metadata = { title: "Academic Performance" };
 
@@ -15,18 +21,46 @@ export const metadata = { title: "Academic Performance" };
  * computed by `performanceOverview()` (subject / grade-level / grading-period
  * averages, attendance rates and below-75 counts) in the standard Panel/Card
  * style used across the app.
+ *
+ * Data is driven by server-side query params so the page can be searched and
+ * filtered (subject search, school year, grade level, grading period) and still
+ * render entirely from the server.
  */
-export default async function PerformancePage() {
+export default async function PerformancePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!hasPermission(user.role, "grades.view")) redirect("/dashboard");
 
-  const data = await performanceOverview();
+  const params = await searchParams;
+  const str = (key: string) =>
+    typeof params[key] === "string" ? (params[key] as string) : "";
+  const q = str("q");
+  const schoolYear = str("schoolYear") || undefined;
+  const gradeLevel = str("gradeLevel") || undefined;
+  const period = str("period") || undefined;
+
+  const [data, schoolYears, gradeLevels, periods] = await Promise.all([
+    performanceOverview(schoolYear, {
+      q: q || undefined,
+      gradeLevelId: gradeLevel || undefined,
+      periodId: period || undefined,
+    }),
+    listSchoolYears(),
+    listGradeLevels(),
+    listGradingPeriods(schoolYear),
+  ]);
 
   const hasGrades = data.subjectAverages.length > 0;
-  const overallCount = data.subjectAverages.reduce((s, r) => s + r.count, 0);
-  const weightedSum = data.subjectAverages.reduce((s, r) => s + r.average * r.count, 0);
-  const overallAverage = overallCount > 0 ? Math.round((weightedSum / overallCount) * 10) / 10 : null;
+  const overallCount = data.subjectAverages.reduce((s: number, r) => s + r.count, 0);
+  const weightedSum = data.subjectAverages.reduce((s: number, r) => s + r.average * r.count, 0);
+  const overallAverage =
+    overallCount > 0 ? Math.round((weightedSum / overallCount) * 10) / 10 : null;
+
+  const hasFilters = Boolean(q || schoolYear || gradeLevel || period);
 
   const chips = [
     {
@@ -51,6 +85,20 @@ export default async function PerformancePage() {
     },
   ];
 
+  const filterValues = {
+    q,
+    schoolYear: schoolYear ?? "",
+    gradeLevel: gradeLevel ?? "",
+    period: period ?? "",
+  };
+
+  const activeFilters: { label: string; value: string }[] = [
+    { label: "Search", value: q },
+    { label: "School Year", value: schoolYear ? data.schoolYear ?? "" : "" },
+    { label: "Grade Level", value: gradeLevels.find((g) => g.id === gradeLevel)?.name ?? "" },
+    { label: "Grading Period", value: periods.find((p) => p.id === period)?.name ?? "" },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -72,11 +120,20 @@ export default async function PerformancePage() {
         }
       />
 
+      {/* ------------------------- Search & filters ------------------------- */}
+      <PerformanceFilters
+        values={filterValues}
+        schoolYears={schoolYears.map((y) => ({ id: y.id, year: y.year }))}
+        gradeLevels={gradeLevels}
+        periods={periods}
+      />
+      <PerformanceActiveFilterChips filters={activeFilters} />
+
       {/* ------------------------- Subject averages ------------------------- */}
       <Card>
         <CardHeader
           title="Subject Averages"
-          description={hasGrades ? "Average grade per subject across the selected school year." : undefined}
+          description={hasGrades ? "Average grade per subject across the selected school year." : hasFilters ? "Average grade per subject — no subjects matched your filters." : undefined}
           icon={<TrendingUp aria-hidden="true" className="h-4 w-4" />}
         />
         <TableWrap minWidth={720}>
@@ -116,8 +173,12 @@ export default async function PerformancePage() {
               <TableEmptyState
                 colSpan={5}
                 icon={<TrendingUp className="h-10 w-10" />}
-                title="No grades recorded yet"
-                description="Subject averages appear once grades are entered for enrolled students."
+                title={hasFilters ? "No subjects match your filters" : "No grades recorded yet"}
+                description={
+                  hasFilters
+                    ? "Try adjusting your subject search or clearing your filters."
+                    : "Subject averages appear once grades are entered for enrolled students."
+                }
               />
             )}
           </tbody>
@@ -129,15 +190,23 @@ export default async function PerformancePage() {
         <Card>
           <CardHeader
             title="Average by Grade Level"
-            description="Mean grade across all recorded grades in each grade level."
+            description={
+              hasFilters
+                ? "Mean grade across all recorded grades in each grade level."
+                : "Mean grade across all recorded grades in each grade level."
+            }
             icon={<Users aria-hidden="true" className="h-4 w-4" />}
           />
           <CardBody>
             {data.gradeAverages.length === 0 ? (
               <EmptyState
                 icon={<Users className="h-10 w-10" />}
-                title="No grade-level data yet"
-                description="Averages appear as soon as grades are recorded."
+                title={hasFilters ? "No grade-level data matches your filters" : "No grade-level data yet"}
+                description={
+                  hasFilters
+                    ? "Try adjusting your grade-level or grading-period filters."
+                    : "Averages appear as soon as grades are recorded."
+                }
               />
             ) : (
               <ul className="space-y-2.5">
@@ -175,8 +244,12 @@ export default async function PerformancePage() {
             {data.periodAverages.length === 0 ? (
               <EmptyState
                 icon={<ClipboardList className="h-10 w-10" />}
-                title="No quarter data yet"
-                description="Quarterly averages appear as soon as grades are recorded."
+                title={hasFilters ? "No quarter data matches your filters" : "No quarter data yet"}
+                description={
+                  hasFilters
+                    ? "Try adjusting your grading-period or grade-level filters."
+                    : "Quarterly averages appear as soon as grades are recorded."
+                }
               />
             ) : (
               <ul className="space-y-2.5">
@@ -224,8 +297,12 @@ export default async function PerformancePage() {
               <TableEmptyState
                 colSpan={4}
                 icon={<CalendarDays className="h-10 w-10" />}
-                title="No attendance recorded yet"
-                description="Attendance rates appear once attendance entries exist for enrolled students."
+                title={hasFilters ? "No attendance matches your filters" : "No attendance recorded yet"}
+                description={
+                  hasFilters
+                    ? "Try adjusting your school-year, grade-level, or search filters."
+                    : "Attendance rates appear once attendance entries exist for enrolled students."
+                }
               />
             ) : (
               data.attendanceByGrade.map((r) => (
