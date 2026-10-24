@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Download } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
 import { getForm137Data, type Form137Data } from "@/lib/form137";
 import { SCHOOL } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
-import { buttonStyles } from "@/components/ui/button";
 import { PrintButton } from "@/components/ui/print-button";
 import schoolLogo from "../../../../../../../public/logo.png";
 
@@ -367,13 +366,6 @@ export default async function Form137Page({
       </nav>
 
       <div className="flex justify-end gap-2 print:hidden">
-        <a
-          href={`/api/form137/${id}`}
-          className={buttonStyles("outline", "sm")}
-        >
-          <Download aria-hidden="true" className="h-3.5 w-3.5" />
-          Download PDF
-        </a>
         <PrintButton label="Preview & Print" />
       </div>
 
@@ -393,8 +385,11 @@ export default async function Form137Page({
           className="px-[12mm] pb-[10mm] pt-[8mm] text-[9.5px] leading-snug text-neutral-900"
           style={{ fontFamily: TIMES }}
         >
-          {/* Official letterhead — school seal + DepEd hierarchy */}
-          <header className="flex items-start">
+          {/* Official letterhead — school seal + DepEd hierarchy.
+              A <div>, not <header>: the global print stylesheet hides all
+              header/footer/aside elements, which cut the letterhead off the
+              printed document and made the print start at the title. */}
+          <div className="flex items-start">
             <Image
               src={schoolLogo}
               alt="School seal"
@@ -414,7 +409,7 @@ export default async function Form137Page({
               <p>{SCHOOL.address}</p>
             </div>
             <span aria-hidden="true" className="w-[52px] shrink-0" />
-          </header>
+          </div>
 
           <div className="my-1.5 border-t border-neutral-900" />
 
