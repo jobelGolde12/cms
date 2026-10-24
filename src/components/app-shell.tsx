@@ -64,12 +64,12 @@ export default async function AppShell({
       </a>
 
       {/* ------------------------------ Sidebar ------------------------------ */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-800/40 bg-brand-900 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-800/40 bg-brand-900 lg:flex print:hidden">
         <div className="flex items-center gap-3 border-b border-brand-800/40 px-5 py-4">
           {/* Brand mark — single source of truth (see components/logo.tsx). */}
           <Logo size="lg" asLink priority />
           <div className="min-w-0 leading-tight">
-            <div className="text-xs font-bold uppercase tracking-wide text-white whitespace-nowrap">
+            <div className="text-xs font-bold uppercase tracking-wide text-white">
               {SCHOOL.shortName}
             </div>
             <div className="text-[11px] font-medium text-[#AFC4FF]">Records Management</div>
@@ -91,7 +91,7 @@ export default async function AppShell({
 
       <div className="flex min-h-screen flex-col lg:pl-60">
         {/* ------------------------------ Header ------------------------------ */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-brand-200 bg-white/90 backdrop-blur-sm px-3 sm:px-4 md:h-16 md:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-brand-200 bg-white/90 backdrop-blur-sm px-3 sm:px-4 md:h-16 md:px-6 print:hidden">
           <MobileNavToggle sections={NAV_SECTIONS} links={visibleLinks} />
 
           <div className="flex min-w-0 items-center gap-2">
@@ -191,7 +191,7 @@ export default async function AppShell({
           {children}
         </main>
 
-        <footer className="border-t border-brand-200/70 px-4 py-4 text-center text-[11px] text-brand-400 sm:px-6">
+        <footer className="border-t border-brand-200/70 px-4 py-4 text-center text-[11px] text-brand-400 sm:px-6 print:hidden">
           {SCHOOL.name} • {SCHOOL.address} • {SCHOOL.region}
         </footer>
       </div>

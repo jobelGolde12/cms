@@ -194,3 +194,53 @@ body {
     animation-delay: 0ms;
   }
 }
+
+/* --------------------------------------------------------------------------- */
+/*   Print — student card isolation                                          */
+/*   Only the printable document content should reach the print output.     */
+/* --------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    font-size: 10pt;
+  }
+
+  /* Hide all application chrome during print */
+  aside,
+  header,
+  footer,
+  nav[aria-label="Breadcrumb"],
+  nav[aria-label="Application navigation"],
+  a[href="#main-content"] {
+    display: none !important;
+  }
+
+  /* Show main content at full width, reset all padding/margins */
+  main#main-content {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  /* Reset main wrapper padding and overflow */
+  .flex\:min-h-screen\>div {
+    max-width: none !important;
+  }
+
+  /* Hide screen-only elements that have print:hidden */
+  .print\:hidden {
+    display: none !important;
+  }
+}

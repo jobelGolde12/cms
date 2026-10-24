@@ -56,7 +56,7 @@ export function MobileNavToggle({
             {/* Brand mark — single source of truth (see components/logo.tsx). */}
             <Logo size="md" asLink tone="onDark" />
             <div className="min-w-0 flex-1 leading-tight">
-              <div className="truncate text-xs font-bold uppercase tracking-wide text-white">
+              <div className="text-xs font-bold uppercase tracking-wide text-white break-words">
                 Sta. Magdalena
               </div>
               <div className="text-[11px] font-medium text-[#AFC4FF]">Records Management</div>

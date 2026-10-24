@@ -10,6 +10,7 @@ import type {
   EmployeeStatus,
   ServiceCreditType,
 } from "./constants";
+import { EMPLOYEE_STATUSES } from "./constants";
 
 /**
  * Employee-records queries — Admin Officer domain.
@@ -228,14 +229,74 @@ export async function serviceCreditSummary(employeeId: string): Promise<ServiceC
   };
 }
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Format + range check: a real calendar date, YYYY-MM-DD. */
+function isValidIsoDate(value: string): boolean {
+  if (!ISO_DATE_RE.test(value)) return false;
+  const [y, m, d] = value.split("-").map(Number);
+  return (
+    m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 9999
+  );
+}
+
+/**
+ * Pure ledger-row filter builder (exported for unit tests): type, inclusive
+ * date range. Unrecognized values are dropped rather than trusted.
+ */
+export function serviceCreditTxConditions(
+  employeeId: string,
+  filters: ServiceCreditTxFilters,
+): SQL[] {
+  const conditions: SQL[] = [eq(serviceCreditTransactions.employeeId, employeeId)];
+  if (filters.type === "earned" || filters.type === "consumed")
+    conditions.push(eq(serviceCreditTransactions.type, filters.type));
+  if (filters.from && isValidIsoDate(filters.from))
+    conditions.push(sql`${serviceCreditTransactions.transactionDate} >= ${filters.from}`);
+  if (filters.to && isValidIsoDate(filters.to))
+    conditions.push(sql`${serviceCreditTransactions.transactionDate} <= ${filters.to}`);
+  return conditions;
+}
+
+export type ServiceCreditTxFilters = {
+  type?: string;
+  /** Inclusive lower bound, ISO YYYY-MM-DD. */
+  from?: string;
+  /** Inclusive upper bound, ISO YYYY-MM-DD. */
+  to?: string;
+};
+
+export type ServiceCreditTxPage = {
+  rows: ServiceCreditTxRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/**
+ * Paginated transaction history for one employee. Filters are combined in a
+ * single WHERE; count + page run as two queries on indexed columns.
+ */
 export async function listServiceCreditTransactions(
   employeeId: string,
-  filter: { type?: string } = {},
-): Promise<ServiceCreditTxRow[]> {
-  const conditions: SQL[] = [eq(serviceCreditTransactions.employeeId, employeeId)];
-  if (filter.type === "earned" || filter.type === "consumed")
-    conditions.push(eq(serviceCreditTransactions.type, filter.type));
-  return db
+  filters: ServiceCreditTxFilters & { page?: number; pageSize?: number } = {},
+): Promise<ServiceCreditTxPage> {
+  const page = Math.max(1, Math.trunc(filters.page ?? 1));
+  const pageSize = ALLOWED_PAGE_SIZES.includes(
+    filters.pageSize as (typeof ALLOWED_PAGE_SIZES)[number],
+  )
+    ? (filters.pageSize as number)
+    : DEFAULT_PAGE_SIZE;
+  const conditions = serviceCreditTxConditions(employeeId, filters);
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const totalRow = await db
+    .select({ n: count() })
+    .from(serviceCreditTransactions)
+    .where(where);
+  const total = totalRow[0]?.n ?? 0;
+
+  const rows = await db
     .select({
       id: serviceCreditTransactions.id,
       employeeId: serviceCreditTransactions.employeeId,
@@ -249,8 +310,12 @@ export async function listServiceCreditTransactions(
       createdAt: serviceCreditTransactions.createdAt,
     })
     .from(serviceCreditTransactions)
-    .where(and(...conditions))
-    .orderBy(desc(serviceCreditTransactions.transactionDate), desc(serviceCreditTransactions.createdAt));
+    .where(where)
+    .orderBy(desc(serviceCreditTransactions.transactionDate), desc(serviceCreditTransactions.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  return { rows, total, page, pageSize };
 }
 
 /** Per-employee summaries for the Service Credits overview page. */
@@ -260,50 +325,188 @@ export type ServiceCreditOverviewRow = EmployeeListRow & {
   balance: number;
 };
 
-export async function serviceCreditOverview(
-  query: { q?: string } = {},
-): Promise<ServiceCreditOverviewRow[]> {
+export type ServiceCreditOverviewQuery = {
+  /** Free-text search across name fields, number, position, department, type, appointment. */
+  q?: string;
+  /** active | inactive | archived (validated) */
+  status?: string;
+  /** has_available | zero | negative */
+  balanceStatus?: string;
+  /** has_transactions | no_transactions */
+  txStatus?: string;
+  sort?: string;
+  dir?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ServiceCreditOverviewPage = {
+  rows: ServiceCreditOverviewRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Aggregates over the ENTIRE filtered dataset — stable across pages (Option A). */
+  totals: { earned: number; consumed: number; available: number };
+};
+
+/**
+ * Correlated per-employee ledger aggregates, rounded to 2dp in SQLite so the
+ * SQL filters below agree with the application's `computeBalance` rounding.
+ * Each expression stays inside its own query statement (no N+1 round-trips).
+ *
+ * Written as literal SQL on purpose: when a drizzle template is embedded in a
+ * select field, drizzle strips table qualification from ${employees.id}, so
+ * the correlated reference rendered as bare "id" and SQLite resolved it to
+ * the inner table's own `id` column — silently zeroing every balance. The
+ * unqualified inner columns (type, credits, employee_id) resolve to the
+ * innermost scope (service_credit_transactions); the outer correlation is
+ * fully qualified. Identifiers are fixed DB names — no interpolation needed.
+ */
+export const SERVICE_CREDIT_EARNED_SQL = sql<number>`coalesce((select round(sum(case when type = 'earned' then credits end), 2) from service_credit_transactions where employee_id = employees.id), 0)`;
+export const SERVICE_CREDIT_CONSUMED_SQL = sql<number>`coalesce((select round(sum(case when type = 'consumed' then credits end), 2) from service_credit_transactions where employee_id = employees.id), 0)`;
+
+const SERVICE_CREDIT_BALANCE_SQL = sql`(${SERVICE_CREDIT_EARNED_SQL} - ${SERVICE_CREDIT_CONSUMED_SQL})`;
+const SERVICE_CREDIT_TX_COUNT_SQL = sql`(select count(*) from service_credit_transactions where employee_id = employees.id)`;
+
+const SERVICE_CREDIT_SEARCH_COLUMNS = [
+  employees.firstName,
+  employees.middleName,
+  employees.lastName,
+  employees.suffix,
+  employees.employeeNumber,
+  employees.position,
+  employees.designation,
+  employees.department,
+  employees.employmentType,
+  employees.appointmentStatus,
+];
+
+/**
+ * Pure overview filter builder (exported for unit tests). Unknown filter
+ * values are ignored rather than trusted; the balance/transaction filters are
+ * per-employee correlated aggregates so they can coexist in one WHERE.
+ */
+export function serviceCreditOverviewFilters(query: ServiceCreditOverviewQuery): SQL[] {
   const conditions: SQL[] = [];
   if (query.q) {
     const needle = `%${query.q}%`;
     conditions.push(
-      sql`(${employees.firstName} LIKE ${needle} OR ${employees.lastName} LIKE ${needle} OR ${employees.employeeNumber} LIKE ${needle})`,
+      sql`(${SERVICE_CREDIT_SEARCH_COLUMNS.map((col) => sql`${col} LIKE ${needle}`).reduce((a, b) => sql`${a} OR ${b}`)})`,
     );
   }
+  if (query.status && EMPLOYEE_STATUSES.includes(query.status as EmployeeStatus))
+    conditions.push(eq(employees.status, query.status as EmployeeStatus));
+  if (query.balanceStatus === "has_available")
+    conditions.push(sql`${SERVICE_CREDIT_BALANCE_SQL} > 0`);
+  else if (query.balanceStatus === "zero")
+    conditions.push(sql`${SERVICE_CREDIT_BALANCE_SQL} = 0`);
+  else if (query.balanceStatus === "negative")
+    conditions.push(sql`${SERVICE_CREDIT_BALANCE_SQL} < 0`);
+  if (query.txStatus === "has_transactions")
+    conditions.push(sql`${SERVICE_CREDIT_TX_COUNT_SQL} > 0`);
+  else if (query.txStatus === "no_transactions")
+    conditions.push(sql`${SERVICE_CREDIT_TX_COUNT_SQL} = 0`);
+  return conditions;
+}
 
-  const rows = await db
-    .select({
-      id: employees.id,
-      employeeNumber: employees.employeeNumber,
-      firstName: employees.firstName,
-      middleName: employees.middleName,
-      lastName: employees.lastName,
-      suffix: employees.suffix,
-      sex: employees.sex,
-      position: employees.position,
-      appointmentStatus: employees.appointmentStatus,
-      employmentType: employees.employmentType,
-      department: employees.department,
-      status: employees.status,
-      createdAt: employees.createdAt,
-      earned: sql<number>`coalesce(sum(case when ${serviceCreditTransactions.type} = 'earned' then ${serviceCreditTransactions.credits} end), 0)`,
-      consumed: sql<number>`coalesce(sum(case when ${serviceCreditTransactions.type} = 'consumed' then ${serviceCreditTransactions.credits} end), 0)`,
-    })
-    .from(employees)
-    .leftJoin(
-      serviceCreditTransactions,
-      eq(serviceCreditTransactions.employeeId, employees.id),
-    )
-    .where(conditions.length ? and(...conditions) : sql`1 = 1`)
-    .groupBy(employees.id)
-    .orderBy(asc(employees.lastName), asc(employees.firstName));
+const sortDir = (ascending: boolean) => (ascending ? asc : desc);
 
-  return rows.map((r) => ({
-    ...r,
-    earned: Number(r.earned) || 0,
-    consumed: Number(r.consumed) || 0,
-    balance: computeBalance(Number(r.earned) || 0, Number(r.consumed) || 0),
-  }));
+/**
+ * Sort allowlist for the overview (exported for unit tests). Every branch
+ * falls back deterministically so rankings stay stable between pages.
+ */
+export function serviceCreditOverviewSort(sort?: string, dir?: string): SQL[] {
+  const isAsc = (dir ?? "").toLowerCase() === "asc";
+  switch (sort) {
+    case "employee_number":
+      return [sortDir(isAsc)(employees.employeeNumber)];
+    case "position":
+      return [sortDir(isAsc)(employees.position), asc(employees.lastName), asc(employees.firstName)];
+    case "status":
+      return [sortDir(isAsc)(employees.status), asc(employees.lastName), asc(employees.firstName)];
+    case "earned":
+      return [sortDir(isAsc)(SERVICE_CREDIT_EARNED_SQL), asc(employees.lastName), asc(employees.firstName)];
+    case "consumed":
+      return [sortDir(isAsc)(SERVICE_CREDIT_CONSUMED_SQL), asc(employees.lastName), asc(employees.firstName)];
+    case "balance":
+      return [sortDir(isAsc)(SERVICE_CREDIT_BALANCE_SQL), asc(employees.lastName), asc(employees.firstName)];
+    /* name (default) — lastName/firstName, and NULL positions last */
+    default:
+      return [sortDir(isAsc)(employees.lastName), sortDir(isAsc)(employees.firstName)];
+  }
+}
+
+/**
+ * Paginated Service Credits overview. Filters run against employees with
+ * correlated aggregate subqueries so count, summary totals and the page rows
+ * are always derived from identical conditions.
+ * Summary totals intentionally cover the ENTIRE filtered dataset (Option A)
+ * so the cards stay stable when the user pages through the table.
+ */
+export async function serviceCreditOverview(
+  query: ServiceCreditOverviewQuery = {},
+): Promise<ServiceCreditOverviewPage> {
+  const page = Math.max(1, Math.trunc(query.page ?? 1));
+  const pageSize = ALLOWED_PAGE_SIZES.includes(query.pageSize as (typeof ALLOWED_PAGE_SIZES)[number])
+    ? (query.pageSize as number)
+    : DEFAULT_PAGE_SIZE;
+  const conditions = serviceCreditOverviewFilters(query);
+  const where = conditions.length ? and(...conditions) : sql`1 = 1`;
+
+  const [totalRow, totalsRow, rows] = await Promise.all([
+    db.select({ n: count() }).from(employees).where(where),
+    db
+      .select({
+        n: count(),
+        earned: sql<number>`coalesce(sum(${SERVICE_CREDIT_EARNED_SQL}), 0)`,
+        consumed: sql<number>`coalesce(sum(${SERVICE_CREDIT_CONSUMED_SQL}), 0)`,
+      })
+      .from(employees)
+      .where(where),
+    db
+      .select({
+        id: employees.id,
+        employeeNumber: employees.employeeNumber,
+        firstName: employees.firstName,
+        middleName: employees.middleName,
+        lastName: employees.lastName,
+        suffix: employees.suffix,
+        sex: employees.sex,
+        position: employees.position,
+        appointmentStatus: employees.appointmentStatus,
+        employmentType: employees.employmentType,
+        department: employees.department,
+        status: employees.status,
+        createdAt: employees.createdAt,
+        earned: SERVICE_CREDIT_EARNED_SQL,
+        consumed: SERVICE_CREDIT_CONSUMED_SQL,
+      })
+      .from(employees)
+      .where(where)
+      .orderBy(...serviceCreditOverviewSort(query.sort, query.dir))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+  ]);
+
+  const totalEarned = Math.round((Number(totalsRow[0]?.earned) || 0) * 100) / 100;
+  const totalConsumed = Math.round((Number(totalsRow[0]?.consumed) || 0) * 100) / 100;
+
+  return {
+    page,
+    pageSize,
+    total: totalRow[0]?.n ?? 0,
+    rows: rows.map((r) => ({
+      ...r,
+      earned: Number(r.earned) || 0,
+      consumed: Number(r.consumed) || 0,
+      balance: computeBalance(Number(r.earned) || 0, Number(r.consumed) || 0),
+    })),
+    totals: {
+      earned: totalEarned,
+      consumed: totalConsumed,
+      available: computeBalance(totalEarned, totalConsumed),
+    },
+  };
 }
 
 /* ------------------------------ dashboard -------------------------------- */

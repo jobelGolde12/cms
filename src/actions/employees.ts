@@ -538,6 +538,18 @@ export async function updateServiceCreditTransaction(
   const tx = rows[0];
   if (!tx) return fail("Transaction not found.");
 
+  // Archived employees must not receive mutations — same guard as the add
+  // action; an error surfaces before any balance projection runs.
+  const employeeRows = await db
+    .select({ status: employees.status })
+    .from(employees)
+    .where(eq(employees.id, tx.employeeId))
+    .limit(1);
+  if (!employeeRows[0]) return fail("Employee record not found.");
+  if (employeeRows[0].status === "archived") {
+    return fail("This employee record is archived — restore it before correcting transactions.");
+  }
+
   const parsed = serviceCreditSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {
     return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));

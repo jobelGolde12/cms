@@ -48,7 +48,7 @@ export function SidebarNav({
                       onClick={onNavigate}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-all duration-200 ease-out",
+                        "flex min-h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-all duration-200 ease-out",
                         active
                           ? "bg-[#315EF7] text-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] translate-x-[1px]"
                           : "text-[#E7EDFF] hover:bg-[#203B7A] hover:text-white hover:translate-x-[1px]",
@@ -57,7 +57,7 @@ export function SidebarNav({
                       {createElement(navIcon(link.icon), {
                         className: "h-4 w-4 shrink-0",
                       })}
-                      <span className="truncate">{link.label}</span>
+                      <span className="block min-w-0 break-words">{link.label}</span>
                     </Link>
                   </li>
                 );

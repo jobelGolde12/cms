@@ -243,11 +243,15 @@ export function EmployeePagination({
   pageSize,
   total,
   searchParams,
+  basePath = "/employees",
+  label = "employees",
 }: {
   page: number;
   pageSize: number;
   total: number;
   searchParams: Record<string, string | string[] | undefined>;
+  basePath?: string;
+  label?: string;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -258,14 +262,14 @@ export function EmployeePagination({
     if (key === "page" || typeof value !== "string" || !value) continue;
     params.set(key, value);
   }
-  const href = (p: number) => `/employees?${new URLSearchParams({ ...Object.fromEntries(params), page: String(p) })}`;
+  const href = (p: number) => `${basePath}?${new URLSearchParams({ ...Object.fromEntries(params), page: String(p) })}`;
 
   return (
     <div className="flex flex-col items-center justify-between gap-3 border-t border-brand-100 px-4 py-3 sm:flex-row">
       <p className="text-xs text-[#64748B]">
         Showing <span className="numeric font-medium text-brand-700">{from}</span>–
         <span className="numeric font-medium text-brand-700">{to}</span> of{" "}
-        <span className="numeric font-medium text-brand-700">{total.toLocaleString("en-PH")}</span> employees
+        <span className="numeric font-medium text-brand-700">{total.toLocaleString("en-PH")}</span> {label}
       </p>
       <nav aria-label="Pagination" className="flex items-center gap-1">
         {page > 1 ? (
