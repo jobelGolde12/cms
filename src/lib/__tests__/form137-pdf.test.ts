@@ -7,6 +7,10 @@ const base: Form137Data = {
     id: "s1",
     studentNumber: "SM-2026-000001",
     lrn: null,
+    firstName: "Maria",
+    lastName: "Santos",
+    middleName: "dela Cruz",
+    suffix: "Jr.",
     name: "Maria Santos dela Cruz Jr.",
     sex: "female",
     birthDate: "2009-05-14",
@@ -20,8 +24,15 @@ const base: Form137Data = {
       gradeLevel: "Grade 9",
       section: "Molave",
       adviser: "Teacher Demo",
+      promotionStatus: "Promoted",
       subjects: [
-        { subjectCode: "FIL", subjectName: "Filipino", quarters: [88, 90, null, null], finalGrade: 89, remark: "Passed" },
+        {
+          subjectCode: "FIL",
+          subjectName: "Filipino",
+          quarters: [88, 90, null, null],
+          finalGrade: 89,
+          remark: "Passed",
+        },
         {
           subjectCode: "SPE-01",
           subjectName: "Computer Systems Servicing",
@@ -45,6 +56,7 @@ const base: Form137Data = {
       gradeLevel: "Grade 10",
       section: "Ilang-Ilang",
       adviser: null,
+      promotionStatus: null,
       subjects: [],
       generalAverage: null,
     },
@@ -69,7 +81,11 @@ describe("renderForm137Pdf", () => {
   });
 
   it("renders with no academic history (empty path)", async () => {
-    const bytes = await renderForm137Pdf({ ...base, blocks: [], principal: "Karing Magdalena" });
+    const bytes = await renderForm137Pdf({
+      ...base,
+      blocks: [],
+      principal: "Karing Magdalena",
+    });
     expect(Buffer.from(bytes.slice(0, 5)).toString("latin1")).toBe("%PDF-");
   });
 

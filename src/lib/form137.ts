@@ -19,34 +19,44 @@ import {
 import { ageFromBirthDate, fullName } from "@/lib/utils";
 
 /**
- * SF9 — Learner's Permanent Academic Record (formerly Form 137) data layer.
+ * SF10-JHS — Learner's Permanent Academic Record for Junior High School
+ * (formerly Form 137) data layer.
  *
  * Read-only: every function here only selects existing rows. Rendering,
- * printing or downloading the SF9 never mutates any record (same guarantee
+ * printing or downloading the SF10 never mutates any record (same guarantee
  * as the report card).
  *
- * The SF9 is a PERMANENT record: it spans the learner's full enrollment
- * history in this school. Data comes from:
- * - students                        → name / LRN / sex / birth date
- * - student_enrollments (+SY/grade/section) → one block per school year
- * - student_grades (+grading_periods)       → quarter grades per learning area
- * - final grade & remarks           → the application's existing COMPUTED
+ * The SF10-JHS is a PERMANENT record: it spans the learner's full enrollment
+ * history in this school, one scholastic-record table per school year /
+ * grade level (DepEd Order No. 58, s. 2017 structure). Data comes from:
+ * - students                        → name components / LRN / sex / birth date
+ * - student_enrollments (+SY/grade/section) → one scholastic block per school year
+ * - student_grades (+grading_periods)   → quarter ratings per learning area
+ * - final rating & remarks          → the application's existing COMPUTED
  *   logic (`computeFinalGrade` + `mapGradeToDescriptor` from report-card.ts —
  *   the same calculation shown everywhere else in the system)
  * - general average                 → same rule as the report card (average
- *   of the subjects' final grades)
+ *   of the subjects' final ratings)
+ * - year-end action                 → the enrollment's recorded promotion status
  *
- * Field truth: the SF2-style attendance layout must NOT appear here; the
- * SF9 is strictly an academic record. Track/strand is not stored anywhere
- * in the schema (documented gap) — rendered blank. All values are derived
- * from the database; nothing about the learner is hardcoded.
+ * Field truth (documented gaps, rendered as blank ruled fields — never invented):
+ * - School ID, District, Section teacher-in-charge beyond the adviser name,
+ *   Learner照片/declarations and the remedial-class mark/recomputed grades
+ *   are not stored anywhere in the schema yet.
+ * - All values are derived from the database; nothing about the learner is
+ *   hardcoded.
  */
 
 /* -------------------------------------------------------------------------- */
 /*  Data contract                                                             */
 /* -------------------------------------------------------------------------- */
 
-export const SF9_QUARTERS = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"] as const;
+export const SF9_QUARTERS = [
+  "1st Quarter",
+  "2nd Quarter",
+  "3rd Quarter",
+  "4th Quarter",
+] as const;
 
 export type Form137Subject = {
   subjectCode: string;
@@ -63,6 +73,8 @@ export type Form137YearBlock = {
   gradeLevel: string;
   section: string | null;
   adviser: string | null;
+  /** Recorded year-end action (e.g. PROMOTED / RETAINED), if stored. */
+  promotionStatus: string | null;
   subjects: Form137Subject[];
   generalAverage: number | null;
 };
@@ -72,6 +84,11 @@ export type Form137Data = {
     id: string;
     studentNumber: string;
     lrn: string | null;
+    // SF10 name layout: last, first, name extension, middle (PSA order).
+    firstName: string;
+    lastName: string;
+    middleName: string | null;
+    suffix: string | null;
     name: string;
     sex: string;
     birthDate: string | null;
@@ -103,7 +120,9 @@ export type Form137Data = {
  * (documents.print + canAccessStudent) before calling this — it performs
  * no permission checks itself.
  */
-export async function getForm137Data(studentId: string): Promise<Form137Data | null> {
+export async function getForm137Data(
+  studentId: string,
+): Promise<Form137Data | null> {
   const studentRows = await db
     .select({
       id: students.id,
@@ -133,18 +152,25 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
       gradeLevelName: gradeLevels.name,
       sectionId: studentEnrollments.sectionId,
       sectionName: sections.name,
+      promotionStatus: studentEnrollments.promotionStatus,
       subjectCode: subjects.code,
       subjectName: subjects.name,
       grade: studentGrades.grade,
       periodOrder: gradingPeriods.orderIndex,
     })
     .from(studentGrades)
-    .innerJoin(studentEnrollments, eq(studentEnrollments.id, studentGrades.enrollmentId))
+    .innerJoin(
+      studentEnrollments,
+      eq(studentEnrollments.id, studentGrades.enrollmentId),
+    )
     .innerJoin(schoolYears, eq(schoolYears.id, studentEnrollments.schoolYearId))
     .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
     .innerJoin(sections, eq(sections.id, studentEnrollments.sectionId))
     .innerJoin(subjects, eq(subjects.id, studentGrades.subjectId))
-    .innerJoin(gradingPeriods, eq(gradingPeriods.id, studentGrades.gradingPeriodId))
+    .innerJoin(
+      gradingPeriods,
+      eq(gradingPeriods.id, studentGrades.gradingPeriodId),
+    )
     .where(eq(studentEnrollments.studentId, studentId))
     .orderBy(
       asc(schoolYears.year),
@@ -158,6 +184,7 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
     gradeLevelName: string;
     sectionId: string; // for adviser lookup
     sectionName: string | null;
+    promotionStatus: string | null;
     perSubject: Map<string, { name: string; perQuarter: Map<number, number> }>;
   };
   const blocks = new Map<string, BlockAcc>();
@@ -170,6 +197,7 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
         gradeLevelName: r.gradeLevelName,
         sectionId: r.sectionId,
         sectionName: r.sectionName,
+        promotionStatus: r.promotionStatus,
         perSubject: new Map(),
       };
       blocks.set(r.enrollmentId, block);
@@ -182,8 +210,8 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
     subj.perQuarter.set(r.periodOrder, r.grade);
   }
 
-  const blockList = [...blocks.entries()].sort(
-    ([, a], [, b]) => a.schoolYear.localeCompare(b.schoolYear),
+  const blockList = [...blocks.entries()].sort(([, a], [, b]) =>
+    a.schoolYear.localeCompare(b.schoolYear),
   );
 
   // Adviser per distinct section — resolved through the existing helper.
@@ -229,6 +257,7 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
       gradeLevel: block.gradeLevelName,
       section: block.sectionName,
       adviser: adviserBySection.get(block.sectionId) ?? null,
+      promotionStatus: block.promotionStatus,
       subjects,
       generalAverage,
     };
@@ -275,6 +304,10 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
       id: studentRow.id,
       studentNumber: studentRow.studentNumber,
       lrn: studentRow.lrn,
+      firstName: studentRow.firstName,
+      lastName: studentRow.lastName,
+      middleName: studentRow.middleName,
+      suffix: studentRow.suffix,
       name: fullName(studentRow),
       sex: studentRow.sex,
       birthDate: studentRow.birthDate,
