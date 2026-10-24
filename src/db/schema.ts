@@ -198,6 +198,7 @@ export const students = sqliteTable(
     /** ISO date YYYY-MM-DD; null when the source does not provide the birth date
      *  (e.g. XLSX-imported SF1/SF2 rosters carry names only). */
     birthDate: text("birth_date"),
+    birthPlace: text("birth_place"),
     /** male | female */
     sex: text("sex").notNull(),
 
@@ -292,6 +293,14 @@ export const studentEnrollments = sqliteTable(
     enrollmentDate: text("enrollment_date"),
     /** Free-text remarks recorded with the enrollment (e.g. transfer-in source school). */
     remarks: text("remarks"),
+    /* SF10-JHS eligibility and previous-enrollment fields */
+    eligibilityCertificate: text("eligibility_certificate"),
+    previousSchoolName: text("previous_school_name"),
+    previousSchoolAddress: text("previous_school_address"),
+    previousGeneralAverage: real("previous_general_average"),
+    previousGradeLevel: text("previous_grade_level"),
+    promotionStatus: text("promotion_status"),
+    academicDistinction: text("academic_distinction"),
     recordedBy: text("recorded_by")
       .notNull()
       .references(() => users.id),

@@ -75,11 +75,22 @@ export type Form137Data = {
     name: string;
     sex: string;
     birthDate: string | null;
+    birthPlace: string | null;
     age: number | null;
   };
   /** Permanent-record blocks, oldest school year first (chronological). */
   blocks: Form137YearBlock[];
   principal: string | null;
+  /** SF10-JHS eligibility & previous-enrollment info (from earliest enrollment). */
+  eligibility: {
+    certificate: string | null;
+    previousSchoolName: string | null;
+    previousSchoolAddress: string | null;
+    previousGeneralAverage: number | null;
+    previousGradeLevel: string | null;
+    promotionStatus: string | null;
+    academicDistinction: string | null;
+  };
 };
 
 /* -------------------------------------------------------------------------- */
@@ -104,6 +115,7 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
       suffix: students.suffix,
       sex: students.sex,
       birthDate: students.birthDate,
+      birthPlace: students.birthPlace,
     })
     .from(students)
     .where(eq(students.id, studentId))
@@ -222,6 +234,42 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
     };
   });
 
+  // Eligibility / previous-enrollment info (earliest enrollment record for SF10 section).
+  const eligibilityRow = await db
+    .select({
+      eligibilityCertificate: studentEnrollments.eligibilityCertificate,
+      previousSchoolName: studentEnrollments.previousSchoolName,
+      previousSchoolAddress: studentEnrollments.previousSchoolAddress,
+      previousGeneralAverage: studentEnrollments.previousGeneralAverage,
+      previousGradeLevel: studentEnrollments.previousGradeLevel,
+      promotionStatus: studentEnrollments.promotionStatus,
+      academicDistinction: studentEnrollments.academicDistinction,
+    })
+    .from(studentEnrollments)
+    .where(eq(studentEnrollments.studentId, studentId))
+    .orderBy(asc(studentEnrollments.enrollmentDate))
+    .limit(1);
+
+  const eligibility = eligibilityRow[0]
+    ? {
+        certificate: eligibilityRow[0].eligibilityCertificate,
+        previousSchoolName: eligibilityRow[0].previousSchoolName,
+        previousSchoolAddress: eligibilityRow[0].previousSchoolAddress,
+        previousGeneralAverage: eligibilityRow[0].previousGeneralAverage,
+        previousGradeLevel: eligibilityRow[0].previousGradeLevel,
+        promotionStatus: eligibilityRow[0].promotionStatus,
+        academicDistinction: eligibilityRow[0].academicDistinction,
+      }
+    : {
+        certificate: null,
+        previousSchoolName: null,
+        previousSchoolAddress: null,
+        previousGeneralAverage: null,
+        previousGradeLevel: null,
+        promotionStatus: null,
+        academicDistinction: null,
+      };
+
   return {
     student: {
       id: studentRow.id,
@@ -230,9 +278,11 @@ export async function getForm137Data(studentId: string): Promise<Form137Data | n
       name: fullName(studentRow),
       sex: studentRow.sex,
       birthDate: studentRow.birthDate,
+      birthPlace: studentRow.birthPlace,
       age: ageFromBirthDate(studentRow.birthDate),
     },
     blocks: out,
     principal,
+    eligibility,
   };
 }

@@ -10,6 +10,7 @@ const base: Form137Data = {
     name: "Maria Santos dela Cruz Jr.",
     sex: "female",
     birthDate: "2009-05-14",
+    birthPlace: "Sta. Magdalena, Sorsogon",
     age: 17,
   },
   blocks: [
@@ -49,6 +50,15 @@ const base: Form137Data = {
     },
   ],
   principal: "Karing Magdalena",
+  eligibility: {
+    certificate: "Elementary School Certificate",
+    previousSchoolName: "Sta. Magdalena Central Elementary School",
+    previousSchoolAddress: "Sta. Magdalena, Sorsogon",
+    previousGeneralAverage: 88,
+    previousGradeLevel: "Grade 6",
+    promotionStatus: "Promoted",
+    academicDistinction: null,
+  },
 };
 
 describe("renderForm137Pdf", () => {

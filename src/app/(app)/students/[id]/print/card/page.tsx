@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Download } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
 import { getReportCardData, REPORT_CARD_MONTHS } from "@/lib/report-card";
 import { SCHOOL } from "@/lib/constants";
-import { buttonStyles } from "@/components/ui/button";
 import { PrintButton } from "@/components/ui/print-button";
 import schoolLogo from "../../../../../../../public/logo.png";
 import depedLogo from "../../../../../../../public/deped_logo_kagawaran_ng_edukasyon.jpg";
@@ -71,13 +70,6 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
       </nav>
 
       <div className="flex justify-end gap-2 print:hidden">
-        <a
-          href={`/api/report-card/${id}`}
-          className={buttonStyles("outline", "sm")}
-        >
-          <Download aria-hidden="true" className="h-3.5 w-3.5" />
-          Download PDF
-        </a>
         <PrintButton label="Preview & Print" />
       </div>
 

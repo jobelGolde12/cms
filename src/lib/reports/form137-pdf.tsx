@@ -289,6 +289,26 @@ const form137Doc = (data: Form137Data) => {
           <Text style={styles.subtitle}>(SF9 — formerly Form 137)</Text>
         </View>
 
+        {/* Eligibility for Junior High School Enrollment */}
+        <View style={[styles.infoGrid, { marginTop: 8 }]}>
+          <Text style={{ fontSize: 9, fontWeight: "bold", textAlign: "center", paddingVertical: 2, borderBottom: "0.6pt solid #111111", borderTop: "0.6pt solid #111111" }}>
+            ELIGIBILITY FOR JUNIOR HIGH SCHOOL ENROLLMENT
+          </Text>
+          <View style={[styles.infoRow, { borderTop: "none" }]}>
+            <InfoField label="Certificate / Credential" value={orBlank(data.eligibility?.certificate)} flex={3} />
+            <InfoField label="Previous School" value={orBlank(data.eligibility?.previousSchoolName)} flex={3} />
+            <InfoField label="Grade Level" value={orBlank(data.eligibility?.previousGradeLevel)} flex={2} />
+          </View>
+          <View style={[styles.infoRow]}>
+            <InfoField label="Previous Gen. Average" value={data.eligibility?.previousGeneralAverage ? fmt(data.eligibility.previousGeneralAverage) : ""} flex={2} />
+            <InfoField label="Previous School Address" value={orBlank(data.eligibility?.previousSchoolAddress)} flex={3} />
+            <InfoField label="Promotion Status" value={orBlank(data.eligibility?.promotionStatus)} flex={3} />
+          </View>
+          <View style={[styles.infoRowLast]}>
+            <InfoField label="Academic Distinction / Honors" value={orBlank(data.eligibility?.academicDistinction)} flex={8} />
+          </View>
+        </View>
+
         {/* Learner information — ruled fields in a bordered grid */}
         <View style={styles.infoGrid}>
           <View style={styles.infoRow}>
@@ -302,6 +322,7 @@ const form137Doc = (data: Form137Data) => {
               value={data.student.birthDate ? formatDate(data.student.birthDate) : ""}
               flex={2}
             />
+            <InfoField label="Birth Place" value={orBlank(data.student.birthPlace)} flex={2} />
             <InfoField label="Age" value={fmt(data.student.age)} flex={1} />
             <InfoField label="Student No." value={data.student.studentNumber} flex={2} />
           </View>

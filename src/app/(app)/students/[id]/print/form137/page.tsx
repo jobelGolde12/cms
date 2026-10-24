@@ -214,21 +214,39 @@ export default async function Form137Page({ params }: { params: Promise<{ id: st
             <p className="text-[9px]">(SF9 — formerly Form 137)</p>
           </div>
 
+          {/* Eligibility for Junior High School Enrollment (SF10) */}
+          <section className="mt-3 border border-neutral-900">
+            <p className="border-b border-neutral-900 bg-neutral-50 px-2 py-0.5 text-center text-[9px] font-bold uppercase tracking-wide">
+              Eligibility for Junior High School Enrollment
+            </p>
+            <div className="flex border-b border-neutral-900">
+              <InfoField label="Certificate / Credential" value={orBlank(data.eligibility?.certificate)} className="w-[35%] border-r border-neutral-900" />
+              <InfoField label="Previous School" value={orBlank(data.eligibility?.previousSchoolName)} className="w-[35%] border-r border-neutral-900" />
+              <InfoField label="Grade Level" value={orBlank(data.eligibility?.previousGradeLevel)} className="w-[30%]" />
+            </div>
+            <div className="flex border-b border-neutral-900">
+              <InfoField label="Previous Gen. Average" value={data.eligibility?.previousGeneralAverage ? fmt(data.eligibility.previousGeneralAverage) : ""} className="w-[25%] border-r border-neutral-900" />
+              <InfoField label="Previous School Address" value={orBlank(data.eligibility?.previousSchoolAddress)} className="w-[45%] border-r border-neutral-900" />
+              <InfoField label="Promotion Status" value={orBlank(data.eligibility?.promotionStatus)} className="w-[30%]" />
+            </div>
+            <div className="flex">
+              <InfoField label="Academic Distinction / Honors" value={orBlank(data.eligibility?.academicDistinction)} className="w-full" />
+            </div>
+          </section>
+
           {/* Learner information — ruled fields in a bordered grid */}
           <section className="mt-1.5 border border-neutral-900">
             <div className="flex border-b border-neutral-900">
-              <InfoField label="Name" value={data.student.name} className="border-r border-neutral-900" />
-              <InfoField label="LRN" value={orBlank(data.student.lrn)} className="border-r border-neutral-900" />
-              <InfoField label="Sex" value={sex} />
+              <InfoField label="Name" value={data.student.name} className="w-[40%] border-r border-neutral-900" />
+              <InfoField label="LRN" value={orBlank(data.student.lrn)} className="w-[20%] border-r border-neutral-900" />
+              <InfoField label="Sex" value={sex} className="w-[8%] border-r border-neutral-900" />
+              <InfoField label="Birth Date" value={data.student.birthDate ? formatDate(data.student.birthDate) : ""} className="w-[10%]" />
             </div>
             <div className="flex">
-              <InfoField
-                label="Birth Date"
-                value={data.student.birthDate ? formatDate(data.student.birthDate) : ""}
-                className="border-r border-neutral-900"
-              />
-              <InfoField label="Age" value={fmt(data.student.age)} className="border-r border-neutral-900" />
-              <InfoField label="Student No." value={data.student.studentNumber} />
+              <InfoField label="Birth Place" value={orBlank(data.student.birthPlace)} className="w-[30%] border-r border-neutral-900" />
+              <InfoField label="Age" value={fmt(data.student.age)} className="w-[15%] border-r border-neutral-900" />
+              <InfoField label="Student No." value={data.student.studentNumber} className="w-[25%] border-r border-neutral-900" />
+              <InfoField label="School Year" value={data.blocks.length > 0 ? data.blocks[0].schoolYear : ""} className="w-[30%]" />
             </div>
           </section>
 
