@@ -17,6 +17,12 @@ export default async function ReportsPage() {
   if (!user) redirect("/login");
   if (!hasPermission(user.role, "reports.view")) redirect("/dashboard");
 
+  // Exporting files requires `reports.export` (enforced server-side by the
+  // /api/reports route AND the proxy middleware — both return 403 otherwise;
+  // see src/app/api/reports/[type]/route.ts and src/proxy.ts). Hide the
+  // download buttons for roles that would only ever receive 403s.
+  const canExport = hasPermission(user.role, "reports.export");
+
   const recent = await db
     .select({
       id: reports.id,
@@ -37,6 +43,14 @@ export default async function ReportsPage() {
         description="Generate and export school, grade-level and section reports as PDF or Excel."
       />
 
+      {!canExport && (
+        <p className="border border-brand-200 bg-brand-50 px-3 py-2 text-xs text-brand-900">
+          You can view this section, but file exports are restricted to Admin,
+          School Admin, Records and Registrar accounts. Contact the school
+          office if you need an exported copy of a report.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
         {REPORT_TYPES.map((t) => (
           <Card key={t} className="flex flex-col">
@@ -50,14 +64,22 @@ export default async function ReportsPage() {
                 Live query over verified and pending records in your scope.
               </p>
               <div className="flex flex-wrap gap-2">
-                <a href={`/api/reports/${t}?format=pdf`} className={buttonStyles("primary", "sm")}>
-                  <Download aria-hidden="true" className="h-3.5 w-3.5" />
-                  PDF
-                </a>
-                <a href={`/api/reports/${t}?format=xlsx`} className={buttonStyles("outline", "sm")}>
-                  <Download aria-hidden="true" className="h-3.5 w-3.5" />
-                  XLSX
-                </a>
+                {canExport ? (
+                  <>
+                    <a href={`/api/reports/${t}?format=pdf`} className={buttonStyles("primary", "sm")}>
+                      <Download aria-hidden="true" className="h-3.5 w-3.5" />
+                      PDF
+                    </a>
+                    <a href={`/api/reports/${t}?format=xlsx`} className={buttonStyles("outline", "sm")}>
+                      <Download aria-hidden="true" className="h-3.5 w-3.5" />
+                      XLSX
+                    </a>
+                  </>
+                ) : (
+                  <span className="text-xs italic text-[#64748B]">
+                    Export requires Records / Registrar role
+                  </span>
+                )}
               </div>
             </CardBody>
           </Card>
