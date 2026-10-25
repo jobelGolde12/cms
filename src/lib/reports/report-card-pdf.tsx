@@ -392,7 +392,7 @@ const reportCardDoc = (data: ReportCardData) => {
         {/* Official letterhead — left DepEd logo, center info, right school logo */}
         <View style={styles.letterhead}>
           {getDepEdLogoSrc() ? (
-            <Image src={`data:image/jpeg;base64,${getDepEdLogoSrc()}`} style={styles.logoLeft} />
+            <Image src={`data:image/jpeg;base64,${getDepEdLogoSrc()}`} style={styles.logoLeft} alt="Department of Education logo" />
           ) : null}
           <View style={styles.letterheadText}>
             <Text>Republic of the Philippines</Text>
@@ -403,7 +403,7 @@ const reportCardDoc = (data: ReportCardData) => {
             <Text>{SCHOOL.address}</Text>
           </View>
           {getLogoSrc() ? (
-            <Image src={`data:image/png;base64,${getLogoSrc()}`} style={styles.logoRight} />
+            <Image src={`data:image/png;base64,${getLogoSrc()}`} style={styles.logoRight} alt="School logo" />
           ) : null}
         </View>
 

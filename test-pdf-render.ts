@@ -61,9 +61,10 @@ async function test() {
     console.log("Starting PDF render...");
     const bytes = await renderReportCardPdf(mockData);
     console.log("PDF render succeeded! Bytes:", bytes.length);
-  } catch (e: any) {
-    console.error("PDF render FAILED:", e.message || e);
-    console.error("Stack:", e.stack);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("PDF render FAILED:", msg);
+    console.error("Stack:", e instanceof Error ? e.stack : "N/A");
   }
 }
 

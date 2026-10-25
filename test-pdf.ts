@@ -12,8 +12,9 @@ async function test() {
       console.log("Attendance months:", data.attendance.months.length);
       console.log("General average:", data.generalAverage);
     }
-  } catch (e: any) {
-    console.error("Data load error:", e.message || e);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("Data load error:", msg);
   }
 }
 

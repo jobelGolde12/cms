@@ -7,7 +7,7 @@ import { buildReport } from "@/lib/reports/report-data";
 import { REPORT_TYPES, REPORT_TYPE_LABELS, type ReportType } from "@/lib/constants";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { TableWrap, Th, Td, TableEmptyState } from "@/components/ui/table";
+import { TableWrap, Th, Td } from "@/components/ui/table";
 import { buttonStyles } from "@/components/ui/button";
 
 export default async function ReportDetailPage({
@@ -51,7 +51,7 @@ export default async function ReportDetailPage({
         <Card>
           <CardBody className="space-y-4">
             <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
-              We couldn't load this report. Please try again or contact support.
+              We could not load this report. Please try again or contact support.
             </div>
             <Link href="/reports" className={buttonStyles("outline", "sm")}>
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Reports
@@ -66,9 +66,9 @@ export default async function ReportDetailPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <a href="/reports" className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-brand-900 mb-2">
+          <Link href="/reports" className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-brand-900 mb-2">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Reports
-          </a>
+          </Link>
           <PageHeader
             eyebrow="Reports & Exports"
             title={REPORT_TYPE_LABELS[reportType]}
