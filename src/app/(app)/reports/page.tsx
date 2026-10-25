@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Eye } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { db } from "@/db";
@@ -64,9 +64,16 @@ export default async function ReportsPage() {
                 Live query over verified and pending records in your scope.
               </p>
               <div className="flex flex-wrap gap-2">
+                <a
+                  href={`/reports/${t}`}
+                  className={buttonStyles("primary", "sm")}
+                >
+                  <Eye aria-hidden="true" className="h-3.5 w-3.5" />
+                  View Report
+                </a>
                 {canExport ? (
                   <>
-                    <a href={`/api/reports/${t}?format=pdf`} className={buttonStyles("primary", "sm")}>
+                    <a href={`/api/reports/${t}?format=pdf`} className={buttonStyles("outline", "sm")}>
                       <Download aria-hidden="true" className="h-3.5 w-3.5" />
                       PDF
                     </a>
