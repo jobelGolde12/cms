@@ -580,7 +580,8 @@ Student enrollment per school year / grade / section.
 ---
 
 ### `student_grades`
-Grades per student, subject, and grading period.
+Grades per student, subject, and grading period, with a draft/submitted
+lifecycle (2026-10 grade-management enhancement).
 
 | Column | Type | Constraints |
 |---|---|---|
@@ -591,11 +592,47 @@ Grades per student, subject, and grading period.
 | `grade` | real NOT NULL | — |
 | `remarks` | text | — |
 | `recorded_by` | text NOT NULL | FK → `users(id)` |
+| `status` | text NOT NULL DEFAULT `'draft'` | `'draft'` \| `'submitted'`; submitted rows are read-only until the sheet is reopened |
+| `submitted_at` | integer | set when the grade's sheet is submitted |
+| `submission_id` | text | FK → `grade_submissions(id)`; ledger entry the grade was submitted under |
 | `created_at` | integer | DEFAULT `(unixepoch())` |
 | `updated_at` | integer | DEFAULT `(unixepoch())` |
 
 **Unique Index:** `grades_enrollment_subject_period_uq` (enrollment_id, subject_id, grading_period_id)  
 **Indexes:** `grades_enrollment_idx`, `grades_subject_idx`, `grades_period_idx`
+
+Lifecycle: teachers save `draft` rows at any time; on **Submit**, all draft
+rows for the sheet gain `status='submitted'`, `submitted_at` and a link to the
+`grade_submissions` ledger entry. Reopening flips the sheet's rows back to
+`draft` (the ledger keeps the full history). Reported grade totals treat new
+status defaults as drafts, so legacy rows stay editable by the section adviser.
+
+---
+
+### `grade_submissions`
+Immutable submission ledger for a (school year, section, subject, grading
+period) sheet — one row per submit/reopen event.
+
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | text PRIMARY KEY | — |
+| `school_year_id` | text NOT NULL | FK → `school_years(id)` |
+| `section_id` | text NOT NULL | FK → `sections(id)` |
+| `subject_id` | text NOT NULL | FK → `subjects(id)` |
+| `grading_period_id` | text NOT NULL | FK → `grading_periods(id)` |
+| `status` | text NOT NULL | `'submitted'` or `'reopened'` |
+| `submitted_by` | text NOT NULL | FK → `users(id)` (the adviser) |
+| `submitted_at` | integer NOT NULL | — |
+| `reopened_at` | integer | set when reopening |
+| `reopened_by` | text | FK → `users(id)` ON DELETE SET NULL |
+| `entry_count` | integer NOT NULL DEFAULT 0 | grades carried in this submission |
+| `roster_count` | integer NOT NULL DEFAULT 0 | active students expected on the sheet |
+| `warnings_json` | text | JSON snapshot of validation warnings at submit time |
+| `created_at` | integer | DEFAULT `(unixepoch())` |
+
+**Indexes:** `grade_submissions_context_idx` (section_id, subject_id,
+grading_period_id), `grade_submissions_sy_idx`, `grade_submissions_submitted_idx`,
+`grade_submissions_submitter_idx`
 
 ---
 

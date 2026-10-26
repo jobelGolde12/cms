@@ -9,11 +9,17 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableWrap, Th, Td } from "@/components/ui/table";
 import { buttonStyles } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ReportFilterForm, resolveReportFilterValues, resolveReportQuery } from "@/components/reports/report-filters";
+
+export const metadata = { title: "Report · Records Management System" };
 
 export default async function ReportDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ type: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -40,10 +46,18 @@ export default async function ReportDetailPage({
 
   const reportType = type as ReportType;
   const canExport = hasPermission(user.role, "reports.export");
+  const filterValues = await resolveReportFilterValues(await searchParams);
+  const filterData = await resolveReportQuery(filterValues);
 
   let built;
   try {
-    built = await buildReport(user, reportType, {});
+    built = await buildReport(user, reportType, {
+      schoolYearId: filterValues.sy,
+      gradeLevelId: filterValues.gradeLevel,
+      sectionId: filterValues.section,
+      subjectId: filterValues.subject,
+      gradingPeriodId: filterValues.period,
+    });
   } catch {
     return (
       <div className="space-y-6">
@@ -62,6 +76,15 @@ export default async function ReportDetailPage({
     );
   }
 
+  const qsFor = (base: string) => {
+    const qs = new URLSearchParams(
+      Object.entries(filterValues)
+        .filter(([, v]) => Boolean(v))
+        .map(([k, v]) => [k, v as string]),
+    ).toString();
+    return qs ? `${base}?${qs}` : base;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -72,16 +95,16 @@ export default async function ReportDetailPage({
           <PageHeader
             eyebrow="Reports & Exports"
             title={REPORT_TYPE_LABELS[reportType]}
-            description={built.filters || `Live query over verified records in your scope.`}
+            description={built.filters || "Live query over verified records in your scope."}
           />
         </div>
         <div className="flex flex-wrap gap-2 shrink-0 pt-1">
           {canExport ? (
             <>
-              <a href={`/api/reports/${reportType}?format=pdf`} className={buttonStyles("primary", "sm")}>
+              <a href={qsFor(`/api/reports/${reportType}?format=pdf`)} className={buttonStyles("primary", "sm")}>
                 <FileText aria-hidden="true" className="h-3.5 w-3.5" /> PDF
               </a>
-              <a href={`/api/reports/${reportType}?format=xlsx`} className={buttonStyles("outline", "sm")}>
+              <a href={qsFor(`/api/reports/${reportType}?format=xlsx`)} className={buttonStyles("outline", "sm")}>
                 <FileText aria-hidden="true" className="h-3.5 w-3.5" /> XLSX
               </a>
             </>
@@ -97,6 +120,46 @@ export default async function ReportDetailPage({
         </p>
       )}
 
+      <ReportFilterForm
+        action={`/reports/${reportType}`}
+        values={filterValues}
+        years={filterData.years}
+        gradeLevels={filterData.gradeLevels}
+        sections={filterData.sections}
+        subjects={filterData.subjects}
+        periods={filterData.periods}
+      />
+
+      {/* Context stamp — section, school year, grade level, subject, period. */}
+      <Card className="border-brand-200 bg-brand-50/60">
+        <CardBody className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
+            Report context
+          </span>
+          <Badge className="bg-white text-brand-800 ring-1 ring-brand-200">
+            {built.scope === "school" ? "School-wide" : built.scope === "grade_level" ? "Grade level" : "Section"}
+          </Badge>
+          {[
+            filterValues.sy ? filterData.years.find((y) => y.id === filterValues.sy)?.year : null,
+            filterValues.gradeLevel ? filterData.gradeLevels.find((g) => g.id === filterValues.gradeLevel)?.name : null,
+            filterValues.section ? filterData.sections.find((s) => s.id === filterValues.section)?.gradeLevelName
+              ? `${filterData.sections.find((s) => s.id === filterValues.section)?.gradeLevelName} — ${filterData.sections.find((s) => s.id === filterValues.section)?.name}`
+              : filterData.sections.find((s) => s.id === filterValues.section)?.name : null,
+            filterData.subjects.find((s) => s.id === filterValues.subject)?.name,
+            filterData.periods.find((p) => p.id === filterValues.period)?.name,
+          ]
+            .filter(Boolean)
+            .map((chip, i) => (
+              <Badge key={`${chip}-${i}`} className="bg-white text-brand-800 ring-1 ring-brand-200">
+                {chip}
+              </Badge>
+            ))}
+          <span className="ml-auto text-xs text-[#64748B]">
+            Generated {built.generatedAt.toLocaleString()} by {built.generatedBy}
+          </span>
+        </CardBody>
+      </Card>
+
       <Card>
         <CardHeader
           title={REPORT_TYPE_LABELS[reportType]}
@@ -107,8 +170,14 @@ export default async function ReportDetailPage({
             <div className="px-4 py-10">
               <div className="text-center">
                 <FileText className="mx-auto h-10 w-10 text-brand-200 mb-3" />
-                <h3 className="text-sm font-semibold text-brand-900">No records found</h3>
-                <p className="text-xs text-[#64748B] mt-1">No data matches the current filters or scope for this report.</p>
+                <h3 className="text-sm font-semibold text-brand-900">
+                  {filterValues.section ? "No records for this section" : "No records found"}
+                </h3>
+                <p className="text-xs text-[#64748B] mt-1">
+                  {filterValues.section
+                    ? "This section has no data matching the report type and academic context yet."
+                    : "No data matches the current filters or scope for this report."}
+                </p>
               </div>
             </div>
           ) : (

@@ -424,6 +424,7 @@ export async function getStudentGrades(studentId: string) {
       periodName: gradingPeriods.name,
       schoolYear: schoolYears.year,
       enrollmentId: studentGrades.enrollmentId,
+      status: studentGrades.status,
     })
     .from(studentGrades)
     .innerJoin(studentEnrollments, eq(studentEnrollments.id, studentGrades.enrollmentId))

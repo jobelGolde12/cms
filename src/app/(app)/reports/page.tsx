@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { FileText, Download, Eye } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
@@ -11,8 +12,19 @@ import { buttonStyles } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  ReportFilterForm,
+  resolveReportFilterValues,
+  resolveReportQuery,
+} from "@/components/reports/report-filters";
 
-export default async function ReportsPage() {
+export const metadata = { title: "Reports · Records Management System" };
+
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!hasPermission(user.role, "reports.view")) redirect("/dashboard");
@@ -22,6 +34,13 @@ export default async function ReportsPage() {
   // see src/app/api/reports/[type]/route.ts and src/proxy.ts). Hide the
   // download buttons for roles that would only ever receive 403s.
   const canExport = hasPermission(user.role, "reports.export");
+
+  const filterValues = await resolveReportFilterValues(await searchParams);
+  const filterData = await resolveReportQuery(filterValues);
+  const qs = new URLSearchParams(
+    Object.entries(filterValues).filter(([, v]) => Boolean(v)) as [string, string][],
+  ).toString();
+  const linkWithFilters = (base: string) => (qs ? `${base}?${qs}` : base);
 
   const recent = await db
     .select({
@@ -40,7 +59,7 @@ export default async function ReportsPage() {
       <PageHeader
         eyebrow="Reports & Exports"
         title="Reports"
-        description="Generate and export school, grade-level and section reports as PDF or Excel."
+        description="Generate and export school, grade-level and section reports as PDF or Excel — filtered by school year, grade level, section, subject and grading period."
       />
 
       {!canExport && (
@@ -49,6 +68,35 @@ export default async function ReportsPage() {
           School Admin, Records and Registrar accounts. Contact the school
           office if you need an exported copy of a report.
         </p>
+      )}
+
+      <ReportFilterForm
+        action="/reports"
+        values={filterValues}
+        years={filterData.years}
+        gradeLevels={filterData.gradeLevels}
+        sections={filterData.sections}
+        subjects={filterData.subjects}
+        periods={filterData.periods}
+      />
+
+      {filterData.selected.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-400">
+            Active filters
+          </span>
+          {filterData.selected.map((f) => (
+            <span
+              key={f.label}
+              className="inline-flex h-6 items-center gap-1 rounded-full bg-brand-100 px-2.5 text-xs text-brand-700"
+            >
+              <span className="font-semibold">{f.label}:</span> {f.value}
+            </span>
+          ))}
+          <Link href="/reports" className="text-xs font-medium text-action-700 hover:text-action-800">
+            Clear all
+          </Link>
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -64,20 +112,23 @@ export default async function ReportsPage() {
                 Live query over verified and pending records in your scope.
               </p>
               <div className="flex flex-wrap gap-2">
-                <a
-                  href={`/reports/${t}`}
-                  className={buttonStyles("primary", "sm")}
-                >
+                <Link href={linkWithFilters(`/reports/${t}`)} className={buttonStyles("primary", "sm")}>
                   <Eye aria-hidden="true" className="h-3.5 w-3.5" />
                   View Report
-                </a>
+                </Link>
                 {canExport ? (
                   <>
-                    <a href={`/api/reports/${t}?format=pdf`} className={buttonStyles("outline", "sm")}>
+                    <a
+                      href={linkWithFilters(`/api/reports/${t}?format=pdf`)}
+                      className={buttonStyles("outline", "sm")}
+                    >
                       <Download aria-hidden="true" className="h-3.5 w-3.5" />
                       PDF
                     </a>
-                    <a href={`/api/reports/${t}?format=xlsx`} className={buttonStyles("outline", "sm")}>
+                    <a
+                      href={linkWithFilters(`/api/reports/${t}?format=xlsx`)}
+                      className={buttonStyles("outline", "sm")}
+                    >
                       <Download aria-hidden="true" className="h-3.5 w-3.5" />
                       XLSX
                     </a>

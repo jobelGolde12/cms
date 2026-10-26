@@ -71,7 +71,16 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number];
 
-const ADMIN: Permission[] = [...PERMISSIONS];
+/**
+ * Grade-encoding rule (2026-10): Teachers/Advisers are the only users allowed
+ * to input and modify student grades. `grades.view` stays read-only for
+ * oversight roles; `grades.write` is deliberately withheld from admin,
+ * school_admin and every non-teacher role here AND re-checked server-side in
+ * the grade actions (role === "teacher"), so this cannot be bypassed.
+ */
+const TEACHER_ONLY_WRITE = new Set<Permission>(["grades.write"]);
+
+const ADMIN: Permission[] = PERMISSIONS.filter((p) => !TEACHER_ONLY_WRITE.has(p));
 
 const SCHOOL_ADMIN: Permission[] = [
   "dashboard.view",
@@ -85,7 +94,7 @@ const SCHOOL_ADMIN: Permission[] = [
   "enrollment.manage",
   "academics.config",
   "grades.view",
-  "grades.write",
+  // grades.write: teachers/advisers ONLY (see TEACHER_ONLY_WRITE above)
   "attendance.view",
   "attendance.write",
   "behavior.view",
@@ -111,6 +120,7 @@ const TEACHER: Permission[] = [
   "guardians.view",
   "enrollment.view",
   "grades.view",
+  // Grade encoding is the teacher/adviser's exclusive duty (grades.write).
   "grades.write",
   "attendance.view",
   "attendance.write",

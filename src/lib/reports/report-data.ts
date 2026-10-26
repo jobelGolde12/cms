@@ -23,8 +23,11 @@ import type { AssessmentDomain, ReportType } from "@/lib/constants";
 import { REPORT_TYPE_LABELS } from "@/lib/constants";
 
 export type ReportParams = {
+  schoolYearId?: string;
   gradeLevelId?: string;
   sectionId?: string;
+  subjectId?: string;
+  gradingPeriodId?: string;
   domain?: AssessmentDomain;
 };
 
@@ -69,8 +72,11 @@ export async function buildReport(
 
   const generatedAt = new Date();
   const filters = [
+    params.schoolYearId ? `School year: ${await schoolYearName(params.schoolYearId)}` : null,
     params.gradeLevelId ? `Grade level: ${await gradeLevelName(params.gradeLevelId)}` : null,
     params.sectionId ? `Section: ${await sectionName(params.sectionId)}` : null,
+    params.subjectId ? `Subject: ${await subjectName(params.subjectId)}` : null,
+    params.gradingPeriodId ? `Grading period: ${await periodName(params.gradingPeriodId)}` : null,
     params.domain ? `Domain: ${params.domain}` : null,
   ]
     .filter(Boolean)
@@ -87,6 +93,14 @@ export async function buildReport(
     scope: params.sectionId ? "section" : params.gradeLevelId ? "grade_level" : "school",
   };
 
+  // Common academic-context joins/filters. Section + school-year + grade-level
+  // filters hit the enrollment rows in SQL (backend filtering) — never as
+  // post-load client-side filtering. The teacher scope predicate always stays
+  // attached, including for reports that previously ignored it.
+  const schoolYearFilter = params.schoolYearId
+    ? eq(studentEnrollments.schoolYearId, params.schoolYearId)
+    : sql`1 = 1`;
+
   switch (type) {
     case "student_master_list":
     case "enrollment_report": {
@@ -94,6 +108,7 @@ export async function buildReport(
         and(
           sql`${students.status} = 'active'`,
           sql`${students.recordStatus} != 'marked_duplicate'`,
+          schoolYearFilter,
           params.gradeLevelId ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId) : sql`1 = 1`,
           params.sectionId ? eq(studentEnrollments.sectionId, params.sectionId) : sql`1 = 1`,
         ),
@@ -164,13 +179,25 @@ export async function buildReport(
     case "subject_performance":
     case "grade_level_performance":
     case "section_performance": {
+      // Explicit school-year filter, else current year (defaults preserved).
+      const yearCond = params.schoolYearId
+        ? eq(schoolYears.id, params.schoolYearId)
+        : eq(schoolYears.isCurrent, true);
       const where = withScope(
         and(
-          eq(schoolYears.isCurrent, true),
+          yearCond,
+          schoolYearFilter,
           params.gradeLevelId
             ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId)
             : sql`1 = 1`,
           params.sectionId ? eq(studentEnrollments.sectionId, params.sectionId) : sql`1 = 1`,
+          params.subjectId ? eq(studentGrades.subjectId, params.subjectId) : sql`1 = 1`,
+          params.gradingPeriodId
+            ? eq(studentGrades.gradingPeriodId, params.gradingPeriodId)
+            : sql`1 = 1`,
+          // Reports show official grades only — adviser drafts (work in
+          // progress) never leak into school reports.
+          eq(studentGrades.status, "submitted"),
         ),
       );
 
@@ -186,6 +213,7 @@ export async function buildReport(
           period: gradingPeriods.name,
           subject: subjects.name,
           gradeValue: studentGrades.grade,
+          gradeStatus: studentGrades.status,
         })
         .from(studentGrades)
         .innerJoin(studentEnrollments, eq(studentEnrollments.id, studentGrades.enrollmentId))
@@ -207,6 +235,10 @@ export async function buildReport(
         Period: r.period,
         Grade: r.gradeValue,
       }));
+
+      // Incomplete-grade visibility for this context is surfaced through the
+      // Grade Encoding page (Not-started rows) and the section performance
+      // summary; reports themselves carry only official submitted grades.
 
       const avg =
         data.length > 0
@@ -231,6 +263,7 @@ export async function buildReport(
       const where = withScope(
         and(
           eq(schoolYears.isCurrent, true),
+          schoolYearFilter,
           params.gradeLevelId
             ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId)
             : sql`1 = 1`,
@@ -295,6 +328,7 @@ export async function buildReport(
           sex: students.sex,
           birthDate: students.birthDate,
           grade: gradeLevels.name,
+          section: sections.name,
           date: assessments.date,
           level: assessments.level,
           score: assessments.score,
@@ -310,7 +344,19 @@ export async function buildReport(
           ),
         )
         .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
-        .where(withScope(eq(assessments.domain, domain)))
+        .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+        .where(
+          withScope(
+            and(
+              eq(assessments.domain, domain),
+              schoolYearFilter,
+              params.gradeLevelId
+                ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId)
+                : sql`1 = 1`,
+              params.sectionId ? eq(studentEnrollments.sectionId, params.sectionId) : sql`1 = 1`,
+            ),
+          ),
+        )
         .orderBy(desc(assessments.date))
         .limit(1000);
 
@@ -318,6 +364,7 @@ export async function buildReport(
         "Student No.": r.number,
         "Full Name": studentName(r),
         "Grade Level": r.grade ?? "—",
+        Section: r.section ?? "—",
         Date: r.date,
         Type: r.assessmentType ?? "—",
         Level: r.level ?? "—",
@@ -332,7 +379,7 @@ export async function buildReport(
 
       return {
         ...base,
-        columns: ["Student No.", "Full Name", "Grade Level", "Date", "Type", "Level", "Score"],
+        columns: ["Student No.", "Full Name", "Grade Level", "Section", "Date", "Type", "Level", "Score"],
         rows: data,
         summary: Object.entries(levelCounts).map(([label, value]) => ({ label, value })),
       };
@@ -346,6 +393,7 @@ export async function buildReport(
           lastName: students.lastName,
           sex: students.sex,
           grade: gradeLevels.name,
+          section: sections.name,
           category: behaviorCategories.name,
           kind: behaviorCategories.kind,
           date: behaviorRecords.date,
@@ -363,9 +411,18 @@ export async function buildReport(
           ),
         )
         .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+        .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
         .where(
           withScope(
-            and(sql`1 = 1`, confidentialBehaviorFilter(user) ?? sql`1 = 1`),
+            and(
+              sql`1 = 1`,
+              confidentialBehaviorFilter(user) ?? sql`1 = 1`,
+              schoolYearFilter,
+              params.gradeLevelId
+                ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId)
+                : sql`1 = 1`,
+              params.sectionId ? eq(studentEnrollments.sectionId, params.sectionId) : sql`1 = 1`,
+            ),
           ),
         )
         .orderBy(desc(behaviorRecords.date))
@@ -375,6 +432,7 @@ export async function buildReport(
         "Student No.": r.number,
         "Full Name": studentName(r),
         "Grade Level": r.grade ?? "—",
+        Section: r.section ?? "—",
         Category: r.category,
         Kind: r.kind,
         Date: r.date,
@@ -389,7 +447,7 @@ export async function buildReport(
 
       return {
         ...base,
-        columns: ["Student No.", "Full Name", "Grade Level", "Category", "Kind", "Date", "Severity", "Status"],
+        columns: ["Student No.", "Full Name", "Grade Level", "Section", "Category", "Kind", "Date", "Severity", "Status"],
         rows: data,
         summary: Object.entries(counts).map(([label, value]) => ({ label, value })),
       };
@@ -403,6 +461,7 @@ export async function buildReport(
           lastName: students.lastName,
           sex: students.sex,
           grade: gradeLevels.name,
+          section: sections.name,
           type: interventions.interventionType,
           status: interventions.status,
           startDate: interventions.startDate,
@@ -419,7 +478,19 @@ export async function buildReport(
           ),
         )
         .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
-        .where(withScope(sql`1 = 1`))
+        .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+        .where(
+          withScope(
+            and(
+              sql`1 = 1`,
+              schoolYearFilter,
+              params.gradeLevelId
+                ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId)
+                : sql`1 = 1`,
+              params.sectionId ? eq(studentEnrollments.sectionId, params.sectionId) : sql`1 = 1`,
+            ),
+          ),
+        )
         .orderBy(desc(interventions.createdAt))
         .limit(1000);
 
@@ -427,6 +498,7 @@ export async function buildReport(
         "Student No.": r.number,
         "Full Name": studentName(r),
         "Grade Level": r.grade ?? "—",
+        Section: r.section ?? "—",
         Type: r.type,
         Status: r.status,
         Start: r.startDate ?? "—",
@@ -441,7 +513,7 @@ export async function buildReport(
 
       return {
         ...base,
-        columns: ["Student No.", "Full Name", "Grade Level", "Type", "Status", "Start", "Target", "Outcome"],
+        columns: ["Student No.", "Full Name", "Grade Level", "Section", "Type", "Status", "Start", "Target", "Outcome"],
         rows: data,
         summary: Object.entries(statusCounts).map(([label, value]) => ({ label, value })),
       };
@@ -461,7 +533,20 @@ export async function buildReport(
         })
         .from(students)
         .leftJoin(recordVerifications, eq(recordVerifications.studentId, students.id))
-        .where(withScope(sql`${students.status} = 'active'`))
+        .where(
+          withScope(
+            and(
+              sql`${students.status} = 'active'`,
+              schoolYearFilter,
+              params.gradeLevelId
+                ? sql`exists (select 1 from student_enrollments se where se.student_id = ${students.id} and se.status = 'active' and se.grade_level_id = ${params.gradeLevelId})`
+                : sql`1 = 1`,
+              params.sectionId
+                ? sql`exists (select 1 from student_enrollments se where se.student_id = ${students.id} and se.status = 'active' and se.section_id = ${params.sectionId})`
+                : sql`1 = 1`,
+            ),
+          ),
+        )
         .groupBy(students.id)
         .orderBy(asc(students.lastName))
         .limit(1000);
@@ -513,10 +598,18 @@ export async function buildReport(
           ),
         )
         .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+        .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
         .where(
           withScope(
-            sql`(exists (select 1 from behavior_records br where br.student_id = ${students.id} ${brConfidential ? "and br.confidential = 0" : ""} and br.status != 'resolved')
+            and(
+              sql`(exists (select 1 from behavior_records br where br.student_id = ${students.id} ${brConfidential ? "and br.confidential = 0" : ""} and br.status != 'resolved')
               or exists (select 1 from interventions iv where iv.student_id = ${students.id} and iv.status in ('planned','active')))`,
+              schoolYearFilter,
+              params.gradeLevelId
+                ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId)
+                : sql`1 = 1`,
+              params.sectionId ? eq(studentEnrollments.sectionId, params.sectionId) : sql`1 = 1`,
+            ),
           ),
         )
         .orderBy(desc(sql`(select count(*) from behavior_records br where br.student_id = ${students.id} ${brConfidential ? "and br.confidential = 0" : ""} and br.status != 'resolved')`))
@@ -539,7 +632,8 @@ export async function buildReport(
 
     case "school_year_comparison":
     default: {
-      // Grade averages per school year.
+      // Grade averages per school year. Teacher scope is enforced here too
+      // (this case previously ignored it) plus optional section filtering.
       const rows = await db
         .select({
           year: schoolYears.year,
@@ -551,6 +645,19 @@ export async function buildReport(
         .innerJoin(studentEnrollments, eq(studentEnrollments.id, studentGrades.enrollmentId))
         .innerJoin(schoolYears, eq(schoolYears.id, studentEnrollments.schoolYearId))
         .innerJoin(subjects, eq(subjects.id, studentGrades.subjectId))
+        .where(
+          withScope(
+            and(
+              eq(studentGrades.status, "submitted"),
+              schoolYearFilter,
+              params.gradeLevelId
+                ? eq(studentEnrollments.gradeLevelId, params.gradeLevelId)
+                : sql`1 = 1`,
+              params.sectionId ? eq(studentEnrollments.sectionId, params.sectionId) : sql`1 = 1`,
+              params.subjectId ? eq(studentGrades.subjectId, params.subjectId) : sql`1 = 1`,
+            ),
+          ),
+        )
         .groupBy(schoolYears.id, subjects.id)
         .orderBy(desc(schoolYears.year), asc(subjects.code));
 
@@ -596,6 +703,33 @@ async function currentYear(): Promise<string | null> {
     .where(eq(schoolYears.isCurrent, true))
     .limit(1);
   return rows[0]?.year ?? null;
+}
+
+async function schoolYearName(id: string): Promise<string> {
+  const rows = await db
+    .select({ year: schoolYears.year })
+    .from(schoolYears)
+    .where(eq(schoolYears.id, id))
+    .limit(1);
+  return rows[0]?.year ?? id;
+}
+
+async function subjectName(id: string): Promise<string> {
+  const rows = await db
+    .select({ name: subjects.name })
+    .from(subjects)
+    .where(eq(subjects.id, id))
+    .limit(1);
+  return rows[0]?.name ?? id;
+}
+
+async function periodName(id: string): Promise<string> {
+  const rows = await db
+    .select({ name: gradingPeriods.name })
+    .from(gradingPeriods)
+    .where(eq(gradingPeriods.id, id))
+    .limit(1);
+  return rows[0]?.name ?? id;
 }
 
 function summarize(data: ReportRow[]): { label: string; value: number }[] {

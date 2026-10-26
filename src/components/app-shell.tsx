@@ -20,6 +20,7 @@ type NavLink = {
 const navLinks: NavLink[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard", permission: "dashboard.view" },
   { label: "Students", href: "/students", icon: "students", permission: "students.view" },
+  { label: "Grade Encoding", href: "/grades", icon: "grades", permission: "grades.view" },
   { label: "Employees", href: "/employees", icon: "employees", permission: "employees.view" },
   { label: "Service Credits", href: "/service-credits", icon: "service_credits", permission: "service_credits.view" },
   { label: "Performance", href: "/performance", icon: "performance", permission: "grades.view" },
@@ -37,7 +38,7 @@ const navLinks: NavLink[] = [
 ];
 
 const NAV_SECTIONS: { heading: string; items: string[] }[] = [
-  { heading: "Core Modules", items: ["/dashboard", "/students", "/performance", "/development", "/health", "/verification", "/duplicates", "/reports"] },
+  { heading: "Core Modules", items: ["/dashboard", "/students", "/grades", "/performance", "/development", "/health", "/verification", "/duplicates", "/reports"] },
   { heading: "Employee Records", items: ["/employees", "/service-credits"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
   { heading: "System", items: ["/users", "/settings", "/privacy"] },

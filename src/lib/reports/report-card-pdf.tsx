@@ -392,7 +392,10 @@ const reportCardDoc = (data: ReportCardData) => {
         {/* Official letterhead — left DepEd logo, center info, right school logo */}
         <View style={styles.letterhead}>
           {getDepEdLogoSrc() ? (
-            <Image src={`data:image/jpeg;base64,${getDepEdLogoSrc()}`} style={styles.logoLeft} alt="Department of Education logo" />
+            // <Image> is @react-pdf/renderer's PDF primitive — it has no alt prop;
+            // a11y alt text is provided by the surrounding <Text> in the letterhead.
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image src={`data:image/jpeg;base64,${getDepEdLogoSrc()}`} style={styles.logoLeft} />
           ) : null}
           <View style={styles.letterheadText}>
             <Text>Republic of the Philippines</Text>
@@ -403,7 +406,8 @@ const reportCardDoc = (data: ReportCardData) => {
             <Text>{SCHOOL.address}</Text>
           </View>
           {getLogoSrc() ? (
-            <Image src={`data:image/png;base64,${getLogoSrc()}`} style={styles.logoRight} alt="School logo" />
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image src={`data:image/png;base64,${getLogoSrc()}`} style={styles.logoRight} />
           ) : null}
         </View>
 

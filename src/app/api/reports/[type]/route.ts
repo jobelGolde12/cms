@@ -39,10 +39,26 @@ export async function GET(
     return NextResponse.json({ error: "Unsupported format" }, { status: 400 });
   }
 
+  // Academic-context filters (applied server-side in buildReport).
   const gradeLevelId = request.nextUrl.searchParams.get("gradeLevel") ?? undefined;
   const sectionId = request.nextUrl.searchParams.get("section") ?? undefined;
+  const schoolYearId = request.nextUrl.searchParams.get("sy") ?? undefined;
+  const subjectId = request.nextUrl.searchParams.get("subject") ?? undefined;
+  const gradingPeriodId = request.nextUrl.searchParams.get("period") ?? undefined;
+  const domainP = request.nextUrl.searchParams.get("domain");
+  const domain =
+    domainP === "reading" || domainP === "literacy" || domainP === "numeracy"
+      ? domainP
+      : undefined;
 
-  const built = await buildReport(user, reportType, { gradeLevelId, sectionId });
+  const built = await buildReport(user, reportType, {
+    gradeLevelId,
+    sectionId,
+    schoolYearId,
+    subjectId,
+    gradingPeriodId,
+    ...(domain ? { domain } : {}),
+  });
   const stamp = new Date().toISOString().slice(0, 10);
   const baseName = `${reportType}-${stamp}`;
 
@@ -55,7 +71,13 @@ export async function GET(
       reportType,
       generatedBy: user.id,
       scope: built.scope,
-      filtersJson: JSON.stringify({ gradeLevelId: gradeLevelId ?? null, sectionId: sectionId ?? null }),
+      filtersJson: JSON.stringify({
+        gradeLevelId: gradeLevelId ?? null,
+        sectionId: sectionId ?? null,
+        schoolYearId: schoolYearId ?? null,
+        subjectId: subjectId ?? null,
+        gradingPeriodId: gradingPeriodId ?? null,
+      }),
     })
     .returning();
 

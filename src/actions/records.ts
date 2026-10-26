@@ -12,6 +12,7 @@ import {
   students,
 } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
+import { getGradeWriter } from "@/lib/grades";
 import { logAudit } from "@/lib/audit";
 import {
   assessmentFormSchema,
@@ -124,8 +125,12 @@ export async function saveGrade(_prev: ActionState, formData: FormData): Promise
   if (!parsed.success) return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
   const { enrollmentId, subjectId, gradingPeriodId, grade, remarks } = parsed.data;
 
-  const user = await getAuthorizedUser("grades.write");
-  if (!user) return fail("You do not have permission to record grades.");
+  // Grade-encoding rule: teachers/advisers ONLY (role checked server-side,
+  // see getGradeWriter). Kept as the single-student variant of the section
+  // workflow in src/actions/grades.ts.
+
+  const user = await getGradeWriter();
+  if (!user) return fail("Only teachers/advisers can record grades.");
 
   const enrollmentRows = await db
     .select({ studentId: studentEnrollments.studentId })

@@ -27,6 +27,26 @@ describe("role catalog", () => {
   });
 });
 
+describe("grade encoding is teacher-only (2026-10 rule)", () => {
+  it("grants grades.write to the teacher/adviser role ONLY", () => {
+    for (const role of ALL_ROLES) {
+      const expected = role === "teacher";
+      expect({ role, granted: hasPermission(role, "grades.write") }).toEqual({
+        role,
+        granted: expected,
+      });
+    }
+  });
+
+  it("keeps grades.view read-only for oversight roles but blocks it when unset", () => {
+    // Oversight roles may see grades; nothing here grants write access.
+    expect(hasPermission("admin", "grades.view")).toBe(true);
+    expect(hasPermission("school_admin", "grades.view")).toBe(true);
+    expect(hasPermission("registrar", "grades.view")).toBe(true);
+    expect(hasPermission("teacher", "grades.view")).toBe(true);
+  });
+});
+
 describe("registrar is strictly read-only", () => {
   const writePermissions = [
     "students.create",

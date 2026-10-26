@@ -338,6 +338,35 @@ export const subjects = sqliteTable(
   ],
 );
 
+/**
+ * Departmental teaching loads — a subject-teacher assignment beyond the
+ * advisory. The adviser (sections.adviser_id) can encode EVERY subject of
+ * their section; a teacher listed here can encode only the assigned subject.
+ * One assignment row per (section, subject); admin/seed-managed for now.
+ */
+export const sectionSubjectTeachers = sqliteTable(
+  "section_subject_teachers",
+  {
+    id: text("id").primaryKey(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => sections.id, { onDelete: "cascade" }),
+    subjectId: text("subject_id")
+      .notNull()
+      .references(() => subjects.id, { onDelete: "cascade" }),
+    teacherId: text("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("section_subject_teacher_uq").on(t.sectionId, t.subjectId),
+    index("section_subject_teacher_teacher_idx").on(t.teacherId),
+    index("section_subject_teacher_section_idx").on(t.sectionId),
+  ],
+);
+
 export const gradingPeriods = sqliteTable(
   "grading_periods",
   {
@@ -360,6 +389,18 @@ export const gradingPeriods = sqliteTable(
   ],
 );
 
+/**
+ * Grade lifecycle status.
+ *
+ * draft — the adviser's staged entry (persists across sessions until either
+ *         submitted or removed);
+ * submitted — committed by the adviser via a grade submission (see
+ *         `grade_submissions`). Submitted rows are read-only for the adviser
+ *         until the submission is reopened (audit-logged correction workflow).
+ */
+export const GRADE_STATUSES = ["draft", "submitted"] as const;
+export type GradeStatus = (typeof GRADE_STATUSES)[number];
+
 export const studentGrades = sqliteTable(
   "student_grades",
   {
@@ -378,6 +419,14 @@ export const studentGrades = sqliteTable(
     recordedBy: text("recorded_by")
       .notNull()
       .references(() => users.id),
+    /** draft | submitted (default keeps legacy rows as drafts after migration). */
+    status: text("status").notNull().default("draft"),
+    /** Timestamp of the submission that committed this row (null for drafts). */
+    submittedAt: timestamp("submitted_at"),
+    /** The submission ledger entry that committed this row (null for drafts). */
+    submissionId: text("submission_id").references(() => gradeSubmissions.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
     updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
   },
@@ -390,6 +439,59 @@ export const studentGrades = sqliteTable(
     index("grades_enrollment_idx").on(t.enrollmentId),
     index("grades_subject_idx").on(t.subjectId),
     index("grades_period_idx").on(t.gradingPeriodId),
+  ],
+);
+
+/**
+ * Grade submission ledger — one row per adviser submission (or reopen) of a
+ * grade sheet for a section × subject × grading period.
+ *
+ * The latest `submitted` row for a context defines the current lock state:
+ * while it exists, that context's student_grades rows are read-only until the
+ * adviser reopens (recorded as a new `reopened` ledger row). This is an
+ * append-only history, so earlier submissions stay auditable.
+ */
+export const gradeSubmissions = sqliteTable(
+  "grade_submissions",
+  {
+    id: text("id").primaryKey(),
+    schoolYearId: text("school_year_id")
+      .notNull()
+      .references(() => schoolYears.id),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => sections.id),
+    subjectId: text("subject_id")
+      .notNull()
+      .references(() => subjects.id),
+    gradingPeriodId: text("grading_period_id")
+      .notNull()
+      .references(() => gradingPeriods.id),
+    /** submitted | reopened */
+    status: text("status").notNull(),
+    submittedBy: text("submitted_by")
+      .notNull()
+      .references(() => users.id),
+    submittedAt: timestamp("submitted_at").notNull(),
+    reopenedAt: timestamp("reopened_at"),
+    reopenedBy: text("reopened_by").references(() => users.id, { onDelete: "set null" }),
+    /** Number of grade rows committed with this submission. */
+    entryCount: integer("entry_count").notNull().default(0),
+    /** Snapshot of the scope the rows represented (roster size), for history. */
+    rosterCount: integer("roster_count").notNull().default(0),
+    /** JSON snapshot: { invalid: string[], skipped: string[] } validation notes. */
+    warningsJson: text("warnings_json"),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("grade_submissions_context_idx").on(
+      t.sectionId,
+      t.subjectId,
+      t.gradingPeriodId,
+    ),
+    index("grade_submissions_sy_idx").on(t.schoolYearId),
+    index("grade_submissions_submitted_idx").on(t.submittedAt),
+    index("grade_submissions_submitter_idx").on(t.submittedBy),
   ],
 );
 
@@ -1114,6 +1216,26 @@ export const gradeRelations = relations(studentGrades, ({ one }) => ({
     references: [gradingPeriods.id],
   }),
   recorder: one(users, { fields: [studentGrades.recordedBy], references: [users.id] }),
+  submission: one(gradeSubmissions, {
+    fields: [studentGrades.submissionId],
+    references: [gradeSubmissions.id],
+  }),
+}));
+
+export const gradeSubmissionRelations = relations(gradeSubmissions, ({ one, many }) => ({
+  submitter: one(users, { fields: [gradeSubmissions.submittedBy], references: [users.id] }),
+  reopener: one(users, { fields: [gradeSubmissions.reopenedBy], references: [users.id] }),
+  schoolYear: one(schoolYears, {
+    fields: [gradeSubmissions.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  section: one(sections, { fields: [gradeSubmissions.sectionId], references: [sections.id] }),
+  subject: one(subjects, { fields: [gradeSubmissions.subjectId], references: [subjects.id] }),
+  gradingPeriod: one(gradingPeriods, {
+    fields: [gradeSubmissions.gradingPeriodId],
+    references: [gradingPeriods.id],
+  }),
+  grades: many(studentGrades),
 }));
 
 export const healthRecordRelations = relations(healthRecords, ({ one }) => ({
@@ -1251,6 +1373,7 @@ export type StudentEnrollment = typeof studentEnrollments.$inferSelect;
 export type Subject = typeof subjects.$inferSelect;
 export type GradingPeriod = typeof gradingPeriods.$inferSelect;
 export type StudentGrade = typeof studentGrades.$inferSelect;
+export type GradeSubmission = typeof gradeSubmissions.$inferSelect;
 export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
 export type HealthRecord = typeof healthRecords.$inferSelect;
 export type ClinicalRecord = typeof clinicalRecords.$inferSelect;

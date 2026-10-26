@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Clock, QrCode, ShieldCheck } from "lucide-react";
+import { ChevronRight, Clock, GraduationCap, QrCode, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
@@ -19,7 +19,7 @@ import {
   getQrEvents,
 } from "@/lib/queries";
 import { formatDate, formatDateTime, fullName, ageFromBirthDate } from "@/lib/utils";
-import { RecordStatusBadge } from "@/components/ui/badge";
+import { Badge, RecordStatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/copy-button";
@@ -88,6 +88,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   const canHealth = hasPermission(user.role, "health.view");
   const canWriteHealth = hasPermission(user.role, "health.write");
   const canPrint = hasPermission(user.role, "documents.print");
+  const canEncodeGrades = hasPermission(user.role, "grades.write");
   const isPending = student.recordStatus === "pending_validation";
 
   const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents, health, clinical] =
@@ -255,7 +256,19 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
           </Section>
 
           {canGrades ? (
-          <Section title="Grades">
+          <Section
+            title="Grades"
+            icon={
+              canEncodeGrades ? (
+                <Link
+                  href="/grades"
+                  className="inline-flex items-center gap-1 rounded-md text-xs font-semibold text-accent-700 transition-colors hover:text-accent-800"
+                >
+                  <GraduationCap className="size-3.5" /> Encode grades
+                </Link>
+              ) : null
+            }
+          >
             {grades.length === 0 ? (
               <EmptyHint>No grades recorded.</EmptyHint>
             ) : (
@@ -268,7 +281,16 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                         {g.periodName} · {g.schoolYear}
                       </span>
                     </span>
-                    <span className="numeric font-semibold text-brand-900">{g.grade}</span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="numeric font-semibold text-brand-900">
+                        {g.grade ?? "—"}
+                      </span>
+                      {g.status === "submitted" ? (
+                        <Badge tone="verified" icon={false}>Final</Badge>
+                      ) : (
+                        <Badge tone="info" icon={false}>Draft</Badge>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
