@@ -508,10 +508,10 @@ export function StudentRegistryTable({
 /*  Pagination                                                                */
 /* -------------------------------------------------------------------------- */
 
-function buildPageHref(params: URLSearchParams, page: number): string {
+function buildPageHref(basePath: string, params: URLSearchParams, page: number): string {
   const next = new URLSearchParams(params);
   next.set("page", String(page));
-  return `/students?${next}`;
+  return `${basePath}?${next}`;
 }
 
 export function RegistryPagination({
@@ -519,11 +519,17 @@ export function RegistryPagination({
   pageSize,
   total,
   searchParams,
+  basePath = "/students",
+  itemLabel = "records",
 }: {
   page: number;
   pageSize: number;
   total: number;
   searchParams: Record<string, string | string[] | undefined>;
+  /** Listing route the links/forms point at (defaults to the registry). */
+  basePath?: string;
+  /** Noun used in the “Showing X–Y of Z …” line (defaults to “records”). */
+  itemLabel?: string;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -545,9 +551,9 @@ export function RegistryPagination({
         <p className="text-xs text-[#64748B]">
           Showing <span className="numeric font-medium text-brand-700">{from}</span>–
           <span className="numeric font-medium text-brand-700">{to}</span> of{" "}
-          <span className="numeric font-medium text-brand-700">{total.toLocaleString("en-PH")}</span> records
+          <span className="numeric font-medium text-brand-700">{total.toLocaleString("en-PH")}</span> {itemLabel}
         </p>
-        <form action="/students" method="GET" className="flex items-center gap-1.5">
+        <form action={basePath} method="GET" className="flex items-center gap-1.5">
           {Object.entries(searchParams).map(([key, value]) =>
             key !== "page" && key !== "pageSize" && typeof value === "string" && value ? (
               <input key={key} type="hidden" name={key} value={value} />
@@ -573,7 +579,7 @@ export function RegistryPagination({
       <nav aria-label="Pagination" className="flex items-center gap-1">
         {page > 1 ? (
           <Link
-            href={buildPageHref(params, page - 1)}
+            href={buildPageHref(basePath, params, page - 1)}
             aria-label="Previous page"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-brand-200 bg-white text-brand-600 hover:bg-brand-50"
           >
@@ -583,7 +589,7 @@ export function RegistryPagination({
         {pageNumbers.map((p) => (
           <Link
             key={p}
-            href={buildPageHref(params, p)}
+            href={buildPageHref(basePath, params, p)}
             aria-current={p === page ? "page" : undefined}
             className={cn(
               "inline-flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-xs font-medium",
@@ -597,7 +603,7 @@ export function RegistryPagination({
         ))}
         {page < totalPages ? (
           <Link
-            href={buildPageHref(params, page + 1)}
+            href={buildPageHref(basePath, params, page + 1)}
             aria-label="Next page"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-brand-200 bg-white text-brand-600 hover:bg-brand-50"
           >

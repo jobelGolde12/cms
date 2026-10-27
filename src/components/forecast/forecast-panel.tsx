@@ -1,8 +1,20 @@
+import dynamic from "next/dynamic";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { getForecastWithCache } from "@/lib/forecasting/service";
 import { Card, CardHeader, CardBody } from "@/components/ui/card";
-import ForecastChart, { type ChartDatum } from "./forecast-chart";
+import type { ChartDatum } from "./forecast-chart";
+
+// The chart pulls in the whole Recharts bundle; route it into its own chunk and
+// render a themed skeleton while loading so there is no layout shift.
+const ForecastChart = dynamic(() => import("./forecast-chart"), {
+  loading: () => (
+    <div
+      aria-hidden="true"
+      className="h-72 w-full animate-pulse rounded-md bg-brand-100/60"
+    />
+  ),
+});
 
 /**
  * Server component: fetches (or generates) the school-wide forecast with

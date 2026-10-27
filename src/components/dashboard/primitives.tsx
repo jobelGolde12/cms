@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DistributionBar } from "./distribution-bar";
 import type {
   ActivityItem,
   DistributionRow,
@@ -263,29 +264,20 @@ export function BarangayDistribution({ rows }: { rows: GradeLevelRow[] }) {
         <p className="py-6 text-center text-sm text-brand-400">No records yet.</p>
       ) : (
         <>
+          {/* Interactive client island: staggered entrance, hover/focus tooltips,
+              and drill-down to the registry filtered by grade level (plan §12). */}
           <ul className="space-y-2.5">
-            {visible.map((row) => (
-              <li key={row.name} className="flex items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-action-600"
-                />
-                <span
-                  className="w-32 min-w-0 shrink-0 truncate text-xs text-brand-600 sm:w-40"
-                  title={row.name}
-                >
-                  {row.name}
-                </span>
-                <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-brand-100">
-                  <div
-                    className="h-full rounded-full bg-action-600"
-                    style={{ width: `${Math.round((row.value / max) * 100)}%` }}
-                  />
-                </div>
-                <span className="numeric w-8 shrink-0 text-right text-xs font-semibold text-brand-900">
-                  {row.value}
-                </span>
-              </li>
+            {visible.map((row, i) => (
+              <DistributionBar
+                key={row.id}
+                label={row.name}
+                value={row.value}
+                max={max}
+                rank={i + 1}
+                index={i}
+                barClassName="bg-action-600"
+                href={`/students?gradeLevel=${encodeURIComponent(row.id)}`}
+              />
             ))}
           </ul>
           {hidden > 0 ? (
@@ -595,21 +587,16 @@ export function BehaviorConcernsCard({
         <p className="py-6 text-center text-sm text-brand-400">No open behavior concerns.</p>
       ) : (
         <ul className="space-y-2.5">
-          {counts.map((row) => (
-            <li key={row.label} className="flex items-center gap-3">
-              <span className="w-36 min-w-0 shrink-0 truncate text-xs text-brand-600" title={row.label}>
-                {row.label}
-              </span>
-              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-brand-100">
-                <div
-                  className="h-full rounded-full bg-amber-500"
-                  style={{ width: `${Math.round((row.value / max) * 100)}%` }}
-                />
-              </div>
-              <span className="numeric w-8 shrink-0 text-right text-xs font-semibold text-brand-900">
-                {row.value}
-              </span>
-            </li>
+          {counts.map((row, i) => (
+            <DistributionBar
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              max={max}
+              rank={i + 1}
+              index={i}
+              barClassName="bg-amber-500"
+            />
           ))}
         </ul>
       )}

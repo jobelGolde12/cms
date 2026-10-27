@@ -117,17 +117,8 @@ export default async function AppShell({
                 name="q"
                 placeholder="Search students, numbers…"
                 autoComplete="off"
-                list="student-autocomplete"
-                aria-autocomplete="list"
-                role="combobox"
-                aria-expanded="false"
-                aria-controls="student-autocomplete"
-                aria-haspopup="listbox"
                 className="h-8 w-full rounded-md border border-brand-200 bg-[#f8fafc] pl-8 pr-3 text-xs text-brand-800 placeholder:text-brand-400 focus:border-action-500 focus:bg-white focus:outline-none"
               />
-              <datalist id="student-autocomplete">
-                <option value="Search students by name or number…" />
-              </datalist>
             </div>
           </form>
           ) : null}

@@ -58,6 +58,8 @@ local.db.stale-backup
 
 # temporary/debug folders
 .freebuff/
+.tmp-integration/
+.tmp-qa/
 grade-plan/
 plan/
 

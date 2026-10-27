@@ -1552,6 +1552,11 @@ export async function listAuditLogs(page = 1, limit = 50) {
     .offset(offset);
 }
 
+export async function auditLogCount(): Promise<number> {
+  const rows = await db.select({ n: count() }).from(auditLogs);
+  return rows[0]?.n ?? 0;
+}
+
 export async function unreadNotificationCount(userId: string): Promise<number> {
   const rows = await db
     .select({ n: count() })

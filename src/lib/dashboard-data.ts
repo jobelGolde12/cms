@@ -36,7 +36,7 @@ export type Kpi = {
   progress: number | null;
 };
 
-export type GradeLevelRow = { name: string; value: number };
+export type GradeLevelRow = { id: string; name: string; value: number };
 export type DistributionRow = { label: string; value: number };
 
 export type VerificationCounts = {
@@ -228,7 +228,7 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
 
     // Students per grade level (active enrollments).
     db
-      .select({ name: gradeLevels.name, value: count() })
+      .select({ id: gradeLevels.id, name: gradeLevels.name, value: count() })
       .from(students)
       .innerJoin(
         studentEnrollments,
@@ -417,7 +417,7 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
     duplicateFlags: duplicateRows,
   };
 
-  const byGradeLevel = byGradeRows.map((r) => ({ name: r.name, value: r.value }));
+  const byGradeLevel = byGradeRows.map((r) => ({ id: r.id, name: r.name, value: r.value }));
 
   // Full label set in canonical order so empty categories still render.
   const enrollmentTotals = new Map(

@@ -22,6 +22,7 @@ export function Tooltip({
           "group-focus-within/tooltip:opacity-100 group-focus-within/tooltip:translate-y-0",
         )}
         role="tooltip"
+        aria-hidden="true"
       >
         {content}
       </span>
