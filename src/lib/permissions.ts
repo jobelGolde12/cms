@@ -72,11 +72,13 @@ export const PERMISSIONS = [
 export type Permission = (typeof PERMISSIONS)[number];
 
 /**
- * Grade-encoding rule (2026-10): Teachers/Advisers are the only users allowed
- * to input and modify student grades. `grades.view` stays read-only for
- * oversight roles; `grades.write` is deliberately withheld from admin,
- * school_admin and every non-teacher role here AND re-checked server-side in
- * the grade actions (role === "teacher"), so this cannot be bypassed.
+ * Grade-encoding rule (2026-10, revision B): only the SUBJECT TEACHER role may
+ * input and modify student grades — and even then only for the (section,
+ * subject) pairs in `section_subject_teachers`. Advisers keep `grades.view`
+ * (read-only oversight). `grades.write` stays withheld from admin,
+ * school_admin and every other role here AND is re-checked server-side in the
+ * grade actions (role === "subject_teacher" + row-level assignment check in
+ * `canWriteGradesInSection`), so this cannot be bypassed.
  */
 const TEACHER_ONLY_WRITE = new Set<Permission>(["grades.write"]);
 
@@ -114,14 +116,18 @@ const SCHOOL_ADMIN: Permission[] = [
   "settings.manage",
 ];
 
+/**
+ * Adviser — assigned sections: attendance, assessments, behavior, viewing of
+ * the section's academic records. The Adviser does NOT encode grades
+ * (2026-10 revision B): encoding is the Subject Teacher's role.
+ */
 const TEACHER: Permission[] = [
   "dashboard.view",
   "students.view",
   "guardians.view",
   "enrollment.view",
   "grades.view",
-  // Grade encoding is the teacher/adviser's exclusive duty (grades.write).
-  "grades.write",
+  // Grade encoding moved to the subject_teacher role — see TEACHER_ONLY_WRITE.
   "attendance.view",
   "attendance.write",
   "behavior.view",
@@ -129,6 +135,22 @@ const TEACHER: Permission[] = [
   "assessments.view",
   "assessments.write",
   "interventions.view",
+  "reports.view",
+  "reports.generate",
+];
+
+/**
+ * Subject Teacher — encodes grades for the departmental teaching loads in
+ * `section_subject_teachers` ONLY (row-level enforcement in
+ * `canWriteGradesInSection`). No administrative functionality, no user
+ * management, no personal-information editing of students.
+ */
+const SUBJECT_TEACHER: Permission[] = [
+  "dashboard.view",
+  "students.view",
+  "enrollment.view",
+  "grades.view",
+  "grades.write",
   "reports.view",
   "reports.generate",
 ];
@@ -155,6 +177,7 @@ const RECORDS: Permission[] = [
   "qr.verify",
 ];
 
+/** Guidance Counselor — student development & incident management domain. */
 const GUIDANCE: Permission[] = [
   "dashboard.view",
   "students.view",
@@ -245,6 +268,7 @@ const ADMIN_OFFICER: Permission[] = [
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   admin: ADMIN,
   school_admin: SCHOOL_ADMIN,
+  subject_teacher: SUBJECT_TEACHER,
   teacher: TEACHER,
   records: RECORDS,
   guidance: GUIDANCE,

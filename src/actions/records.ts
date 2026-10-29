@@ -125,12 +125,13 @@ export async function saveGrade(_prev: ActionState, formData: FormData): Promise
   if (!parsed.success) return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
   const { enrollmentId, subjectId, gradingPeriodId, grade, remarks } = parsed.data;
 
-  // Grade-encoding rule: teachers/advisers ONLY (role checked server-side,
-  // see getGradeWriter). Kept as the single-student variant of the section
-  // workflow in src/actions/grades.ts.
+  // Grade-encoding rule: subject teachers ONLY, assigned (section, subject)
+  // (role + row-level checked server-side, see getGradeWriter and
+  // canWriteGradesInSection). Kept as the single-student variant of the
+  // section workflow in src/actions/grades.ts.
 
   const user = await getGradeWriter();
-  if (!user) return fail("Only teachers/advisers can record grades.");
+  if (!user) return fail("Only Subject Teachers can record grades.");
 
   const enrollmentRows = await db
     .select({ studentId: studentEnrollments.studentId })

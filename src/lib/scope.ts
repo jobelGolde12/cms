@@ -1,6 +1,11 @@
 import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { behaviorRecords, sections, studentEnrollments } from "@/db/schema";
+import {
+  behaviorRecords,
+  sectionSubjectTeachers,
+  sections,
+  studentEnrollments,
+} from "@/db/schema";
 import type { SessionUser } from "./auth";
 
 /**
@@ -10,8 +15,11 @@ import type { SessionUser } from "./auth";
  *   literacy_coordinator → all students (domain gating — which tables a role
  *   may read or write — is handled by permission checks, not row scope)
  * - admin_officer → no student rows at all (employee-records domain)
- * - teacher → students with an active enrollment in a section where the user
- *   is the adviser (parameter-driven, never string-interpolated from user input)
+ * - teacher (Adviser) → students with an active enrollment in a section where
+ *   the user is the adviser (parameter-driven, never string-interpolated from
+ *   user input)
+ * - subject_teacher → students with an active enrollment in a section holding
+ *   one of the user's `section_subject_teachers` teaching loads
  * - unknown roles → nothing
  *
  * Used by every read *and* write path so that authorization cannot be
@@ -25,6 +33,15 @@ export async function adviserSectionIds(userId: string): Promise<string[]> {
     .from(sections)
     .where(eq(sections.adviserId, userId));
   return rows.map((r) => r.id);
+}
+
+/** Sections the user holds a subject-teaching load in (any school year). */
+export async function subjectTeacherSectionIds(userId: string): Promise<string[]> {
+  const rows = await db
+    .select({ id: sectionSubjectTeachers.sectionId })
+    .from(sectionSubjectTeachers)
+    .where(eq(sectionSubjectTeachers.teacherId, userId));
+  return Array.from(new Set(rows.map((r) => r.id)));
 }
 
 /**
@@ -57,7 +74,8 @@ export function studentScope(user: SessionUser, sectionIds?: string[]): SQL | un
     case "registrar":
     case "literacy_coordinator":
       return undefined; // school-wide
-    case "teacher": {
+    case "teacher":
+    case "subject_teacher": {
       const ids = sectionIds ?? [];
       if (ids.length === 0) return sql`1 = 0`;
       return enrollmentInSection(sql`students.id`, ids);
@@ -69,9 +87,13 @@ export function studentScope(user: SessionUser, sectionIds?: string[]): SQL | un
 
 /** Convenience: resolve the user's section ids then build the scope. */
 export async function userSectionScope(user: SessionUser): Promise<SQL | undefined> {
-  if (user.role !== "teacher") return studentScope(user);
-  const ids = await adviserSectionIds(user.id);
-  return studentScope(user, ids);
+  if (user.role === "teacher") {
+    return studentScope(user, await adviserSectionIds(user.id));
+  }
+  if (user.role === "subject_teacher") {
+    return studentScope(user, await subjectTeacherSectionIds(user.id));
+  }
+  return studentScope(user);
 }
 
 export type StudentScopeRef = {
@@ -98,15 +120,22 @@ export function confidentialBehaviorFilter(
   return eq(column, false);
 }
 
+/** Resolve which sections gate this scoped teaching role's row access. */
+async function scopedTeachingSectionIds(user: SessionUser): Promise<string[]> {
+  return user.role === "subject_teacher"
+    ? subjectTeacherSectionIds(user.id)
+    : adviserSectionIds(user.id);
+}
+
 /** Can this user read this student's record? Used before detail views/writes. */
 export async function canAccessStudent(
   user: SessionUser,
   ref: StudentScopeRef,
 ): Promise<boolean> {
-  if (user.role !== "teacher") {
+  if (user.role !== "teacher" && user.role !== "subject_teacher") {
     return studentScope(user) === undefined;
   }
-  const ids = await adviserSectionIds(user.id);
+  const ids = await scopedTeachingSectionIds(user);
   if (ids.length === 0) return false;
   const rows = await db
     .select({ id: studentEnrollments.id })

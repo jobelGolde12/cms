@@ -48,6 +48,7 @@ export async function sessionMetadata(): Promise<{ ip: string | null; userAgent:
 export const ROLE_IDS = {
   admin: "role-admin",
   school_admin: "role-school-admin",
+  subject_teacher: "role-subject-teacher",
   teacher: "role-teacher",
   records: "role-records",
   guidance: "role-guidance",

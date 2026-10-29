@@ -46,6 +46,7 @@ import {
   roles,
   schoolYears,
   sections,
+  sectionSubjectTeachers,
   studentEnrollments,
   studentGrades,
   studentGuardians,
@@ -108,9 +109,10 @@ async function seedRolesAndPermissions() {
   const roleRows: { id: string; name: string; description: string }[] = [
     { id: "role-admin", name: "System Administrator", description: "Full system access including users, settings, and audit logs." },
     { id: "role-school-admin", name: "School Administrator", description: "School-wide records, academics, analytics, and reports." },
-    { id: "role-teacher", name: "Teacher / Adviser", description: "Assigned sections: grades, attendance, assessments, behavior." },
+    { id: "role-teacher", name: "Adviser", description: "Assigned sections: advisory, attendance, assessments and behavior — not grade encoding." },
+    { id: "role-subject-teacher", name: "Subject Teacher", description: "Encodes grades for assigned subject, grade level and section(s) only." },
     { id: "role-records", name: "Records Personnel", description: "Student records, enrollment, verification, historical records." },
-    { id: "role-guidance", name: "Guidance Personnel", description: "Behavior, interventions, and student support information." },
+    { id: "role-guidance", name: "Guidance Counselor", description: "Records and manages student incidents, interventions, and student support information." },
     { id: "role-nurse", name: "Nurse", description: "Health and nutrition records only — cannot edit general student information." },
     { id: "role-registrar", name: "Registrar", description: "Strictly read-only official records plus student card / Form 137 printing." },
     { id: "role-literacy-coordinator", name: "Language & Literacy Coordinator", description: "Reading, literacy and numeracy assessments and statistics." },
@@ -165,9 +167,10 @@ async function seedUsers() {
   const defaults: { role: Role; emailEnv: string; hashEnv: string; firstEnv: string; lastEnv: string; id: string; name: string }[] = [
     { role: "admin", emailEnv: "DEFAULT_ADMIN_EMAIL", hashEnv: "DEFAULT_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_LAST_NAME", id: "user-admin", name: "Admin" },
     { role: "school_admin", emailEnv: "DEFAULT_SCHOOL_ADMIN_EMAIL", hashEnv: "DEFAULT_SCHOOL_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_SCHOOL_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_SCHOOL_ADMIN_LAST_NAME", id: "user-school-admin", name: "SchoolAdmin" },
-    { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_TEACHER_LAST_NAME", id: "user-teacher", name: "Teacher" },
+    { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_TEACHER_LAST_NAME", id: "user-teacher", name: "Adviser" },
+    { role: "subject_teacher", emailEnv: "DEFAULT_SUBJECT_TEACHER_EMAIL", hashEnv: "DEFAULT_SUBJECT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_SUBJECT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_SUBJECT_TEACHER_LAST_NAME", id: "user-subject", name: "SubjectTeacher" },
     { role: "records", emailEnv: "DEFAULT_RECORDS_EMAIL", hashEnv: "DEFAULT_RECORDS_PASSWORD_HASH", firstEnv: "DEFAULT_RECORDS_FIRST_NAME", lastEnv: "DEFAULT_RECORDS_LAST_NAME", id: "user-records", name: "Records" },
-    { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", firstEnv: "DEFAULT_GUIDANCE_FIRST_NAME", lastEnv: "DEFAULT_GUIDANCE_LAST_NAME", id: "user-guidance", name: "Guidance" },
+    { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", firstEnv: "DEFAULT_GUIDANCE_FIRST_NAME", lastEnv: "DEFAULT_GUIDANCE_LAST_NAME", id: "user-guidance", name: "Counselor" },
     { role: "nurse", emailEnv: "DEFAULT_NURSE_EMAIL", hashEnv: "DEFAULT_NURSE_PASSWORD_HASH", firstEnv: "DEFAULT_NURSE_FIRST_NAME", lastEnv: "DEFAULT_NURSE_LAST_NAME", id: "user-nurse", name: "Nurse" },
     { role: "registrar", emailEnv: "DEFAULT_REGISTRAR_EMAIL", hashEnv: "DEFAULT_REGISTRAR_PASSWORD_HASH", firstEnv: "DEFAULT_REGISTRAR_FIRST_NAME", lastEnv: "DEFAULT_REGISTRAR_LAST_NAME", id: "user-registrar", name: "Registrar" },
     { role: "literacy_coordinator", emailEnv: "DEFAULT_LITERACY_EMAIL", hashEnv: "DEFAULT_LITERACY_PASSWORD_HASH", firstEnv: "DEFAULT_LITERACY_FIRST_NAME", lastEnv: "DEFAULT_LITERACY_LAST_NAME", id: "user-literacy", name: "LiteracyCoord" },
@@ -277,6 +280,34 @@ async function seedAcademicStructure(teacherId: string) {
   return { yearId, sectionIds };
 }
 
+/**
+ * Demo section/subject teaching assignments for the Subject Teacher user:
+ * Filipino and Science in every section (the realistic small-school model —
+ * one teacher covering a subject across grade levels).
+ */
+async function seedSubjectAssignments(subjectTeacherId: string) {
+  const teachingPairs: { subjectId: string }[] = [
+    { subjectId: "sub-FIL" },
+    { subjectId: "sub-SCI" },
+  ];
+  for (let gradeLevelNum = 7; gradeLevelNum <= 10; gradeLevelNum++) {
+    for (let secIdx = 0; secIdx < 3; secIdx++) {
+      const sectionId = `sec-${gradeLevelNum}-${secIdx}`;
+      for (const { subjectId } of teachingPairs) {
+        await db
+          .insert(sectionSubjectTeachers)
+          .values({
+            id: `${sectionId}__${subjectId}__${subjectTeacherId}`,
+            sectionId,
+            subjectId,
+            teacherId: subjectTeacherId,
+          })
+          .onConflictDoNothing();
+      }
+    }
+  }
+}
+
 async function seedCategoriesAndSettings() {
   for (const c of BEHAVIOR_SEED_CATEGORIES) {
     await db
@@ -327,6 +358,10 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
 
   const creator = people[0]!.id;
   const teacherId = people.find((p) => p.role === "teacher")!.id;
+  // Advisers no longer encode grades — demo grades are recorded by the
+  // Subject Teacher, falling back to the teacher row if the role is absent.
+  const subjectTeacherId = people.find((p) => p.role === "subject_teacher")?.id ?? teacherId;
+  const gradeRecorderId = subjectTeacherId;
   const guidanceId = people.find((p) => p.role === "guidance")!.id;
   const nurseId = people.find((p) => p.role === "nurse")!.id;
 
@@ -418,7 +453,7 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
           subjectId: sub.id,
           gradingPeriodId: periodRows[0]!.id,
           grade: randInt(70, 98),
-          recordedBy: teacherId,
+          recordedBy: gradeRecorderId,
         });
       }
     }
@@ -803,6 +838,10 @@ async function main() {
   const teacher = people.find((p) => p.role === "teacher")!;
   const structure = await seedAcademicStructure(teacher.id);
   await seedCategoriesAndSettings();
+  const subjectTeacher = people.find((p) => p.role === "subject_teacher");
+  if (subjectTeacher) {
+    await seedSubjectAssignments(subjectTeacher.id);
+  }
   await seedDemoData(people, structure);
   await seedEmployees(people.find((p) => p.role === "admin_officer")?.id ?? people[0]!.id);
 }

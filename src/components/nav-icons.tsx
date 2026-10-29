@@ -16,6 +16,7 @@ import {
   Bell,
   Settings,
   Wallet,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const NAV_ICONS = {
   service_credits: Wallet,
   performance: TrendingUp,
   development: HeartHandshake,
+  guidance: LifeBuoy,
   health: HeartPulse,
   validation: ShieldCheck,
   verification: ShieldCheck,

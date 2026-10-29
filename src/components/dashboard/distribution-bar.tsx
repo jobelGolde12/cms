@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { CountUp } from "./count-up";
+import { AnimatedBar } from "./animated-bar";
 
 /**
  * Client island for one animated distribution bar row.
@@ -122,17 +124,14 @@ export function DistributionBar({
       >
         {label}
       </span>
-      <span
-        className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-brand-100"
-        aria-hidden="true"
-      >
-        <span
-          className={cn("bar-grow block h-full rounded-full", barClassName)}
-          style={{ width: `${percent}%` }}
-        />
-      </span>
+      {/* Bar fills from 0 once the row scrolls into view. */}
+      <AnimatedBar
+        widthPercent={percent}
+        className={barClassName}
+        trackClassName="h-2 min-w-0 flex-1"
+      />
       <span className="numeric shrink-0 whitespace-nowrap text-right text-xs font-semibold text-brand-900">
-        {value}
+        <CountUp value={value} duration={600} delay={Math.min(index, 7) * 60} />
         {share !== null ? (
           <span className="hidden text-[10px] font-normal text-brand-400 sm:inline">
             {" "}

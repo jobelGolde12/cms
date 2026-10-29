@@ -47,6 +47,8 @@ export function roleNameFromId(roleId: string): Role | null {
       return "admin_officer";
     case "role-school-admin":
       return "school_admin";
+    case "role-subject-teacher":
+      return "subject_teacher";
     case "role-teacher":
       return "teacher";
     case "role-records":

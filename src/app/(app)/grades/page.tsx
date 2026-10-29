@@ -30,8 +30,9 @@ export const metadata = { title: "Grade Encoding · Records Management System" }
  *   School Year → Grade Level → Section → Subject → Grading Period → Students
  *
  * Authorization: the page is readable with `grades.view` (read-only for every
- * non-teacher role); encoding/submitting is done only by the section's
- * adviser, enforced again inside the actions (never here alone).
+ * other role — including the Adviser); encoding/submitting is done only by
+ * Subject Teachers with an assignment in that (section, subject), re-enforced
+ * inside the actions (never here alone).
  */
 export default async function GradesPage({
   searchParams,
@@ -54,22 +55,21 @@ export default async function GradesPage({
   const periodParam = param("period");
 
   /* ----------------------- candidate sections & refs ---------------------- */
-  const isTeacher = user.role === "teacher";
-  if (isTeacher) {
-    // Advisory sections allow every subject; departmental ones restrict the
-    // subject dropdown to the teacher's (section, subject) assignments.
+  const isSubjectTeacher = user.role === "subject_teacher";
+  if (isSubjectTeacher) {
+    // Departmental teaching loads only: the subject dropdown is restricted to
+    // the teacher's (section, subject) assignments — wrong-subject encoding is
+    // impossible from the UI and re-checked in every action.
     const own = await teacherEncodingSections(user);
     const [subjectRows, periodRows, assignments] = await Promise.all([
       listSubjects(),
       allPeriods(),
       teacherSubjectAssignments(user.id),
     ]);
-    const subjectsBySection = groupAssignmentsBySection(
-      assignments,
-      own.filter((s) => s.advisory).map((s) => s.id),
-    );
+    const subjectsBySection = groupAssignmentsBySection(assignments);
     return render({
       user,
+      isEncoder: true,
       sections: own.map((s) => ({ ...s, editable: true, advisory: s.advisory })),
       allSectionsForFallback: own.map((s) => ({ ...s, editable: true, advisory: s.advisory })),
       subjects: subjectRows.map((s) => ({ id: s.id, name: s.name, code: s.code })),
@@ -79,11 +79,13 @@ export default async function GradesPage({
     });
   }
 
-  // Non-teacher roles: read-only view over every active section (any year).
+  // Adviser and every other role: read-only grade view over every active
+  // section (any year). Advisers may no longer encode grades (2026-10 rev B).
   const allSections = await allSectionsAcrossYears();
   const [subjectRows, periodRows] = await Promise.all([listSubjects(), allPeriods()]);
   return render({
     user,
+    isEncoder: false,
     sections: allSections.map((s) => ({ ...s, editable: false })),
     allSectionsForFallback: allSections.map((s) => ({ ...s, editable: false })),
     subjects: subjectRows.map((s) => ({ id: s.id, name: s.name, code: s.code })),
@@ -94,6 +96,7 @@ export default async function GradesPage({
 
   async function render(ctx: {
     user: SessionUser;
+    isEncoder: boolean;
     sections: Parameters<typeof GradeSheetFilters>[0]["sections"];
     allSectionsForFallback: Parameters<typeof GradeSheetFilters>[0]["sections"];
     subjects: { id: string; name: string; code: string }[];
@@ -120,13 +123,13 @@ export default async function GradesPage({
             <CardBody className="py-14 text-center">
               <GraduationCap aria-hidden="true" className="mx-auto mb-3 h-10 w-10 text-brand-200" />
             <p className="text-base font-semibold text-brand-800">
-              {isTeacher
+              {ctx.isEncoder
                 ? "No grade-encoding sections are assigned to you yet"
                 : "No active sections found"}
             </p>
               <p className="mt-1 max-w-md text-sm text-[#64748B]">
-                {isTeacher
-                  ? "Sections appear here once you are assigned as their adviser or given a subject teaching load in them. Ask the school administrator to set that up."
+                {ctx.isEncoder
+                  ? "Sections appear here once you are given a subject teaching load in them. Ask the school administrator to set that up."
                   : "Sections appear here once they are configured for a school year."}
               </p>
             </CardBody>
@@ -175,8 +178,8 @@ export default async function GradesPage({
           eyebrow="Academics"
           title="Grade Encoding"
           description={
-            isTeacher && context.editable
-              ? "Your advisory sections. Grades are saved as drafts until you submit the sheet."
+            ctx.isEncoder && context.editable
+              ? "Your assigned subject sheets. Grades are saved as drafts until you submit the sheet."
               : "Section-based grade sheets. Submitted grades are shown for your role."
           }
         />

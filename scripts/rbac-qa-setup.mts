@@ -29,6 +29,7 @@ const QA_PASSWORD = "rbac-verify-2026";
 const QA_USERS: { id: string; role: string; email: string; first: string; last: string; roleRowId: string }[] = [
   { id: "qa-user-admin", role: "admin", email: "qa-admin@rbac-test.local", first: "QA", last: "Admin", roleRowId: "role-admin" },
   { id: "qa-user-teacher", role: "teacher", email: "qa-adviser@rbac-test.local", first: "QA", last: "Adviser", roleRowId: "role-teacher" },
+  { id: "qa-user-subject", role: "subject_teacher", email: "qa-subject@rbac-test.local", first: "QA", last: "SubjectTeacher", roleRowId: "role-subject-teacher" },
   { id: "qa-user-nurse", role: "nurse", email: "qa-nurse@rbac-test.local", first: "QA", last: "Nurse", roleRowId: "role-nurse" },
   { id: "qa-user-registrar", role: "registrar", email: "qa-registrar@rbac-test.local", first: "QA", last: "Registrar", roleRowId: "role-registrar" },
   { id: "qa-user-guidance", role: "guidance", email: "qa-guidance@rbac-test.local", first: "QA", last: "Guidance", roleRowId: "role-guidance" },

@@ -54,7 +54,7 @@ export function OfficerDashboard({
       {/* ------------------------- Page header ------------------------- */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
+          <p className="text-xs font-medium text-brand-600">
             Employee Records Overview
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
@@ -65,10 +65,8 @@ export function OfficerDashboard({
             National High School.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-600">
-            {today}
-          </span>
+        <div className="leading-tight md:text-right">
+          <div className="text-xs text-[#64748B]">{today}</div>
         </div>
       </div>
 

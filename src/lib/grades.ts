@@ -14,7 +14,6 @@ import {
   type GradeStatus,
 } from "@/db/schema";
 import { getAuthorizedUser, type SessionUser } from "./auth";
-import { adviserSectionIds } from "./scope";
 import { collectGradeIssues, MAX_GRADE, MIN_GRADE, type GradeValidationIssue } from "./grade-validation";
 
 export { collectGradeIssues, MAX_GRADE, MIN_GRADE };
@@ -23,43 +22,46 @@ export type { GradeValidationIssue };
 /**
  * Grade-encoding domain layer.
  *
- * Rule enforced here (and re-checked in every action): **Teachers/Advisers are
- * the only users allowed to input and modify student grades.** Enforcement is
- * role-based (`teacher` + `grades.write`) plus row-level (the section must be
- * one where the user is the current adviser), so direct calls to the actions
- * cannot bypass the UI hiding of buttons.
+ * Rule enforced here (and re-checked in every action): **only the SUBJECT
+ * TEACHER role may input and modify student grades**, and only for the
+ * (section, subject) pairs listed in `section_subject_teachers` (row-level).
+ * Advisers keep read-only grade access. Direct calls to the actions cannot
+ * bypass UI hiding of buttons.
  *
  * Lifecycle: Not Started → Draft → (Review) → Submitted.
- * Submitted sheets are locked; only the current section adviser can reopen
- * them for correction (audit-logged via the grade submission ledger).
+ * Submitted sheets are locked; only the current assigned subject teacher can
+ * reopen them for correction (audit-logged via the grade submission ledger).
  */
 
 /* --------------------------------- guards --------------------------------- */
 
-export type GradeWriter = SessionUser & { role: "teacher" };
+export type GradeWriter = SessionUser & { role: "subject_teacher" };
 
 /**
- * Server-side grade-write guard: must hold `grades.write` AND be a teacher
- * (advisers). Returns null when the caller is not authorized — actions turn
- * this into a user-facing error instead of a redirect.
+ * Server-side grade-write guard: must hold `grades.write` AND be a subject
+ * teacher (row-level assignment is re-checked separately in
+ * `canWriteGradesInSection`). Returns null when the caller is not authorized
+ * — actions turn this into a user-facing error instead of a redirect.
  */
 export async function getGradeWriter(): Promise<GradeWriter | null> {
   const user = await getAuthorizedUser("grades.write");
   if (!user) return null;
-  if (user.role !== "teacher") return null;
+  if (user.role !== "subject_teacher") return null;
   return user as GradeWriter;
 }
 
-/** Can this user encode grades here? Adviser of the section (any subject) or
- *  departmentally assigned to the (section, subject). Row-level either way. */
+/**
+ * Can this user encode grades here? Only departmentally: the caller must be
+ * an assigned subject teacher for this exact (section, subject) pair. This
+ * replaces the previous advisory path — an Adviser can never encode grades.
+ * Row-level either way.
+ */
 export async function canWriteGradesInSection(
   user: SessionUser,
   sectionId: string,
   subjectId?: string,
 ): Promise<boolean> {
-  if (user.role !== "teacher") return false;
-  const ids = await adviserSectionIds(user.id);
-  if (ids.includes(sectionId)) return true;
+  if (user.role !== "subject_teacher") return false;
   const assignments = await teacherSubjectAssignments(user.id);
   if (subjectId) return assignments.some((a) => a.sectionId === sectionId && a.subjectId === subjectId);
   return assignments.some((a) => a.sectionId === sectionId);
@@ -107,44 +109,22 @@ export type TeacherSection = {
   gradeLevelOrder: number;
   schoolYearId: string;
   schoolYear: string;
-  /** true → user is the section adviser (may encode every subject) */
+  /** true → user is the section adviser (view-only; never encodes grades) */
   advisory: boolean;
 };
 
-/** Sections where the user is the *current* active adviser, newest year first. */
-export async function teacherGradeSections(user: SessionUser): Promise<TeacherSection[]> {
-  return db
-    .select({
-      id: sections.id,
-      name: sections.name,
-      gradeLevelId: sections.gradeLevelId,
-      gradeLevelName: gradeLevels.name,
-      gradeLevelOrder: gradeLevels.orderIndex,
-      schoolYearId: sections.schoolYearId,
-      schoolYear: schoolYears.year,
-    })
-    .from(sections)
-    .innerJoin(gradeLevels, eq(gradeLevels.id, sections.gradeLevelId))
-    .innerJoin(schoolYears, eq(schoolYears.id, sections.schoolYearId))
-    .where(and(eq(sections.adviserId, user.id), eq(sections.isActive, true)))
-    .orderBy(desc(schoolYears.year), asc(gradeLevels.orderIndex), asc(sections.name))
-    .then((rows) => rows.map((r) => ({ ...r, advisory: true })));
-}
-
 /**
- * Every section a teacher can encode in: their advisory sections (any
- * subject) plus departmental sections they teach at least one subject in.
- * Advisory sections come first; a section that is both is advisory-only.
+ * Every section the subject teacher can encode in: the active sections that
+ * hold at least one of their `section_subject_teachers` teaching loads.
+ * (Adviser-only sections appear only in the read-only grade views.)
  */
 export async function teacherEncodingSections(user: SessionUser): Promise<TeacherSection[]> {
-  const advisory = await teacherGradeSections(user);
   const assignments = await teacherSubjectAssignments(user.id);
-  const advisoryIds = new Set(advisory.map((s) => s.id));
   const assignedSectionIds = Array.from(
-    new Set(assignments.map((a) => a.sectionId).filter((id) => !advisoryIds.has(id))),
+    new Set(assignments.map((a) => a.sectionId)),
   );
-  if (assignedSectionIds.length === 0) return advisory;
-  const extra = await db
+  if (assignedSectionIds.length === 0) return [];
+  const relative = await db
     .select({
       id: sections.id,
       name: sections.name,
@@ -159,12 +139,7 @@ export async function teacherEncodingSections(user: SessionUser): Promise<Teache
     .innerJoin(schoolYears, eq(schoolYears.id, sections.schoolYearId))
     .where(and(inArray(sections.id, assignedSectionIds), eq(sections.isActive, true)))
     .orderBy(desc(schoolYears.year), asc(gradeLevels.orderIndex), asc(sections.name));
-  return [...advisory, ...extra.map((r) => ({ ...r, advisory: false }))].sort(
-    (a, b) =>
-      b.schoolYear.localeCompare(a.schoolYear) ||
-      a.gradeLevelOrder - b.gradeLevelOrder ||
-      a.name.localeCompare(b.name),
-  );
+  return relative.map((r) => ({ ...r, advisory: false }));
 }
 
 /** All active sections for a school year (read-only report/consumer view). */
@@ -219,7 +194,7 @@ export type GradeSheetContext = {
   subjectName: string;
   gradingPeriodId: string;
   periodName: string;
-  /** false for teachers not advising this section, or non-teacher roles */
+  /** false for viewers who may not encode this (section, subject) */
   editable: boolean;
   /** latest ledger row state for this sheet context */
   submission: {
@@ -244,10 +219,10 @@ export async function resolveGradeSliceContext(
     gradingPeriodId?: string;
   },
 ): Promise<{ ok: true; context: GradeSheetContext } | { ok: false; error: string }> {
-  // 1) Section — default to the teacher's first advisory section (then first
-  // departmental one); everyone else gets the first section of the current year.
+  // 1) Section — default to the subject teacher's first assignment; everyone
+  // else gets the first section of the current year (read-only context).
   let primarySectionId = params.sectionId || "";
-  const teacherSections = user.role === "teacher" ? await teacherEncodingSections(user) : [];
+  const teacherSections = user.role === "subject_teacher" ? await teacherEncodingSections(user) : [];
   if (!primarySectionId) {
     if (teacherSections[0]) {
       primarySectionId = teacherSections[0].id;
@@ -327,8 +302,8 @@ export async function resolveGradeSliceContext(
   const subject = subjectList.find((s) => s.id === subjectId)!;
   const period = periods.find((p) => p.id === gradingPeriodId)!;
 
-  // Editability depends on the resolved subject too: the adviser may encode
-  // every subject of the section; a departmental teacher only theirs.
+  // Editability depends on the resolved subject too: an assigned subject
+  // teacher may encode only their (section, subject) pairs.
   const editable = section.isActive && (await canWriteGradesInSection(user, section.id, subjectId));
 
   return {
@@ -374,9 +349,10 @@ export type GradeSheetRow = {
 
 /**
  * The roster + grades for one sheet context.
- * - teachers advising the section see draft + submitted rows and can edit;
+ * - assigned subject teachers see the draft + submitted rows of the sheets
+ *   they may encode and can edit them;
  * - every other viewer sees submitted rows only (drafts stay private to the
- *   encoding adviser).
+ *   encoding subject teacher).
  */
 export async function getGradeSheet(
   user: SessionUser,

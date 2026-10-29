@@ -9,6 +9,7 @@ import type { SessionUser } from "@/lib/auth";
 const ALL_ROLES: readonly Role[] = [
   "admin",
   "school_admin",
+  "subject_teacher",
   "teacher",
   "records",
   "guidance",
@@ -27,15 +28,20 @@ describe("role catalog", () => {
   });
 });
 
-describe("grade encoding is teacher-only (2026-10 rule)", () => {
-  it("grants grades.write to the teacher/adviser role ONLY", () => {
+describe("grade encoding is subject-teacher-only (2026-10 rule, rev B)", () => {
+  it("grants grades.write to the subject_teacher role ONLY", () => {
     for (const role of ALL_ROLES) {
-      const expected = role === "teacher";
+      const expected = role === "subject_teacher";
       expect({ role, granted: hasPermission(role, "grades.write") }).toEqual({
         role,
         granted: expected,
       });
     }
+  });
+
+  it("adviser keeps read-only grade access but can never encode", () => {
+    expect(hasPermission("teacher", "grades.view")).toBe(true);
+    expect(hasPermission("teacher", "grades.write")).toBe(false);
   });
 
   it("keeps grades.view read-only for oversight roles but blocks it when unset", () => {
@@ -44,6 +50,61 @@ describe("grade encoding is teacher-only (2026-10 rule)", () => {
     expect(hasPermission("school_admin", "grades.view")).toBe(true);
     expect(hasPermission("registrar", "grades.view")).toBe(true);
     expect(hasPermission("teacher", "grades.view")).toBe(true);
+    expect(hasPermission("subject_teacher", "grades.view")).toBe(true);
+  });
+});
+
+describe("subject teacher is grade-encoding domain only", () => {
+  it("encodes grades but holds no administrative or personal-data writes", () => {
+    expect(hasPermission("subject_teacher", "grades.write")).toBe(true);
+    expect(hasPermission("subject_teacher", "grades.view")).toBe(true);
+    expect(hasPermission("subject_teacher", "students.view")).toBe(true);
+  });
+
+  it("cannot modify personal information, manage users, or touch other domains", () => {
+    for (const p of [
+      "students.create",
+      "students.update",
+      "students.archive",
+      "guardians.manage",
+      "enrollment.manage",
+      "attendance.write",
+      "behavior.write",
+      "assessments.write",
+      "health.write",
+      "interventions.write",
+      "verification.review",
+      "users.view",
+      "users.manage",
+      "settings.manage",
+      "academics.config",
+      "employees.view",
+      "documents.print",
+    ] as const) {
+      expect(hasPermission("subject_teacher", p)).toBe(false);
+    }
+  });
+});
+
+describe("guidance counselor incident domain", () => {
+  it("records and manages behavior incidents and interventions", () => {
+    expect(hasPermission("guidance", "behavior.view")).toBe(true);
+    expect(hasPermission("guidance", "behavior.write")).toBe(true);
+    expect(hasPermission("guidance", "interventions.view")).toBe(true);
+    expect(hasPermission("guidance", "interventions.write")).toBe(true);
+  });
+
+  it("never encodes grades or modifies personal information", () => {
+    expect(hasPermission("guidance", "grades.write")).toBe(false);
+    expect(hasPermission("guidance", "students.update")).toBe(false);
+    expect(hasPermission("guidance", "students.create")).toBe(false);
+    expect(hasPermission("guidance", "users.manage")).toBe(false);
+    expect(hasPermission("guidance", "settings.manage")).toBe(false);
+  });
+
+  it("subject teacher cannot touch incident data", () => {
+    expect(hasPermission("subject_teacher", "behavior.write")).toBe(false);
+    expect(hasPermission("subject_teacher", "interventions.write")).toBe(false);
   });
 });
 
@@ -193,7 +254,7 @@ describe("guidance data confidentiality", () => {
     for (const role of ["admin", "school_admin", "guidance"] as const) {
       expect(canViewConfidentialBehavior(userWith(role))).toBe(true);
     }
-    for (const role of ["teacher", "nurse", "registrar", "literacy_coordinator"] as const) {
+    for (const role of ["teacher", "subject_teacher", "nurse", "registrar", "literacy_coordinator"] as const) {
       expect(canViewConfidentialBehavior(userWith(role))).toBe(false);
     }
   });

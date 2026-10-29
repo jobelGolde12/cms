@@ -27,8 +27,8 @@ import { fail, sessionMetadata, zodFieldErrors, ok, type ActionState } from "./h
  * Grade-mutating server actions. Every action re-establishes the full chain
  * server-side (never trusting the client):
  *
- *   role(teacher) + grades.write  →  community "who may encode"
- *   section is the caller's advisory  →  row-level "who may encode here"
+ *   role(subject_teacher) + grades.write  →  community "who may encode"
+ *   (section, subject) ∈ caller's teaching loads  →  row-level "who may encode here"
  *   grading period ∈ section's school year  →  context integrity
  *   student is actively enrolled in that section  →  roster integrity
  *   latest ledger row not "submitted"  →  submission lock
@@ -158,11 +158,11 @@ export async function saveSectionGradeDraft(input: SheetInput): Promise<ActionSt
   }
 
   const user = await getGradeWriter();
-  if (!user) return fail("Only teachers/advisers can encode grades.");
+  if (!user) return fail("Only Subject Teachers can encode grades.");
 
   const ctx = parsed.data;
   if (!(await canWriteGradesInSection(user, ctx.sectionId, ctx.subjectId))) {
-    return fail("You can only encode grades for sections you advise or subjects assigned to you.");
+    return fail("You can only encode grades for your assigned subject in your assigned sections.");
   }
   const context = await verifyContext(ctx.sectionId, ctx.gradingPeriodId);
   if ("error" in context) return fail(context.error);
@@ -280,7 +280,7 @@ export async function submitSectionGradeSheet(
   if (!parsed.success) return { ok: false, error: "Invalid submission request." };
 
   const user = await getGradeWriter();
-  if (!user) return { ok: false, error: "Only teachers/advisers can submit grades." };
+  if (!user) return { ok: false, error: "Only Subject Teachers can submit grades." };
 
   const ctx = parsed.data;
   if (!(await canWriteGradesInSection(user, ctx.sectionId, ctx.subjectId))) {
@@ -415,15 +415,16 @@ async function latestSubmissionLock(context: ContextInput): Promise<{ locked: bo
 
 /**
  * Reopen a submitted sheet for correction. Allowed only while the caller is
- * the section's current adviser; every submitted row for the context flips
- * back to `draft` and the reopen event is appended to the ledger.
+ * the assigned subject teacher for the (section, subject); every submitted
+ * row for the context flips back to `draft` and the reopen event is appended
+ * to the ledger.
  */
 export async function reopenSectionGradeSheet(input: ContextInput): Promise<ActionState> {
   const parsed = contextSchema.safeParse(input);
   if (!parsed.success) return fail("Invalid reopen request.");
 
   const user = await getGradeWriter();
-  if (!user) return fail("Only teachers/advisers can reopen grade sheets.");
+  if (!user) return fail("Only Subject Teachers can reopen grade sheets.");
 
   const ctx = parsed.data;
   if (!(await canWriteGradesInSection(user, ctx.sectionId, ctx.subjectId))) {
@@ -516,7 +517,7 @@ export async function removeSectionGrade(input: RemoveInput): Promise<ActionStat
   if (!parsed.success) return fail("Invalid remove request.");
 
   const user = await getGradeWriter();
-  if (!user) return fail("Only teachers/advisers can remove grades.");
+  if (!user) return fail("Only Subject Teachers can remove grades.");
 
   const { studentId, subjectId, gradingPeriodId } = parsed.data;
 
@@ -528,7 +529,7 @@ export async function removeSectionGrade(input: RemoveInput): Promise<ActionStat
   const enrollment = enrollmentRows[0];
   if (!enrollment) return fail("The student has no active enrollment.");
   if (!(await canWriteGradesInSection(user, enrollment.sectionId, subjectId))) {
-    return fail("You can only remove grades from sheets you own (adviser or assigned subject).");
+    return fail("You can only remove grades from your assigned subject sheets.");
   }
   const integrity = await verifyContext(enrollment.sectionId, gradingPeriodId);
   if ("error" in integrity) return fail(integrity.error);

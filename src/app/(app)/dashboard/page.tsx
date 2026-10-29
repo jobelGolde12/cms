@@ -48,7 +48,7 @@ export default async function AppDashboardPage() {
       {/* ------------------------- Page header ------------------------- */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
+          <p className="text-xs font-medium text-brand-600">
             Student Records Overview
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
@@ -59,17 +59,17 @@ export default async function AppDashboardPage() {
             student development at {SCHOOL.shortName}.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-600">
-            Current School Year: {new Date().getFullYear()}-{new Date().getFullYear() + 1}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-600">
+        <div className="leading-tight md:text-right">
+          <div className="text-sm font-semibold text-brand-900">
+            School Year {new Date().getFullYear()}–{new Date().getFullYear() + 1}
+          </div>
+          <div className="mt-0.5 text-xs text-[#64748B]">
             {new Date().toLocaleDateString("en-PH", {
               month: "short",
               day: "numeric",
               year: "numeric",
             })}
-          </span>
+          </div>
         </div>
       </div>
 

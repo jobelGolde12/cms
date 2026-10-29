@@ -1,5 +1,5 @@
 import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
-import { confidentialBehaviorFilter } from "./scope";
+import { confidentialBehaviorFilter, canViewConfidentialBehavior } from "./scope";
 import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/db";
 import {
@@ -1234,6 +1234,148 @@ export async function listBehaviorCategories() {
     })
     .from(behaviorCategories)
     .orderBy(asc(behaviorCategories.kind), asc(behaviorCategories.name));
+}
+
+export type GuidanceIncidentRow = {
+  id: string;
+  date: string;
+  incident: string;
+  intervention: string | null;
+  severity: string | null;
+  status: string;
+  confidential: boolean;
+  categoryId: string;
+  categoryName: string;
+  studentId: string;
+  studentNumber: string;
+  firstName: string;
+  lastName: string;
+  gradeLevelName: string | null;
+  sectionName: string | null;
+};
+
+export type GuidanceIncidentFilters = {
+  /** student name / number contains */
+  q?: string;
+  /** incident-type category id */
+  categoryId?: string;
+  /** open | monitored | resolved */
+  status?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+/**
+ * Guidance Office incident list — concern-type behavior records enriched with
+ * the student's registry basics (name, LRN section). Confidential rows are
+ * readable only by admin/school_admin/guidance (server-side filter); the
+ * guidance pages additionally gate the route by that same role set.
+ */
+export async function listGuidanceIncidents(
+  user: SessionUser,
+  filters: GuidanceIncidentFilters,
+): Promise<{ rows: GuidanceIncidentRow[]; total: number; page: number; pageSize: number }> {
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.min(100, Math.max(5, filters.pageSize ?? 25));
+
+  const conditions: SQL[] = [];
+  const confidentialFilter = confidentialBehaviorFilter(user);
+  if (confidentialFilter) conditions.push(confidentialFilter);
+
+  if (filters.q) {
+    const needle = `%${filters.q}%`;
+    conditions.push(
+      sql`(${students.firstName} LIKE ${needle} OR ${students.lastName} LIKE ${needle} OR ${students.studentNumber} LIKE ${needle})`,
+    );
+  }
+  if (filters.categoryId) conditions.push(eq(behaviorRecords.categoryId, filters.categoryId));
+  if (filters.status && filters.status !== "all")
+    conditions.push(eq(behaviorRecords.status, filters.status));
+
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const totalRow = await db
+    .select({ n: count() })
+    .from(behaviorRecords)
+    .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+    .where(where);
+  const total = totalRow[0]?.n ?? 0;
+
+  const rows = await db
+    .select({
+      id: behaviorRecords.id,
+      date: behaviorRecords.date,
+      incident: behaviorRecords.description,
+      intervention: behaviorRecords.followUp,
+      severity: behaviorRecords.severity,
+      status: behaviorRecords.status,
+      confidential: behaviorRecords.confidential,
+      categoryId: behaviorCategories.id,
+      categoryName: behaviorCategories.name,
+      studentId: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      gradeLevelName: gradeLevels.name,
+      sectionName: sections.name,
+    })
+    .from(behaviorRecords)
+    .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+    .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+    .leftJoin(
+      studentEnrollments,
+      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+    )
+    .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+    .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .where(where)
+    .orderBy(desc(behaviorRecords.date), asc(students.lastName))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  return { rows, total, page, pageSize };
+}
+
+/** A single incident for the edit screen (returns null when out of scope). */
+export async function getGuidanceIncident(
+  user: SessionUser,
+  incidentId: string,
+): Promise<GuidanceIncidentRow | null> {
+  const rows = await db
+    .select({
+      id: behaviorRecords.id,
+      date: behaviorRecords.date,
+      incident: behaviorRecords.description,
+      intervention: behaviorRecords.followUp,
+      severity: behaviorRecords.severity,
+      status: behaviorRecords.status,
+      confidential: behaviorRecords.confidential,
+      categoryId: behaviorCategories.id,
+      categoryName: behaviorCategories.name,
+      studentId: students.id,
+      studentNumber: students.studentNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      gradeLevelName: gradeLevels.name,
+      sectionName: sections.name,
+    })
+    .from(behaviorRecords)
+    .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+    .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+    .leftJoin(
+      studentEnrollments,
+      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+    )
+    .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+    .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+    .where(eq(behaviorRecords.id, incidentId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+  // Confidential incidents cannot be read by roles outside the guidance set.
+  if (row.confidential && !canViewConfidentialBehavior(user)) return null;
+  return row;
 }
 
 /* -------------------------------------------------------------------------- */

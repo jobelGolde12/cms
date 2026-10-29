@@ -8,6 +8,7 @@ import {
   Bell,
   BookOpen,
   Check,
+  ChevronRight,
   ClipboardCheck,
   Clock,
   Copy,
@@ -25,6 +26,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DistributionBar } from "./distribution-bar";
+import { CountUp } from "./count-up";
+import { AnimatedBar, AnimatedStackedBar } from "./animated-bar";
 import type {
   ActivityItem,
   DistributionRow,
@@ -63,7 +66,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        "rounded-lg border border-brand-200 bg-white shadow-xs",
+        "rounded-lg border border-brand-100 bg-white shadow-xs",
         className,
       )}
     >
@@ -89,7 +92,7 @@ function PanelLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-xs font-medium text-action-700 hover:text-action-800 transition-all duration-150 group"
+      className="group inline-flex items-center gap-1 text-xs font-medium text-action-700 underline-offset-2 transition-colors duration-150 hover:underline hover:text-action-800"
     >
       <span className="transition-transform duration-200 group-hover:translate-x-0.5">{children}</span>
       <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
@@ -132,60 +135,105 @@ export function DashIcon({
   return <Icon aria-hidden="true" className={className} />;
 }
 
-const KPI_TONES: Record<Kpi["tone"], { icon: string; bar: string }> = {
-  navy: { icon: "text-brand-800 bg-brand-100", bar: "bg-brand-700" },
-  blue: { icon: "text-brand-600 bg-brand-100", bar: "bg-brand-500" },
-  green: { icon: "text-emerald-700 bg-emerald-100", bar: "bg-emerald-600" },
-  amber: { icon: "text-amber-700 bg-amber-100", bar: "bg-amber-500" },
-  red: { icon: "text-red-700 bg-red-100", bar: "bg-red-600" },
-  slate: { icon: "text-brand-600 bg-brand-100", bar: "bg-brand-400" },
-};
-
 /* -------------------------------------------------------------------------- */
 /*  KPI grid                                                                  */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Metric name → number → short context, with a meaningful progress share
+ * where one exists. Numbers lead; the icon is a quiet secondary cue, not a
+ * decorated tile. Color is reserved for status-relevant tones (verified =
+ * success, pending/behavior = warning, etc.); everything else stays in the
+ * brand blue. Six metrics read best as two rows of three.
+ */
+const KPI_TONES: Record<Kpi["tone"], { icon: string; bar: string }> = {
+  navy: { icon: "text-brand-700", bar: "bg-brand-600" },
+  blue: { icon: "text-brand-500", bar: "bg-brand-500" },
+  green: { icon: "text-emerald-600", bar: "bg-emerald-600" },
+  amber: { icon: "text-amber-600", bar: "bg-amber-500" },
+  red: { icon: "text-red-600", bar: "bg-red-600" },
+  slate: { icon: "text-brand-500", bar: "bg-brand-400" },
+};
+
+/* Card targets — mapped to the filters that already exist in the registry. */
+const KPI_LINKS: Record<string, string> = {
+  total: "/students",
+  verified: "/students?status=verified",
+  pending: "/students?status=pending_validation",
+  enrolled: "/students",
+  behavior: "/development/behavior",
+  interventions: "/development",
+};
+
 export function KpiGrid({ kpis }: { kpis: Kpi[] }) {
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-      {kpis.map((kpi) => {
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      {kpis.map((kpi, i) => {
         const tone = KPI_TONES[kpi.tone];
-        return (
+        const href = KPI_LINKS[kpi.key];
+        const card = (
           <article
-            key={kpi.key}
-            className="rounded-lg border border-brand-200 bg-white px-4 py-3.5 shadow-xs transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-brand-300"
+            className={cn(
+              "flex h-full flex-col rounded-lg border border-brand-100 bg-white px-4 py-4 shadow-xs",
+              "transition-all duration-200 ease-out",
+              href &&
+                "group cursor-pointer hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-sm",
+            )}
           >
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="mt-1 flex items-center text-xs font-medium text-[#64748B]">
                 {kpi.label}
+                {/* Action-needed pulse: only when work is actually waiting. */}
+                {kpi.key === "pending" && kpi.value > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"
+                  />
+                ) : null}
               </h3>
               <span
                 className={cn(
-                  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                  "shrink-0 transition-opacity duration-150",
                   tone.icon,
+                  kpi.tone === "red" && "group-hover:animate-pulse",
                 )}
               >
-                <DashIcon name={kpi.icon} className="h-3.5 w-3.5" />
+                <DashIcon name={kpi.icon} className="h-4 w-4" />
               </span>
             </div>
-            <p className="numeric mt-1.5 text-3xl font-bold tracking-tight text-brand-900">
-              {kpi.value}
+            <p className="numeric mt-2 text-3xl font-semibold tracking-tight text-brand-900">
+              <CountUp value={kpi.value} delay={i * 60} />
             </p>
-            <p className="mt-0.5 truncate text-xs text-[#64748B]">
+            <p className="mt-1 text-xs text-[#64748B]">
               {kpi.description}
             </p>
             {kpi.progress !== null ? (
-              <div
-                className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-brand-100"
-                role="presentation"
-              >
-                <div
-                  className={cn("h-full rounded-full", tone.bar)}
-                  style={{ width: `${Math.min(100, Math.max(2, kpi.progress))}%` }}
-                />
-              </div>
+              <AnimatedBar
+                widthPercent={kpi.progress}
+                className={tone.bar}
+                trackClassName="mt-2.5 h-1 w-full max-w-24"
+                delay={i * 60 + 250}
+              />
             ) : null}
           </article>
+        );
+        return (
+          <div
+            key={kpi.key}
+            className="rise"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            {href ? (
+              <Link
+                href={href}
+                aria-label={`${kpi.label}: ${kpi.value} — ${kpi.description}`}
+              >
+                {card}
+              </Link>
+            ) : (
+              card
+            )}
+          </div>
         );
       })}
     </div>
@@ -206,40 +254,51 @@ export function OperationalBanner({
   barangayCount: number;
 }) {
   return (
-    <section className="rounded-lg bg-brand-900 px-5 py-4 text-white shadow-xs sm:px-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
-            Student Records Operations
-          </p>
-          <h2 className="mt-1 text-base font-semibold sm:text-lg">
+    <section className="rounded-lg bg-brand-900 px-5 py-5 sm:px-6">
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="max-w-xl">
+          <h2 className="text-base font-semibold text-white sm:text-lg">
             Current Enrollment &amp; Verification Cycle
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-brand-300">
             Monitor enrolled students, grade-level coverage, verification
             progress, and student development across the school.
           </p>
+          <p className="mt-3 flex flex-wrap items-center gap-y-1 text-sm text-brand-300">
+            <Link
+              href="/students"
+              className="rounded-md transition-colors duration-150 hover:text-white"
+            >
+              <span className="numeric font-semibold text-white">
+                <CountUp value={registered} duration={800} />
+              </span>{" "}
+              enrolled
+            </Link>
+            <span aria-hidden="true" className="mx-1.5 text-brand-500">·</span>
+            <Link
+              href="/students?status=verified"
+              className="rounded-md transition-colors duration-150 hover:text-white"
+            >
+              <span className="numeric font-semibold text-white">
+                <CountUp value={verified} duration={800} delay={150} />
+              </span>{" "}
+              verified
+            </Link>
+            <span aria-hidden="true" className="mx-1.5 text-brand-500">·</span>
+            <span className="rounded-md">
+              <span className="numeric font-semibold text-white">
+                <CountUp value={barangayCount} duration={800} delay={300} />
+              </span>{" "}
+              grade level{barangayCount === 1 ? "" : "s"}
+            </span>
+          </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-x-8 gap-y-3">
-          <div>
-            <p className="numeric text-2xl font-bold">{registered}</p>
-            <p className="text-xs text-brand-400">Enrolled students</p>
-          </div>
-          <div>
-            <p className="numeric text-2xl font-bold">{verified}</p>
-            <p className="text-xs text-brand-400">Verified records</p>
-          </div>
-          <div>
-            <p className="numeric text-2xl font-bold">{barangayCount}</p>
-            <p className="text-xs text-brand-400">Grade levels</p>
-          </div>
-          <Link
-            href="/students"
-            className="rounded-md bg-white px-3.5 py-2 text-xs font-semibold text-brand-900 transition-colors hover:bg-brand-100"
-          >
-            View Student Registry
-          </Link>
-        </div>
+        <Link
+          href="/students"
+          className="shrink-0 self-start rounded-md bg-white px-4 py-2 text-sm font-medium text-brand-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-sm md:self-auto"
+        >
+          View Student Registry
+        </Link>
       </div>
     </section>
   );
@@ -305,6 +364,13 @@ const RECORD_TONES: Record<string, string> = {
   Draft: "bg-brand-300",
 };
 
+const STATUS_PARAM: Record<string, string> = {
+  Verified: "verified",
+  "Pending Verification": "pending_validation",
+  "Needs Correction": "needs_correction",
+  Draft: "draft",
+};
+
 export function RecordStatusCard({ rows }: { rows: DistributionRow[] }) {
   return (
     <Panel
@@ -314,17 +380,31 @@ export function RecordStatusCard({ rows }: { rows: DistributionRow[] }) {
     >
       <ul className="divide-y divide-brand-100">
         {rows.map((row) => (
-          <li key={row.label} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-            <span className="flex min-w-0 items-center gap-2 text-xs text-brand-600">
-              <span
-                aria-hidden="true"
-                className={cn("h-1.5 w-1.5 shrink-0 rounded-full", RECORD_TONES[row.label] ?? "bg-brand-300")}
-              />
-              <span className="truncate">{row.label}</span>
-            </span>
-            <span className="numeric shrink-0 text-sm font-semibold text-brand-900">
-              {row.value}
-            </span>
+          <li key={row.label} className="first:pt-0 last:pb-0">
+            <Link
+              href={`/students?status=${STATUS_PARAM[row.label] ?? ""}`}
+              className="group -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors duration-150 hover:bg-brand-50"
+            >
+              <span className="flex min-w-0 items-center gap-2 text-xs text-brand-600">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "h-1.5 w-1.5 shrink-0 rounded-full animate-pulse",
+                    RECORD_TONES[row.label] ?? "bg-brand-300",
+                  )}
+                />
+                <span className="truncate">{row.label}</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-0.5">
+                <span className="numeric text-sm font-semibold text-brand-900 transition-colors duration-150 group-hover:text-action-700">
+                  {row.value}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 -translate-x-0.5 text-brand-400 opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100"
+                />
+              </span>
+            </Link>
           </li>
         ))}
       </ul>
@@ -357,39 +437,65 @@ export function EducationDistribution({ rows }: { rows: DistributionRow[] }) {
         <p className="py-6 text-center text-sm text-brand-400">No enrollment records yet.</p>
       ) : (
         <>
-          {/* Stacked distribution bar */}
-          <div
-            className="flex h-2.5 w-full overflow-hidden rounded-full bg-brand-100"
-            role="img"
-            aria-label={`Enrollment status distribution of ${total} students`}
-          >
-            {withValues.map((row) => (
-              <div
-                key={row.label}
-                className={cn("h-full", EDU_BAR[row.label] ?? "bg-brand-300")}
-                style={{ width: `${(row.value / total) * 100}%` }}
-                title={`${row.label}: ${row.value}`}
-              />
-            ))}
-          </div>
-          <ul className="mt-3.5 space-y-2">
-            {rows.map((row) => (
-              <li key={row.label} className="flex items-center justify-between gap-3">
-                <span className="flex min-w-0 items-center gap-2 text-xs text-brand-600">
-                  <span
-                    aria-hidden="true"
-                    className={cn("h-2 w-2 shrink-0 rounded-sm", EDU_BAR[row.label] ?? "bg-brand-300")}
-                  />
-                  <span className="truncate">{row.label}</span>
-                </span>
+          {/* Stacked distribution bar — segments fill left to right, staggered,
+              when the panel scrolls into view. */}
+          <AnimatedStackedBar
+            ariaLabel={`Enrollment status distribution of ${total} students`}
+            trackClassName="h-2.5"
+            segments={withValues.map((row) => ({
+              className: EDU_BAR[row.label] ?? "bg-brand-300",
+              percent: (row.value / total) * 100,
+              title: `${row.label}: ${row.value}`,
+            }))}
+          />
+          <ul className="mt-3.5 divide-y divide-brand-100">
+            {rows.map((row) => {
+              const value = (
                 <span className="shrink-0 text-xs text-[#64748B]">
                   <span className="numeric font-semibold text-brand-900">{row.value}</span>
                   <span className="numeric ml-1.5">
                     ({Math.round((row.value / total) * 100)}%)
                   </span>
                 </span>
-              </li>
-            ))}
+              );
+              return (
+                <li key={row.label}>
+                  {row.label === "Active" && row.value > 0 ? (
+                    <Link
+                      href="/students"
+                      aria-label={`Open ${row.label} students in the registry`}
+                      className="group -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors duration-150 hover:bg-brand-50"
+                    >
+                      <span className="flex min-w-0 items-center gap-2 text-xs text-brand-600">
+                        <span
+                          aria-hidden="true"
+                          className={cn("h-2 w-2 shrink-0 rounded-sm", EDU_BAR[row.label] ?? "bg-brand-300")}
+                        />
+                        <span className="truncate">{row.label}</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-0.5">
+                        {value}
+                        <ChevronRight
+                          aria-hidden="true"
+                          className="h-3.5 w-3.5 -translate-x-0.5 text-brand-400 opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100"
+                        />
+                      </span>
+                    </Link>
+                  ) : (
+                    <div className="-mx-2 flex items-center justify-between gap-3 px-2 py-1.5">
+                      <span className="flex min-w-0 items-center gap-2 text-xs text-brand-600">
+                        <span
+                          aria-hidden="true"
+                          className={cn("h-2 w-2 shrink-0 rounded-sm", EDU_BAR[row.label] ?? "bg-brand-300")}
+                        />
+                        <span className="truncate">{row.label}</span>
+                      </span>
+                      {value}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
@@ -409,10 +515,10 @@ export function ValidationQueueCard({
   canReview: boolean;
 }) {
   const rows = [
-    { label: "Verified Records", value: counts.verified, tone: "bg-emerald-500" },
-    { label: "Pending Verification", value: counts.pending, tone: "bg-amber-500" },
-    { label: "Needs Correction", value: counts.needsCorrection, tone: "bg-red-500" },
-    { label: "Duplicate Flags", value: counts.duplicateFlags, tone: "bg-brand-400" },
+    { label: "Verified Records", value: counts.verified, tone: "bg-emerald-500", href: "/students?status=verified" },
+    { label: "Pending Verification", value: counts.pending, tone: "bg-amber-500", href: canReview ? "/verification" : "/students?status=pending_validation" },
+    { label: "Needs Correction", value: counts.needsCorrection, tone: "bg-red-500", href: "/students?status=needs_correction" },
+    { label: "Duplicate Flags", value: counts.duplicateFlags, tone: "bg-brand-400", href: "/duplicates" },
   ];
   const href = canReview ? "/verification" : "/students?status=pending_validation";
 
@@ -424,17 +530,29 @@ export function ValidationQueueCard({
     >
       <ul className="divide-y divide-brand-100">
         {rows.map((row) => (
-          <li key={row.label} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-            <span className="flex min-w-0 items-center gap-2 text-xs text-brand-600">
-              <span
-                aria-hidden="true"
-                className={cn("h-1.5 w-1.5 shrink-0 rounded-full", row.tone)}
-              />
-              <span className="truncate">{row.label}</span>
-            </span>
-            <span className="numeric shrink-0 text-sm font-semibold text-brand-900">
-              {row.value}
-            </span>
+          <li key={row.label} className="first:pt-0 last:pb-0">
+            <Link
+              href={row.href}
+              aria-label={`${row.label}: ${row.value}`}
+              className="group -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors duration-150 hover:bg-brand-50"
+            >
+              <span className="flex min-w-0 items-center gap-2 text-xs text-brand-600">
+                <span
+                  aria-hidden="true"
+                  className={cn("h-1.5 w-1.5 shrink-0 rounded-full animate-pulse", row.tone)}
+                />
+                <span className="truncate">{row.label}</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-0.5">
+                <span className="numeric text-sm font-semibold text-brand-900 transition-colors duration-150 group-hover:text-action-700">
+                  {row.value}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 -translate-x-0.5 text-brand-400 opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100"
+                />
+              </span>
+            </Link>
           </li>
         ))}
       </ul>
@@ -447,11 +565,11 @@ export function ValidationQueueCard({
 /* -------------------------------------------------------------------------- */
 
 const ACTIVITY_TONE_STYLES: Record<"green" | "red" | "amber" | "blue" | "gray", string> = {
-  green: "bg-emerald-50 text-emerald-700",
-  red: "bg-red-50 text-red-700",
-  amber: "bg-amber-50 text-amber-700",
-  blue: "bg-brand-50 text-brand-600",
-  gray: "bg-brand-100 text-brand-600",
+  green: "text-emerald-600",
+  red: "text-red-600",
+  amber: "text-amber-600",
+  blue: "text-brand-600",
+  gray: "text-[#94A3B8]",
 };
 
 export function RecentActivity({ items }: { items: ActivityItem[] }) {
@@ -471,12 +589,9 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
               <li key={item.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                    ACTIVITY_TONE_STYLES[tone],
-                  )}
+                  className={cn("shrink-0", ACTIVITY_TONE_STYLES[tone])}
                 >
-                  <DashIcon name={activityIcon(item)} className="h-3.5 w-3.5" />
+                  <DashIcon name={activityIcon(item)} className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-brand-800">
@@ -527,13 +642,13 @@ export function SectionCoverageTable({ rows }: { rows: SectionCoverageRow[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-100">
-              {rows.map((row) => {
+              {rows.map((row, i) => {
                 const coverage =
                   row.registered > 0
                     ? Math.round((row.withGrades / row.registered) * 100)
                     : 0;
                 return (
-                  <tr key={row.gradeLevel}>
+                  <tr key={row.gradeLevel} className="transition-colors duration-150 hover:bg-brand-50/70">
                     <td className="max-w-[140px] truncate px-4 py-2 text-brand-700" title={row.gradeLevel}>
                       {row.gradeLevel}
                     </td>
@@ -545,12 +660,12 @@ export function SectionCoverageTable({ rows }: { rows: SectionCoverageRow[] }) {
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-brand-100">
-                          <div
-                            className="h-full rounded-full bg-emerald-600"
-                            style={{ width: `${Math.min(100, coverage)}%` }}
-                          />
-                        </div>
+                        <AnimatedBar
+                          widthPercent={coverage}
+                          className="bg-emerald-600"
+                          trackClassName="h-1.5 w-16"
+                          delay={i * 80}
+                        />
                         <span className="numeric w-9 text-right text-[#64748B]">{coverage}%</span>
                       </div>
                     </td>

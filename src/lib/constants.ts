@@ -13,13 +13,14 @@ export const SCHOOL = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
-/*  Roles — eight school roles (barangay/lgu removed with the municipality     */
+/*  Roles — ten school roles (barangay/lgu removed with the municipality       */
 /*  scope; schools users are internal personnel).                              */
 /* -------------------------------------------------------------------------- */
 
 export const ROLES = [
   "admin",
   "school_admin",
+  "subject_teacher",
   "teacher",
   "records",
   "guidance",
@@ -33,9 +34,10 @@ export type Role = (typeof ROLES)[number];
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "System Administrator",
   school_admin: "School Administrator",
-  teacher: "Teacher / Adviser",
+  subject_teacher: "Subject Teacher",
+  teacher: "Adviser",
   records: "Records Personnel",
-  guidance: "Guidance Personnel",
+  guidance: "Guidance Counselor",
   nurse: "Nurse",
   registrar: "Registrar",
   literacy_coordinator: "Language & Literacy Coordinator",
@@ -147,6 +149,14 @@ export const BEHAVIOR_SEED_CATEGORIES = [
   { name: "Classroom Concern", kind: "concern" },
   { name: "Attendance-Related Concern", kind: "concern" },
   { name: "Peer Relations Concern", kind: "concern" },
+  // Guidance Office incident types (data rows — the Guidance Counselor can
+  // request new types from the admin; nothing here is hard-coded in logic).
+  { name: "Bullying", kind: "concern" },
+  { name: "Fighting / Riot", kind: "concern" },
+  { name: "Physical Altercation", kind: "concern" },
+  { name: "Verbal Abuse", kind: "concern" },
+  { name: "Harassment", kind: "concern" },
+  { name: "Threatening Behavior", kind: "concern" },
 ] as const;
 
 /* -------------------------------------------------------------------------- */

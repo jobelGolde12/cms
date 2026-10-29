@@ -196,6 +196,7 @@ export const userFormSchema = z.object({
     [
       "role-admin",
       "role-school-admin",
+      "role-subject-teacher",
       "role-teacher",
       "role-records",
       "role-guidance",

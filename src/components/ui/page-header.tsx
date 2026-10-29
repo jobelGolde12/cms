@@ -35,7 +35,7 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {eyebrow ? (
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-action-700">
+          <p className="text-xs font-medium text-brand-600">
             {eyebrow}
           </p>
         ) : null}
@@ -52,7 +52,7 @@ export function PageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+        <div className="flex flex-wrap items-end gap-2">{actions}</div>
       ) : null}
     </div>
   );
