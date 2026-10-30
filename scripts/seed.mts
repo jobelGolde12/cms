@@ -292,7 +292,9 @@ async function seedSubjectAssignments(subjectTeacherId: string) {
   ];
   for (let gradeLevelNum = 7; gradeLevelNum <= 10; gradeLevelNum++) {
     for (let secIdx = 0; secIdx < 3; secIdx++) {
-      const sectionId = `sec-${gradeLevelNum}-${secIdx}`;
+      // Section IDs use a global running index across grades (see
+      // seedAcademicStructure): grade 7 -> 0..2, grade 8 -> 3..5, etc.
+      const sectionId = `sec-${gradeLevelNum}-${(gradeLevelNum - 7) * 3 + secIdx}`;
       for (const { subjectId } of teachingPairs) {
         await db
           .insert(sectionSubjectTeachers)
