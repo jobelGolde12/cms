@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
@@ -17,7 +17,9 @@ import { useScrolled } from "./useScrolled";
  *
  * On narrow viewports the desktop nav is hidden behind a hamburger trigger.
  * The drawer slides in from the right, closes on backdrop tap, link click,
- * or Escape, and is fully keyboard-accessible.
+ * or Escape, locks body scroll while open, and is fully keyboard-accessible.
+ * When closed it is made `invisible` so its contents can never receive
+ * keyboard focus while off-screen.
  */
 function Drawer({
   open,
@@ -33,8 +35,8 @@ function Drawer({
       aria-modal="true"
       aria-label="Navigation menu"
       className={cn(
-        "fixed inset-0 z-50 flex items-start justify-end bg-white/95 backdrop-blur-sm transition-transform duration-300 ease-in-out lg:hidden",
-        open ? "translate-x-0" : "translate-x-full",
+        "fixed inset-0 z-50 flex items-start justify-end bg-white/95 backdrop-blur-sm transition-[transform,visibility] duration-300 ease-in-out lg:hidden",
+        open ? "visible translate-x-0" : "invisible translate-x-full",
       )}
     >
       <div
@@ -77,6 +79,21 @@ function Drawer({
 export function WelcomeHeader() {
   const scrolled = useScrolled(8);
   const [open, setOpen] = useState(false);
+
+  // While the drawer is open: lock body scroll and close on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
 
   return (
     <header

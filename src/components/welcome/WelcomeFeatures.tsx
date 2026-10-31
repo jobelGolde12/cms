@@ -78,7 +78,7 @@ export const features: Feature[] = [
 export function FeatureCard({ feature }: { feature: Feature }) {
   const Icon = feature.icon;
   return (
-    <article className="group border-t border-brand-200 pb-8 pt-7">
+    <article className="group border-t border-brand-200 pb-8 pt-7 transition-colors duration-300 group-hover:border-brand-300">
       <div className="flex items-center justify-between gap-3">
         <Icon
           className="h-5 w-5 text-brand-400 transition-colors duration-300 group-hover:text-action-600"

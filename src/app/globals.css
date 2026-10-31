@@ -156,6 +156,23 @@ body {
   100% { background-position: 200% 0; }
 }
 
+/* Indeterminate progress hairline (global loading state, src/app/loading.tsx). */
+@keyframes loader-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+.loader-bar {
+  animation: loader-slide 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-bar {
+    animation: none;
+    transform: translateX(100%);
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Dashboard chart animations
 --------------------------------------------------------------------------- */

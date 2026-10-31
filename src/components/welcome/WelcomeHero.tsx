@@ -8,10 +8,8 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { SCHOOL } from "@/lib/constants";
-import {
-  EditorialContainer,
-  Eyebrow,
-} from "./editorial";
+import { cn } from "@/lib/utils";
+import { EditorialContainer, Eyebrow } from "./editorial";
 
 // Hero illustration (public/hero-section-image.svg) as a static import:
 // TypeScript infers the intrinsic 960×845.748 dimensions and Next fingerprints
@@ -91,6 +89,12 @@ export function WelcomeHero() {
           <div className="rise rise-d2 min-w-0 lg:col-span-5">
             <div className="relative mx-auto w-full max-w-[380px] lg:ml-auto lg:max-w-md">
               <div className="relative aspect-[960/845.748]">
+                {/* Soft radial wash — one quiet depth cue behind the
+                    illustration, flat editorial palette undisturbed. */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-10 bg-[radial-gradient(closest-side,var(--color-brand-100),transparent)]"
+                />
                 {/* `unoptimized`: next/image does not optimize SVGs; per-image
                     opt-out keeps dev/prod identical without enabling
                     dangerouslyAllowSVG globally. */}
@@ -115,13 +119,19 @@ export function WelcomeHero() {
         </div>
 
         {/* ── Metadata strip — quiet institutional anchors (§24) ── */}
-        <div className="rise rise-d3 grid gap-4 border-t border-brand-200 px-4 py-6 sm:px-6 sm:py-8 md:grid-cols-3 lg:px-8">
+        <div className="rise rise-d3 grid gap-4 border-t border-brand-200 px-4 py-6 sm:px-6 sm:py-8 md:grid-cols-3 md:gap-0 md:py-8 lg:px-8">
           {[
             { icon: MapPin, label: "Location", value: `${SCHOOL.address}` },
             { icon: Award, label: "Province", value: `${SCHOOL.province}` },
             { icon: CheckCircle2, label: "Coverage", value: "Grades 7–12" },
-          ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="flex items-start gap-2">
+          ].map(({ icon: Icon, label, value }, index) => (
+            <div
+              key={label}
+              className={cn(
+                "flex items-start gap-2 md:px-6",
+                index > 0 && "md:border-l md:border-brand-200",
+              )}
+            >
               <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-300" aria-hidden="true" />
               <div>
                 <p className="eyebrow">{label}</p>
