@@ -56,10 +56,11 @@ local.db.stale-backup
 # local database backups
 *.db.stale-backup
 
-# temporary/debug folders
+# temp/debug folders
 .freebuff/
 .tmp-integration/
 .tmp-qa/
+scripts/tmp/
 grade-plan/
 plan/
 
