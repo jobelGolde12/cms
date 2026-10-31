@@ -75,6 +75,15 @@ export async function saveHealthRecord(
     return fail("Height must be between 60 and 250 cm.");
   }
 
+  const heightForAgeRaw = String(formData.get("heightForAge") ?? "").trim();
+  const heightForAge =
+    heightForAgeRaw === "normal" ||
+    heightForAgeRaw === "stunted" ||
+    heightForAgeRaw === "severely_stunted" ||
+    heightForAgeRaw === "tall"
+      ? heightForAgeRaw
+      : null;
+
   const nutritionalStatusRaw = String(formData.get("nutritionalStatus") ?? "").trim();
   const nutritionalStatus =
     nutritionalStatusRaw === "normal" ||
@@ -85,8 +94,8 @@ export async function saveHealthRecord(
       ? nutritionalStatusRaw
       : null;
 
-  if (weightKg == null && heightCm == null && !nutritionalStatus) {
-    return fail("Provide at least weight, height, or a nutritional status.");
+  if (weightKg == null && heightCm == null && !nutritionalStatus && !heightForAge) {
+    return fail("Provide at least weight, height, nutritional status, or height-for-age.");
   }
 
   const recordId = String(formData.get("id") ?? "").trim();
@@ -131,6 +140,7 @@ export async function saveHealthRecord(
           heightCm,
           bmi,
           nutritionalStatus,
+          heightForAge,
           remarks: remarks || null,
           updatedAt: new Date(),
         })
@@ -145,6 +155,7 @@ export async function saveHealthRecord(
         heightCm,
         bmi,
         nutritionalStatus,
+        heightForAge,
         remarks: remarks || null,
         recordedBy: user.id,
       });
@@ -159,7 +170,7 @@ export async function saveHealthRecord(
     action: recordId ? "UPDATE_HEALTH_RECORD" : "CREATE_HEALTH_RECORD",
     entityType: "health_record",
     entityId: recordId || studentId,
-    newValues: { studentId, measurementDate, nutritionalStatus },
+    newValues: { studentId, measurementDate, nutritionalStatus, heightForAge },
     ipAddress: ip,
     userAgent,
   });

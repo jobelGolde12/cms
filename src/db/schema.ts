@@ -601,6 +601,8 @@ export const healthRecords = sqliteTable(
     bmi: real("bmi"),
     /** normal | wasted | severely_wasted | overweight | obese */
     nutritionalStatus: text("nutritional_status"),
+    /** normal | stunted | severely_stunted | tall */
+    heightForAge: text("height_for_age"),
     remarks: text("remarks"),
     recordedBy: text("recorded_by")
       .notNull()
@@ -612,6 +614,7 @@ export const healthRecords = sqliteTable(
     index("health_student_idx").on(t.studentId),
     index("health_date_idx").on(t.measurementDate),
     index("health_status_idx").on(t.nutritionalStatus),
+    index("health_height_for_age_idx").on(t.heightForAge),
   ],
 );
 

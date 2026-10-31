@@ -231,6 +231,21 @@ export const NUTRITIONAL_STATUS_LABELS: Record<NutritionalStatus, string> = {
   obese: "Obese",
 };
 
+export const HEIGHT_FOR_AGE_STATUSES = [
+  "normal",
+  "stunted",
+  "severely_stunted",
+  "tall",
+] as const;
+export type HeightForAgeStatus = (typeof HEIGHT_FOR_AGE_STATUSES)[number];
+
+export const HEIGHT_FOR_AGE_LABELS: Record<HeightForAgeStatus, string> = {
+  normal: "Normal",
+  stunted: "Stunted",
+  severely_stunted: "Severely Stunted",
+  tall: "Tall",
+};
+
 export const HEALTH_SEED_CATEGORIES = [
   "Health Assessment",
   "First Aid",

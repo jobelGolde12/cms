@@ -12,6 +12,7 @@ import {
   FOLLOWUP_STATUSES,
   INTERVENTION_STATUSES,
   NUTRITIONAL_STATUSES,
+  HEIGHT_FOR_AGE_STATUSES,
   ROLES,
   SEXES,
   SERVICE_CREDIT_TYPES,
@@ -407,6 +408,7 @@ export const healthRecordSchema = z
       .optional()
       .or(z.literal("")),
     nutritionalStatus: z.enum(NUTRITIONAL_STATUSES).optional().or(z.literal("")),
+    heightForAge: z.enum(HEIGHT_FOR_AGE_STATUSES).optional().or(z.literal("")),
     remarks: optionalText(300),
   })
   .refine((v) => v.weightKg !== "" || v.heightCm !== "" || v.nutritionalStatus !== "", {

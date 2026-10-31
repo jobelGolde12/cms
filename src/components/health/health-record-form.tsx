@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { saveHealthRecord } from "@/actions/health";
 import { Button } from "@/components/ui/button";
-import { NUTRITIONAL_STATUSES, NUTRITIONAL_STATUS_LABELS } from "@/lib/constants";
+import { NUTRITIONAL_STATUSES, NUTRITIONAL_STATUS_LABELS, HEIGHT_FOR_AGE_STATUSES, HEIGHT_FOR_AGE_LABELS } from "@/lib/constants";
 
 /**
  * Nutritional status form (Nurse). The server action re-validates
@@ -86,6 +86,27 @@ export function HealthRecordForm({ studentId }: { studentId: string }) {
             inputMode="decimal"
             className="numeric w-full rounded-md border border-brand-200 bg-white px-3 py-2 text-[13px] text-brand-900 focus:border-action-500 focus:outline-none"
           />
+        </div>
+        <div>
+          <label
+            htmlFor="health-height-for-age"
+            className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#64748B]"
+          >
+            Height-for-Age
+          </label>
+          <select
+            id="health-height-for-age"
+            name="heightForAge"
+            defaultValue=""
+            className="w-full rounded-md border border-brand-200 bg-white px-3 py-2 text-[13px] text-brand-900 focus:border-action-500 focus:outline-none"
+          >
+            <option value="">Not recorded</option>
+            {HEIGHT_FOR_AGE_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {HEIGHT_FOR_AGE_LABELS[s]}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label

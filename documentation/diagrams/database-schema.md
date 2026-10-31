@@ -397,6 +397,7 @@ weight_kg       REAL    NULL  (kg)
 height_cm       REAL    NULL  (cm)
 bmi             REAL    NULL  (kg/m² — computed by action layer; not manually edited)
 nutritional_status  TEXT  NULL  ("normal" | "wasted" | "severely_wasted" | "overweight" | "obese")
+height_for_age      TEXT  NULL  ("normal" | "stunted" | "severely_stunted" | "tall")
 remarks         TEXT    NULL
 recorded_by     TEXT    NOT NULL  FK → users.id
 created_at      INTEGER  NOT NULL  DEFAULT (unixepoch())
@@ -404,6 +405,7 @@ updated_at      INTEGER  NOT NULL  DEFAULT (unixepoch())
 INDEX: health_student_idx (student_id)
 INDEX: health_date_idx (measurement_date)
 INDEX: health_status_idx (nutritional_status)
+INDEX: health_height_for_age_idx (height_for_age)
 NOTE: Only `nurse` role has `health.write`; `admin` has `health.view`. `school_admin` does NOT have health access per 2026-10 audit (documented in `permissions.ts` and `security/role-permission-matrix.md`).
 
 TABLE: clinical_records

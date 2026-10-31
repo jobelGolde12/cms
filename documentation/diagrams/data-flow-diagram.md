@@ -251,7 +251,7 @@ P9 Sub-processes:
 | E6 (Guidance) | P5.2 (Followup) | `intervention_followups` | Intervention, follow_up_date, status, notes, recorded_by |
 | E3 (Adviser) | P4 (Attendance) | `attendance_records` | Enrollment, date, status (present/absent_excused/absent_unexcused/late), remarks, recorded_by |
 | E9 (Literacy Coord) | P5.4 (Assessment) | `assessments` | Student, domain (reading/literacy/numeracy), type, skill_area, date, level, score, assessor_id, notes |
-| E7 (Nurse) | P6 (Health) | `health_records` | Student, measurement_date, weight_kg, height_cm, bmi, nutritional_status, remarks, recorded_by |
+| E7 (Nurse) | P6 (Health) | `health_records` | Student, measurement_date, weight_kg, height_cm, bmi, nutritional_status, height_for_age, remarks, recorded_by |
 | E7 (Nurse) | P6 (Clinical) | `clinical_records` | Student, date, category, description, assessment, action_taken, remarks, recorded_by |
 | E2 (School Admin) | P2.4 (Verification) | `record_verifications` | Student, submitted_by, reviewed_by [nullable], status, remarks, submitted_at, reviewed_at |
 | E5 (Records) | P2.5 (Duplicate) | `duplicate_candidates` | Student, possible_student, match_score, match_reason, status, reviewed_by, review_notes |
