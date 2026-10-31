@@ -32,6 +32,14 @@ npm run db:seed
 npm run db:push
 ```
 
+> ⚠️ **Never run `drizzle-kit push` (with `--force`) against the production Turso database.**
+> The Turso DB intentionally retains legacy prototype tables (`children`,
+> `child_*`, `municipalities`, `schools`) and `*_backup_*` snapshot tables with
+> real data. A full push sees them as drift and will offer to delete them.
+> Applied schema changes to Turso must be targeted migrations (e.g.
+> `scripts/migrate-remote-schema.mts`, or explicit ALTER/CREATE statements),
+> followed by verifying counts and `PRAGMA foreign_key_check`.
+
 ### Development Process
 
 1. Configure `.env.local` with `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` (or `LIBSQL_URL=file:./local.db`).
