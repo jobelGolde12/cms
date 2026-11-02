@@ -6,7 +6,8 @@ import { systemSettings } from "@/db/schema";
 import { hasPermission } from "@/lib/permissions";
 import { ROLE_LABELS } from "@/lib/constants";
 import { updateSystemSettingForm } from "@/actions/settings";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/form-status";
 import { Field, Input } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { SettingsShell } from "@/components/settings/settings-shell";
@@ -51,9 +52,12 @@ export default async function SettingsPage() {
                 <Input id={`set-${s.key}`} name="value" defaultValue={s.value} maxLength={200} />
               </Field>
             </div>
-            <Button type="submit" variant="outline" size="md">
+            <SubmitButton
+              className={buttonStyles("outline", "md")}
+              pendingLabel="Saving…"
+            >
               Save
-            </Button>
+            </SubmitButton>
           </form>
         ))}
       </div>

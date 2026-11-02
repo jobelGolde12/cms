@@ -4,7 +4,9 @@ import { verificationQueue, verificationStats } from "@/lib/queries";
 import { reviewVerificationForm } from "@/actions/students";
 import { hasPermission } from "@/lib/permissions";
 import { ageFromBirthDate, formatDate } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/form-status";
+import { ClientNavForm } from "@/components/ui/client-nav-form";
 import { EmptyState } from "@/components/ui/states";
 import { ShieldCheck } from "lucide-react";
 import {
@@ -59,7 +61,7 @@ export default async function VerificationPage({
               </span>
             ) : null}
           </div>
-          <form action="/verification" method="GET" className="w-full sm:w-64">
+          <ClientNavForm action="/verification" className="w-full sm:w-64">
             <label htmlFor="queue-search" className="sr-only">
               Search the verification queue
             </label>
@@ -71,7 +73,7 @@ export default async function VerificationPage({
               placeholder="Search name or student number…"
               className="h-8 w-full rounded-md border border-brand-200 bg-[#f8fafc] px-3 text-xs text-brand-800 placeholder:text-brand-400 focus:border-action-500 focus:bg-white focus:outline-none"
             />
-          </form>
+          </ClientNavForm>
         </header>
 
         {filtered.length === 0 ? (
@@ -129,9 +131,12 @@ export default async function VerificationPage({
                         name="remarks"
                         value={`Approved from queue ${item.studentNumber}`}
                       />
-                      <Button type="submit" size="sm">
+                      <SubmitButton
+                        className={buttonStyles("primary", "sm")}
+                        pendingLabel="Reviewing…"
+                      >
                         Approve
-                      </Button>
+                      </SubmitButton>
                     </form>
                     <form action={reviewVerificationForm} className="flex items-center gap-1.5">
                       <input type="hidden" name="studentId" value={item.id} />
@@ -141,17 +146,23 @@ export default async function VerificationPage({
                         name="remarks"
                         value="Returned from verification queue"
                       />
-                      <Button type="submit" variant="outline" size="sm">
+                      <SubmitButton
+                        className={buttonStyles("outline", "sm")}
+                        pendingLabel="Reviewing…"
+                      >
                         Return for correction
-                      </Button>
+                      </SubmitButton>
                     </form>
                     <form action={reviewVerificationForm} className="flex items-center gap-1.5">
                       <input type="hidden" name="studentId" value={item.id} />
                       <input type="hidden" name="decision" value="rejected" />
                       <input type="hidden" name="remarks" value="Rejected from verification queue" />
-                      <Button type="submit" variant="danger" size="sm">
+                      <SubmitButton
+                        className={buttonStyles("danger", "sm")}
+                        pendingLabel="Reviewing…"
+                      >
                         Reject
-                      </Button>
+                      </SubmitButton>
                     </form>
                   </div>
                 ) : null}

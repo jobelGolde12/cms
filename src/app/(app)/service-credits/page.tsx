@@ -6,6 +6,7 @@ import { hasPermission } from "@/lib/permissions";
 import { serviceCreditOverview } from "@/lib/employees";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { TableWrap, Th, Td, TableEmptyState } from "@/components/ui/table";
+import { ClientNavForm } from "@/components/ui/client-nav-form";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   CreditBadges,
@@ -97,7 +98,7 @@ export default async function ServiceCreditsOverviewPage({
           description={`${result.total} employee${result.total === 1 ? "" : "s"}${hasFilters ? " matching the current filters" : ""}`}
           icon={<Wallet aria-hidden="true" className="h-4 w-4" />}
           actions={
-            <form action="/service-credits" method="GET" className="flex flex-wrap items-center gap-2">
+            <ClientNavForm action="/service-credits" className="flex flex-wrap items-center gap-2">
               <label htmlFor="credits-search" className="sr-only">
                 Search employees
               </label>
@@ -177,7 +178,7 @@ export default async function ServiceCreditsOverviewPage({
                   Clear
                 </Link>
               ) : null}
-            </form>
+            </ClientNavForm>
           }
         />
         <TableWrap minWidth={860}>

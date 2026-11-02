@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
+import { ClientNavForm } from "@/components/ui/client-nav-form";
 import { buttonStyles } from "@/components/ui/button";
 
 export const metadata = { title: "Guidance Office · Records Management System" };
@@ -74,8 +75,7 @@ export default async function GuidancePage({
       />
 
       {/* Filters (GET form → server-rendered results) */}
-      <form
-        method="get"
+      <ClientNavForm
         action="/guidance"
         className="grid grid-cols-1 gap-3 rounded-lg border border-brand-200 bg-white px-4 py-3 shadow-xs sm:grid-cols-3"
       >
@@ -140,7 +140,7 @@ export default async function GuidancePage({
             Filter
           </button>
         </div>
-      </form>
+      </ClientNavForm>
 
       <Card>
         <CardHeader

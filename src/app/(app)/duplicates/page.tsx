@@ -10,7 +10,8 @@ import {
   type DuplicateStatus,
 } from "@/lib/constants";
 import { cn, formatDate } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/form-status";
 import { EmptyState } from "@/components/ui/states";
 import {
   ConfidenceChip,
@@ -269,23 +270,32 @@ export default async function DuplicatesPage({
                         <form action={reviewDuplicateForm}>
                           <input type="hidden" name="id" value={selected.id} />
                           <input type="hidden" name="decision" value="confirmed_duplicate" />
-                          <Button type="submit" variant="danger" size="sm">
+                          <SubmitButton
+                            className={buttonStyles("danger", "sm")}
+                            pendingLabel="Resolving…"
+                          >
                             Confirm duplicate
-                          </Button>
+                          </SubmitButton>
                         </form>
                         <form action={reviewDuplicateForm}>
                           <input type="hidden" name="id" value={selected.id} />
                           <input type="hidden" name="decision" value="not_duplicate" />
-                          <Button type="submit" variant="outline" size="sm">
+                          <SubmitButton
+                            className={buttonStyles("outline", "sm")}
+                            pendingLabel="Resolving…"
+                          >
                             Not a duplicate
-                          </Button>
+                          </SubmitButton>
                         </form>
                         <form action={reviewDuplicateForm}>
                           <input type="hidden" name="id" value={selected.id} />
                           <input type="hidden" name="decision" value="dismissed" />
-                          <Button type="submit" variant="ghost" size="sm">
+                          <SubmitButton
+                            className={buttonStyles("ghost", "sm")}
+                            pendingLabel="Resolving…"
+                          >
                             Dismiss
-                          </Button>
+                          </SubmitButton>
                         </form>
                       </div>
                     ) : (

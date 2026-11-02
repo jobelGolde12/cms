@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEditable } from "@/lib/workflow";
+import { ClientNavForm } from "@/components/ui/client-nav-form";
 import { RecordStatusBadge } from "@/components/ui/badge";
 import { Tooltip } from "@/components/ui/tooltip";
 import { SCHOOL, type RecordStatus } from "@/lib/constants";
@@ -188,9 +189,8 @@ export function RegistryFilters({
   const activeGrade = values.gradeLevel;
 
   return (
-    <form
+    <ClientNavForm
       action="/students"
-      method="GET"
       className="rounded-lg border border-brand-200 bg-white shadow-xs"
     >
       <div className="border-b border-brand-100 px-4 py-3">
@@ -310,7 +310,7 @@ export function RegistryFilters({
           </button>
         </div>
       </div>
-    </form>
+    </ClientNavForm>
   );
 }
 
@@ -553,7 +553,7 @@ export function RegistryPagination({
           <span className="numeric font-medium text-brand-700">{to}</span> of{" "}
           <span className="numeric font-medium text-brand-700">{total.toLocaleString("en-PH")}</span> {itemLabel}
         </p>
-        <form action={basePath} method="GET" className="flex items-center gap-1.5">
+        <ClientNavForm action={basePath} className="flex items-center gap-1.5">
           {Object.entries(searchParams).map(([key, value]) =>
             key !== "page" && key !== "pageSize" && typeof value === "string" && value ? (
               <input key={key} type="hidden" name={key} value={value} />
@@ -573,7 +573,7 @@ export function RegistryPagination({
           <button type="submit" className="text-xs font-medium text-action-700 hover:text-action-800">
             Set
           </button>
-        </form>
+        </ClientNavForm>
       </div>
 
       <nav aria-label="Pagination" className="flex items-center gap-1">

@@ -18,6 +18,7 @@ import { archiveEmployeeForm, reactivateEmployeeForm } from "@/actions/employees
 import { EditEmployeeModal } from "@/components/employees/add-employee-modal";
 import { EmployeeStatusBadge } from "@/components/employees/employee-ui";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { SubmitButton } from "@/components/ui/form-status";
 
 function formatDateTime(d: Date | null): string {
   if (!d) return "—";
@@ -82,25 +83,25 @@ export default async function EmployeeProfilePage({
           {canArchive && employee.status === "active" ? (
             <form action={archiveEmployeeForm}>
               <input type="hidden" name="employeeId" value={employee.id} />
-              <button
-                type="submit"
+              <SubmitButton
                 className="inline-flex h-9 items-center gap-1.5 rounded-md border border-brand-300 bg-white px-3 text-[13px] font-medium text-red-700 transition-colors hover:bg-red-50"
+                pendingLabel="Archiving…"
               >
                 <Archive aria-hidden="true" className="h-4 w-4" />
                 Archive
-              </button>
+              </SubmitButton>
             </form>
           ) : null}
           {canArchive && employee.status === "inactive" ? (
             <form action={reactivateEmployeeForm}>
               <input type="hidden" name="employeeId" value={employee.id} />
-              <button
-                type="submit"
+              <SubmitButton
                 className="inline-flex h-9 items-center gap-1.5 rounded-md border border-brand-300 bg-white px-3 text-[13px] font-medium text-brand-700 transition-colors hover:bg-brand-100"
+                pendingLabel="Restoring…"
               >
                 <RotateCcw aria-hidden="true" className="h-4 w-4" />
                 Restore
-              </button>
+              </SubmitButton>
             </form>
           ) : null}
         </div>

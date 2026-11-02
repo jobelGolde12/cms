@@ -4,7 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { recentNotifications } from "@/lib/queries";
 import { markAllNotificationsRead } from "@/actions/notifications";
 import { formatDateTime } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/form-status";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
 import { PageHeader } from "@/components/ui/page-header";
@@ -29,9 +30,12 @@ export default async function NotificationsPage() {
         actions={
           unread > 0 ? (
             <form action={markAllNotificationsRead}>
-              <Button type="submit" variant="outline" size="sm">
+              <SubmitButton
+                className={buttonStyles("outline", "sm")}
+                pendingLabel="Marking…"
+              >
                 Mark all read
-              </Button>
+              </SubmitButton>
             </form>
           ) : null
         }
