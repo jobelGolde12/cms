@@ -71,27 +71,31 @@ export const features: Feature[] = [
 ];
 
 /**
- * Individual capability item — flat editorial treatment (design.md §49: no
- * rounded cards as the default language). A small line icon, quiet metadata
- * label, and hairline divider carry the structure instead of boxes.
+ * Individual capability card — compact, Notion-inspired treatment: white
+ * surface on a tinted section background, soft radius, hairline border with
+ * a readable hover lift. Icon sits inside a quiet tinted tile; the metadata
+ * badge balances the top row. (design.md §49 was the previous flat language;
+ * this pass reinterprets it with cards while keeping the institutional tone.)
  */
 export function FeatureCard({ feature }: { feature: Feature }) {
   const Icon = feature.icon;
   return (
-    <article className="group border-t border-brand-200 pb-8 pt-7 transition-colors duration-300 group-hover:border-brand-300">
-      <div className="flex items-center justify-between gap-3">
-        <Icon
-          className="h-5 w-5 text-brand-400 transition-colors duration-300 group-hover:text-action-600"
-          aria-hidden="true"
-        />
+    <article className="reveal group rounded-xl border border-brand-100 bg-white p-6 transition-[border-color,box-shadow] duration-300 hover:border-brand-200 hover:shadow-[0_8px_24px_rgba(7,22,62,0.06)]">
+      <div className="flex items-start justify-between gap-3">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-light transition-colors duration-300 group-hover:bg-brand-200/70">
+          <Icon
+            className="h-4.5 w-4.5 text-brand-600"
+            aria-hidden="true"
+          />
+        </span>
         <span className="text-[9px] font-bold tracking-[0.11em] text-brand-400">
           {feature.badge}
         </span>
       </div>
-      <h3 className="mt-4 text-base font-medium tracking-[-0.01em] text-brand-950">
+      <h3 className="mt-5 text-base font-semibold tracking-[-0.01em] text-brand-950">
         {feature.title}
       </h3>
-      <p className="mt-2.5 text-[14px] leading-[1.6] text-[#64748B]">
+      <p className="mt-2 text-[14px] leading-[1.6] text-[#64748B]">
         {feature.description}
       </p>
     </article>
@@ -99,14 +103,14 @@ export function FeatureCard({ feature }: { feature: Feature }) {
 }
 
 /**
- * Capabilities section — editorial grid with hairline dividers, generous
- * whitespace, and quiet metadata. No cards, no shadows (design.md §18–20).
+ * Capabilities section — tinted band with a grid of compact white cards,
+ * generous whitespace, and quiet metadata.
  */
 export function WelcomeFeatures() {
   return (
-    <section className="border-y border-brand-200 bg-brand-50/40 py-24 md:py-32 lg:py-40">
+    <section className="border-y border-brand-200 bg-brand-50/50 py-24 md:py-32 lg:py-40">
       <EditorialContainer>
-        <div className="grid gap-8 md:grid-cols-12 md:items-end">
+        <div className="reveal grid gap-8 md:grid-cols-12 md:items-end">
           <div className="md:col-span-7">
             <Eyebrow>Capabilities</Eyebrow>
             <SectionTitle className="mt-4">What the system does.</SectionTitle>
@@ -119,7 +123,7 @@ export function WelcomeFeatures() {
           </div>
         </div>
 
-        <div className="mt-16 grid gap-x-8 gap-y-12 md:grid-cols-2 lg:grid-cols-3 md:mt-20">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 md:mt-16 lg:grid-cols-3 lg:gap-5">
           {features.map((feature) => (
             <FeatureCard key={feature.title} feature={feature} />
           ))}

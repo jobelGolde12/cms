@@ -61,7 +61,7 @@ function Drawer({
           <Link
             href="/login"
             onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-[3px] bg-brand-950 px-4 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-brand-950 px-4 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
           >
             Sign In
           </Link>
@@ -109,7 +109,7 @@ export function WelcomeHeader() {
           {/* Brand lockup — single source of truth (see components/logo.tsx).
               min-w-0 lets the lockup's truncate engage on narrow screens. */}
           <div className="flex min-w-0 items-center">
-            <Logo size="md" variant="lockup" asLink priority />
+            <Logo size="md" variant="lockup" asLink priority className="min-w-0" />
           </div>
 
           {/* Desktop nav — hidden on mobile to keep the header compact and

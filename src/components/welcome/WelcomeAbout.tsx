@@ -50,7 +50,7 @@ export function WelcomeAbout() {
       <div className="border-b border-brand-200">
         <EditorialContainer className="py-24 md:py-32 lg:py-40">
           <Eyebrow>Purpose</Eyebrow>
-          <p className="mt-6 max-w-3xl text-[1.5rem] md:text-[2rem] lg:text-[2.5rem] leading-[1.15] font-normal tracking-[-0.03em] text-brand-950 md:leading-[1.1] lg:leading-[1.08]">
+          <p className="reveal mt-6 max-w-3xl text-[1.5rem] md:text-[2rem] lg:text-[2.5rem] leading-[1.15] font-normal tracking-[-0.03em] text-brand-950 md:leading-[1.1] lg:leading-[1.08]">
             Purpose-built for school governance — the single source of truth
             for learner records in{" "}
             <span className="text-action-700">Sta. Magdalena</span>, supporting
@@ -75,7 +75,7 @@ export function WelcomeAbout() {
 
             <div className="mt-12 divide-y divide-brand-200 border-y border-brand-200">
               {complianceItems.map((item) => (
-                <div key={item.title} className="flex items-start gap-4 py-5">
+                <div key={item.title} className="reveal flex items-start gap-4 py-5">
                   <CheckCircle2
                     className="mt-1 h-4 w-4 shrink-0 text-action-600"
                     aria-hidden="true"
@@ -101,7 +101,7 @@ export function WelcomeAbout() {
             </h3>
             <dl className="mt-10 space-y-8">
               {userRoles.map((item) => (
-                <div key={item.label} className="border-t border-brand-200 pt-5">
+                <div key={item.label} className="reveal border-t border-brand-200 pt-5">
                   <dt className="text-[12px] font-medium uppercase tracking-[0.12em] text-brand-950">
                     {item.label}
                   </dt>

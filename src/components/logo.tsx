@@ -99,7 +99,7 @@ export function Logo({
 
   const content =
     variant === "lockup" ? (
-      <span className="inline-flex items-center gap-3">
+      <span className="inline-flex min-w-0 items-center gap-3">
         {image}
         <span className="min-w-0 leading-tight">
           <span

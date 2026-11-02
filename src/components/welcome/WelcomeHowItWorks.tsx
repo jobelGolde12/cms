@@ -38,7 +38,7 @@ export function WelcomeHowItWorks() {
     <section className="bg-white py-24 md:py-32 lg:py-40">
       <EditorialContainer>
         {/* Section introduction — editorial label + heading + side copy (§18) */}
-        <div className="grid gap-8 md:grid-cols-12 md:items-end">
+        <div className="reveal grid gap-8 md:grid-cols-12 md:items-end">
           <div className="md:col-span-7">
             <Eyebrow>Workflow</Eyebrow>
             <SectionTitle className="mt-4">How it works.</SectionTitle>
@@ -55,7 +55,7 @@ export function WelcomeHowItWorks() {
 
         <div className="grid gap-x-6 gap-y-10 pt-10 sm:grid-cols-2 md:grid-cols-3 sm:gap-y-12 sm:pt-12 md:pt-16">
           {steps.map((step) => (
-            <article key={step.number} className="group">
+            <article key={step.number} className="reveal group">
               <p className="numeric text-[12px] font-medium tracking-[0.08em] text-brand-300 transition-colors duration-300 group-hover:text-action-600">
                 {step.number}
               </p>

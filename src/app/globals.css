@@ -151,6 +151,34 @@ body {
 .rise-d3 { animation-delay: 240ms; }
 .rise-d4 { animation-delay: 320ms; }
 
+/* ---------------------------------------------------------------------------
+   Below-the-fold scroll reveal — progressive enhancement, zero JavaScript.
+   Uses native scroll-driven view() timelines (Chrome 115+, Firefox 128+,
+   Safari 26+). Kept as bare longhand declarations rather than an @supports
+   guard: the build's CSS optimizer drops @supports blocks it does not think
+   match its browser baseline, which would silently remove the reveal.
+   Browsers without scroll-driven support ignore the `animation-timeline` /
+   `animation-range` values and run the keyframes once at load — the same
+   behavior as the .rise entrance above, so nothing is ever hidden.
+   Discrete blocks only (cards, steps, list rows) — never tall section
+   containers, which never "fully enter" the viewport and would stick mid-way.
+--------------------------------------------------------------------------- */
+.reveal {
+  animation-name: rise-in;
+  animation-duration: 700ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 60%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+    animation-timeline: auto;
+  }
+}
+
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }

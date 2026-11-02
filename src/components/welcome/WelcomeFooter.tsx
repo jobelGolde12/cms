@@ -13,8 +13,8 @@ export function WelcomeFooter() {
       <EditorialContainer className="py-14 md:py-16">
         <div className="grid gap-10 md:grid-cols-12 lg:gap-12">
           {/* Brand + mission */}
-          <div className="md:col-span-6">
-            <Logo size="md" variant="lockup" asLink />
+          <div className="min-w-0 md:col-span-6">
+            <Logo size="md" variant="lockup" asLink className="min-w-0 max-w-full" />
             <p className="mt-5 max-w-md text-[13px] leading-[1.6] text-[#64748B]">
               Student records and performance analytics platform for{" "}
               {SCHOOL.name}, {SCHOOL.province}, {SCHOOL.region}. Compliant with
