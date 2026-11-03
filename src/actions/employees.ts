@@ -6,6 +6,7 @@ import { db } from "@/db";
 import {
   employee201Records,
   employees,
+  sections,
   serviceCreditTransactions,
   type NewEmployee,
 } from "@/db/schema";
@@ -22,6 +23,20 @@ import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./h
 
 const scrub = (value: string | undefined | null | ""): string | null =>
   value && String(value).trim() ? String(value).trim() : null;
+
+/**
+ * Paid position resolved from the controlled Select: `other` stores the
+ * accompanying free-text description (or the literal "other" when blank).
+ */
+function resolvedPosition(v: {
+  position?: string;
+  otherPosition?: string;
+}): string | null {
+  const key = scrub(v.position);
+  if (!key) return null;
+  if (key === "other") return scrub(v.otherPosition) ?? "other";
+  return key;
+}
 
 function parseEmployeeForm(formData: FormData) {
   return employeeFormSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -43,7 +58,9 @@ function employeeValues(v: Awaited<ReturnType<typeof employeeFormSchema.parse>>)
     emergencyContactName: scrub(v.emergencyContactName),
     emergencyContactRelation: scrub(v.emergencyContactRelation),
     emergencyContactNumber: scrub(v.emergencyContactNumber),
-    position: scrub(v.position),
+    position: resolvedPosition(v),
+    /** Section assignment only ever attaches to the adviser position. */
+    assignedSectionId: resolvedPosition(v) === null || scrub(v.position) !== "adviser" ? null : scrub(v.assignedSectionId),
     designation: scrub(v.designation),
     appointmentStatus: scrub(v.appointmentStatus),
     employmentType: scrub(v.employmentType),
@@ -70,6 +87,67 @@ async function employeeNumberTaken(employeeNumber: string, excludeId?: string): 
   return rows.length > 0;
 }
 
+/**
+ * Server-side adviser-assignment validation (client checks are never
+ * trusted):
+ *
+ *   1. the referenced section must EXIST — FK alone would surface a raw DB
+ *      error back to the user;
+ *   2. the section must be active;
+ *   3. position !== 'adviser' can never carry an assignment (cleared above);
+ *   4. an active adviser from another employee record may not be re-assigned
+ *      to the same section (one active adviser per section).
+ */
+async function validateAdviserAssignment(
+  v: Awaited<ReturnType<typeof employeeFormSchema.parse>>,
+  excludeEmployeeId?: string,
+): Promise<{ ok: true; sectionName: string | null } | { ok: false; error: string }> {
+  const sectionId = scrub(v.assignedSectionId);
+  if (scrub(v.position) !== "adviser") {
+    // Assignment silently cleared for non-adviser positions.
+    return { ok: true, sectionName: null };
+  }
+  if (!sectionId) return { ok: true, sectionName: null };
+
+  const sectionRows = await db
+    .select({ id: sections.id, name: sections.name, isActive: sections.isActive })
+    .from(sections)
+    .where(eq(sections.id, sectionId))
+    .limit(1);
+  const section = sectionRows[0];
+  if (!section) {
+    return { ok: false, error: "Assigned section not found — select a valid section." };
+  }
+  if (!section.isActive) {
+    return { ok: false, error: "That section is deactivated — re-activate it before assigning an adviser." };
+  }
+
+  const conflictRows = await db
+    .select({
+      id: employees.id,
+      firstName: employees.firstName,
+      lastName: employees.lastName,
+      employeeNumber: employees.employeeNumber,
+    })
+    .from(employees)
+    .where(
+      and(
+        eq(employees.assignedSectionId, sectionId),
+        eq(employees.status, "active"),
+        excludeEmployeeId ? ne(employees.id, excludeEmployeeId) : undefined,
+      ),
+    )
+    .limit(1);
+  const conflict = conflictRows[0];
+  if (conflict) {
+    return {
+      ok: false,
+      error: `Section ${section.name} already has an active adviser (${conflict.firstName} ${conflict.lastName}, ${conflict.employeeNumber}).`,
+    };
+  }
+  return { ok: true, sectionName: section.name };
+}
+
 /** Create a new employee record. */
 export async function createEmployee(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getAuthorizedUser("employees.create");
@@ -81,6 +159,9 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
     return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
   }
   const v = parsed.data;
+
+  const assignment = await validateAdviserAssignment(v);
+  if (!assignment.ok) return fail(assignment.error, { assignedSectionId: "Section already assigned or invalid" });
 
   let number: string;
   if (v.employeeNumber && String(v.employeeNumber).trim()) {
@@ -151,6 +232,9 @@ export async function updateEmployee(_prev: ActionState, formData: FormData): Pr
   }
   const v = parsed.data;
 
+  const assignment = await validateAdviserAssignment(v, employeeId);
+  if (!assignment.ok) return fail(assignment.error, { assignedSectionId: "Section already assigned or invalid" });
+
   if (v.employeeNumber && String(v.employeeNumber).trim()) {
     const number = String(v.employeeNumber).trim();
     if (number !== employee.employeeNumber && (await employeeNumberTaken(number, employeeId))) {
@@ -182,7 +266,15 @@ export async function updateEmployee(_prev: ActionState, formData: FormData): Pr
     action: "UPDATE_EMPLOYEE",
     entityType: "employee",
     entityId: employeeId,
-    oldValues: { status: employee.status },
+    oldValues: {
+      status: employee.status,
+      position: employee.position,
+      assignedSectionId: employee.assignedSectionId,
+    },
+    newValues: {
+      position: resolvedPosition(v),
+      assignedSectionId: await currentAssignedSectionId(employeeId),
+    },
     ipAddress: ip,
     userAgent,
   });
@@ -191,6 +283,16 @@ export async function updateEmployee(_prev: ActionState, formData: FormData): Pr
   revalidatePath(`/employees/${employeeId}`);
   revalidatePath("/dashboard");
   return ok("Employee record updated.");
+}
+
+/** Read the freshly saved assignment for the audit trail (post-update value). */
+async function currentAssignedSectionId(employeeId: string): Promise<string | null> {
+  const rows = await db
+    .select({ assignedSectionId: employees.assignedSectionId })
+    .from(employees)
+    .where(eq(employees.id, employeeId))
+    .limit(1);
+  return rows[0]?.assignedSectionId ?? null;
 }
 
 /**

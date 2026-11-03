@@ -1,6 +1,6 @@
 ROLE AND PERMISSION GUIDE FOR THE SCHOOL SYSTEM
 
-Status: Implemented. Last audited October 29, 2026 (introduced the Subject Teacher role; moved grade encoding out of the Adviser role).
+Status: Implemented. Last audited November 3, 2026 (2026-11 revision: confined the Guidance Counselor to the Guidance Office domain, removed Reports from the Nurse, added the sections/employees configuration module and verified-records-only official printing — see features/rbac-2026-11-revision.md). Previous audit October 29, 2026 introduced the Subject Teacher role and moved grade encoding out of the Adviser role.
 
 The ten roles described here are already live. They're defined in src/lib/permissions.ts and loaded through scripts/seed.mts and scripts/seed-remote-reference.mts. Every check is enforced on the server through requirePermission, getAuthorizedUser, and the row-level scope in src/lib/scope.ts. Checks in the user interface are only for appearance and don't protect anything on their own.
 
@@ -23,10 +23,10 @@ records (Records Personnel)
 Handles student records, enrollment, profile verification, historical records, and documents.
 
 guidance (Guidance Counselor)
-Records and manages student behavioral/disciplinary incidents (the Guidance Office workflow at /guidance) — incident type, intervention, status — plus behavior records, interventions, and support information. Incidents recorded through the Guidance Office are confidential by default. Also selected student development data.
+Works exclusively out of the Guidance Office (/guidance): student lookup plus confidential behavioral incident records. Incidents recorded through the Guidance Office are confidential by default. The Student Development module, grades, attendance, assessments, interventions and reports are all outside this role's scope (2026-11 revision).
 
 nurse (Nurse)
-Works with health, nutrition, and clinical records only. A nurse cannot edit general student information.
+Works with health, nutrition, and clinical records only. A nurse cannot edit general student information and has no access to Reports (2026-11 revision).
 
 registrar (Registrar)
 Strictly read-only access, plus printing of official documents such as the student card and Form 137.
@@ -109,7 +109,7 @@ Full access to everything, including:
 
 SCHOOL ADMIN
 Full access to student and academic work, but not health data, user management, or employee records.
-- Student registry: view, create, update, archive
+- Student registry: view, create (drafts), update, archive
 - Full student profile and guardians
 - Enrollment: create, update, view
 - Subjects and grading period setup (academics.config)
@@ -151,18 +151,15 @@ RECORDS
 - Reports: read-only viewing, plus export
 - Official document printing and QR generate/verify
 
-GUIDANCE (GUIDANCE COUNSELOR)
+GUIDANCE (GUIDANCE COUNSELOR — 2026-11 REVISION)
 - Read-only view of the student registry, with a limited profile covering support-related areas
 - Search students and record incidents (student + section picked from existing records, never typed)
 - Incident types are data rows (behavior categories, kind = 'concern') — nothing is hard-coded; new types can be added by seeding, no code change
-- Record incident, intervention, type, severity, and status; edit where appropriate (audit-logged)
+- Record incident, type, severity, and status; edit where appropriate (audit-logged)
 - Review a student's incident history (Guidance incident roster + per-student views)
 - View guardians and enrollment
-- Grades: summary view only — never encodes grades
-- Attendance: view
 - Behavior: write and view, including confidential guidance records
-- Assessments and interventions: write and view
-- Reports: limited
+- Hold NO academic or reporting modules: grades, attendance, assessments, interventions, reports, official document printing and the Student Development module (/development) are all excluded
 - Cannot modify student personal information or manage users
 
 NURSE
@@ -170,7 +167,7 @@ NURSE
 - Student profile: health information only
 - Health and nutrition records: record and view
 - Clinical records: record and view
-- Reports: view and generate, health-related only
+- NO Reports access: reports.view / reports.generate / reports.export and documents.print were withdrawn in the 2026-11 revision
 
 REGISTRAR
 - View the student registry, enrollment, and guardians

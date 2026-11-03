@@ -181,6 +181,8 @@ export type ReportCardData = {
     fullName: string;
     age: number | null;
     sex: string;
+    /** Draft state of the source record — official documents only print for `verified` records. */
+    recordStatus: string;
   };
   schoolYear: string;
   gradeLevel: string | null;
@@ -315,6 +317,7 @@ export async function getReportCardData(
       suffix: students.suffix,
       birthDate: students.birthDate,
       sex: students.sex,
+      recordStatus: students.recordStatus,
     })
     .from(students)
     .where(eq(students.id, studentId))
@@ -341,6 +344,7 @@ export async function getReportCardData(
       fullName,
       age: ageFromBirthDate(studentRow.birthDate),
       sex: studentRow.sex,
+      recordStatus: studentRow.recordStatus,
     },
     schoolYear: "",
     gradeLevel: null,
@@ -444,6 +448,7 @@ export async function getReportCardData(
       fullName,
       age: ageFromBirthDate(studentRow.birthDate),
       sex: studentRow.sex,
+      recordStatus: studentRow.recordStatus,
     },
     schoolYear: enrollment.schoolYear,
     gradeLevel: enrollment.gradeLevelName,

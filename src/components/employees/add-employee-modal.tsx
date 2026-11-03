@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Modal } from "./modal";
 import { EmployeeForm } from "./employee-form";
+import type { SectionOption } from "@/components/sections/section-dialog";
 
-export function AddEmployeeModal() {
+export function AddEmployeeModal({ sectionOptions = [] }: { sectionOptions?: SectionOption[] }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -29,6 +30,7 @@ export function AddEmployeeModal() {
       >
         <EmployeeForm
           mode="create"
+          sectionOptions={sectionOptions}
           onSuccess={() => {
             setOpen(false);
             router.refresh();
@@ -39,7 +41,13 @@ export function AddEmployeeModal() {
   );
 }
 
-export function EditEmployeeModal({ employee }: { employee: Parameters<typeof EmployeeForm>[0]["employee"] }) {
+export function EditEmployeeModal({
+  employee,
+  sectionOptions = [],
+}: {
+  employee: Parameters<typeof EmployeeForm>[0]["employee"];
+  sectionOptions?: SectionOption[];
+}) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -62,6 +70,7 @@ export function EditEmployeeModal({ employee }: { employee: Parameters<typeof Em
           key={employee?.id}
           employee={employee}
           mode="edit"
+          sectionOptions={sectionOptions}
           onSuccess={() => {
             setOpen(false);
             router.refresh();

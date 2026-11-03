@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Bell, Search } from "lucide-react";
 import { unreadNotificationCount } from "@/lib/queries";
 import { hasPermission, type Permission } from "@/lib/permissions";
-import { canViewConfidentialBehavior } from "@/lib/scope";
+import { canViewConfidentialBehavior, canViewStudentDevelopment } from "@/lib/scope";
 import { SCHOOL, ROLE_LABELS } from "@/lib/constants";
 import { Logo } from "./logo";
 import { MobileNavToggle } from "./mobile-nav-toggle";
@@ -21,6 +21,7 @@ type NavLink = {
 const navLinks: NavLink[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard", permission: "dashboard.view" },
   { label: "Students", href: "/students", icon: "students", permission: "students.view" },
+  { label: "Sections", href: "/sections", icon: "sections", permission: "academics.config" },
   { label: "Grade Encoding", href: "/grades", icon: "grades", permission: "grades.view" },
   { label: "Employees", href: "/employees", icon: "employees", permission: "employees.view" },
   { label: "Service Credits", href: "/service-credits", icon: "service_credits", permission: "service_credits.view" },
@@ -40,7 +41,7 @@ const navLinks: NavLink[] = [
 ];
 
 const NAV_SECTIONS: { heading: string; items: string[] }[] = [
-  { heading: "Core Modules", items: ["/dashboard", "/students", "/grades", "/performance", "/development", "/guidance", "/health", "/verification", "/duplicates", "/reports"] },
+  { heading: "Core Modules", items: ["/dashboard", "/students", "/sections", "/grades", "/performance", "/development", "/guidance", "/health", "/verification", "/duplicates", "/reports"] },
   { heading: "Employee Records", items: ["/employees", "/service-credits"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
   { heading: "System", items: ["/users", "/settings", "/privacy"] },
@@ -58,7 +59,9 @@ export default async function AppShell({
       hasPermission(user.role, link.permission) &&
       // Confidential Guidance Office module: only guidance + admin-tier roles
       // even see the link (teacher/adviser views never show incident data).
-      (link.href !== "/guidance" || canViewConfidentialBehavior(user)),
+      (link.href !== "/guidance" || canViewConfidentialBehavior(user)) &&
+      // Student Development module: policy-excluded from the guidance role.
+      (link.href !== "/development" || canViewStudentDevelopment(user)),
   );
   const unread = await unreadNotificationCount(user.id);
 

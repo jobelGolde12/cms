@@ -5,6 +5,8 @@ import { ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
+import { isOfficialPrintEligible } from "@/lib/workflow";
+import { OfficialDocumentBlocked } from "@/components/students/print-blocked";
 import { getReportCardData, REPORT_CARD_MONTHS } from "@/lib/report-card";
 import { SCHOOL } from "@/lib/constants";
 import { PrintButton } from "@/components/ui/print-button";
@@ -47,6 +49,18 @@ export default async function StudentCardPage({ params }: { params: Promise<{ id
 
   const data = await getReportCardData(id);
   if (!data) redirect("/students");
+
+  // Draft-state gate: official output prints for `verified` records only, so
+  // incomplete draft information is never rendered as finalized data.
+  if (!isOfficialPrintEligible(data.student.recordStatus)) {
+    return (
+      <OfficialDocumentBlocked
+        studentNumber={data.student.studentNumber}
+        recordStatus={data.student.recordStatus}
+        documentName="Student Card"
+      />
+    );
+  }
 
   const sex = data.student.sex
     ? data.student.sex.charAt(0).toUpperCase() + data.student.sex.slice(1)

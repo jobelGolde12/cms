@@ -17,6 +17,7 @@ import {
   Settings,
   Wallet,
   LifeBuoy,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ export const NAV_ICONS = {
   notifications: Bell,
   settings: Settings,
   monitoring: BarChart3,
+  sections: Network,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIconName = keyof typeof NAV_ICONS;

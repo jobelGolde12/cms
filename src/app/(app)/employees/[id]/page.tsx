@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Archive, RotateCcw } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { getEmployeeById } from "@/lib/employees";
+import { getEmployeeById, activeSectionOptions } from "@/lib/employees";
 import {
   APPOINTMENT_STATUS_LABELS,
   CIVIL_STATUS_LABELS,
@@ -52,6 +52,7 @@ export default async function EmployeeProfilePage({
 
   const canUpdate = hasPermission(user.role, "employees.update");
   const canArchive = hasPermission(user.role, "employees.archive");
+  const sectionOptions = canUpdate ? await activeSectionOptions() : [];
 
   const fullName = [
     employee.firstName,
@@ -79,7 +80,7 @@ export default async function EmployeeProfilePage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {canUpdate ? <EditEmployeeModal employee={employee} /> : null}
+          {canUpdate ? <EditEmployeeModal employee={employee} sectionOptions={sectionOptions} /> : null}
           {canArchive && employee.status === "active" ? (
             <form action={archiveEmployeeForm}>
               <input type="hidden" name="employeeId" value={employee.id} />

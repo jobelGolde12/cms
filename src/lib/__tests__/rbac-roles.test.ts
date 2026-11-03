@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hasPermission, ROLE_PERMISSIONS } from "@/lib/permissions";
-import { canViewConfidentialBehavior } from "@/lib/scope";
+import { canViewConfidentialBehavior, canViewStudentDevelopment } from "@/lib/scope";
 import type { Role } from "@/lib/constants";
 import type { SessionUser } from "@/lib/auth";
 
@@ -18,6 +18,16 @@ const ALL_ROLES: readonly Role[] = [
   "literacy_coordinator",
   "admin_officer",
 ];
+
+/** Session factory for scope-level guards under test. */
+const userWith = (role: Role): SessionUser => ({
+  id: "u1",
+  email: "u@example.com",
+  firstName: "T",
+  lastName: "User",
+  roleId: "role-x",
+  role,
+});
 
 describe("role catalog", () => {
   it("covers every role with a permission map", () => {
@@ -86,20 +96,49 @@ describe("subject teacher is grade-encoding domain only", () => {
   });
 });
 
-describe("guidance counselor incident domain", () => {
-  it("records and manages behavior incidents and interventions", () => {
+describe("guidance counselor — Guidance Office domain (2026-11 revision)", () => {
+  it("records confidential behavior incidents in the Guidance Office", () => {
     expect(hasPermission("guidance", "behavior.view")).toBe(true);
     expect(hasPermission("guidance", "behavior.write")).toBe(true);
-    expect(hasPermission("guidance", "interventions.view")).toBe(true);
-    expect(hasPermission("guidance", "interventions.write")).toBe(true);
   });
 
-  it("never encodes grades or modifies personal information", () => {
+  it("still views student records for guidance work but never modifies them", () => {
+    expect(hasPermission("guidance", "students.view")).toBe(true);
     expect(hasPermission("guidance", "grades.write")).toBe(false);
     expect(hasPermission("guidance", "students.update")).toBe(false);
     expect(hasPermission("guidance", "students.create")).toBe(false);
     expect(hasPermission("guidance", "users.manage")).toBe(false);
     expect(hasPermission("guidance", "settings.manage")).toBe(false);
+  });
+
+  it("holds NO academic, performance or reporting modules", () => {
+    for (const p of [
+      "grades.view",
+      "grades.write",
+      "attendance.view",
+      "attendance.write",
+      "assessments.view",
+      "assessments.write",
+      "interventions.view",
+      "interventions.write",
+      "reports.view",
+      "reports.generate",
+      "reports.export",
+      "documents.print",
+    ] as const) {
+      expect(hasPermission("guidance", p)).toBe(false);
+    }
+  });
+
+  it("is policy-excluded from the Student Development module itself", () => {
+    expect(canViewStudentDevelopment(userWith("guidance"))).toBe(false);
+    // Oversight and classroom roles keep it.
+    expect(canViewStudentDevelopment(userWith("admin"))).toBe(true);
+    expect(canViewStudentDevelopment(userWith("school_admin"))).toBe(true);
+    expect(canViewStudentDevelopment(userWith("teacher"))).toBe(true);
+    // Other restricted roles stay excluded.
+    expect(canViewStudentDevelopment(userWith("nurse"))).toBe(false);
+    expect(canViewStudentDevelopment(userWith("registrar"))).toBe(false);
   });
 
   it("subject teacher cannot touch incident data", () => {
@@ -156,6 +195,12 @@ describe("nurse is health-domain only", () => {
     expect(hasPermission("nurse", "behavior.write")).toBe(false);
     expect(hasPermission("nurse", "assessments.write")).toBe(false);
   });
+
+  it("holds NO Reports access (2026-11 revision — module withdrawn)", () => {
+    for (const p of ["reports.view", "reports.generate", "reports.export", "documents.print"] as const) {
+      expect(hasPermission("nurse", p)).toBe(false);
+    }
+  });
 });
 
 describe("admin officer is employee-domain only, isolated from students", () => {
@@ -208,6 +253,19 @@ describe("admin officer is employee-domain only, isolated from students", () => 
   });
 });
 
+describe("admin & school admin — configuration and drafting", () => {
+  it("school admin can create student drafts", () => {
+    expect(hasPermission("school_admin", "students.create")).toBe(true);
+  });
+
+  it("admin keeps academics.config for sections/employees management", () => {
+    expect(hasPermission("admin", "academics.config")).toBe(true);
+    expect(hasPermission("school_admin", "academics.config")).toBe(true);
+    expect(hasPermission("guidance", "academics.config")).toBe(false);
+    expect(hasPermission("nurse", "academics.config")).toBe(false);
+  });
+});
+
 describe("matrix decisions from the 2026-10 audit", () => {
   it("health.view is held only by admin and nurse (school_admin denied per doc note)", () => {
     expect(hasPermission("admin", "health.view")).toBe(true);
@@ -241,15 +299,6 @@ describe("literacy coordinator is assessment-domain only", () => {
 });
 
 describe("guidance data confidentiality", () => {
-  const userWith = (role: Role): SessionUser => ({
-    id: "u1",
-    email: "u@example.com",
-    firstName: "T",
-    lastName: "User",
-    roleId: "role-x",
-    role,
-  });
-
   it("confidential behavior records are visible only to admin/school_admin/guidance", () => {
     for (const role of ["admin", "school_admin", "guidance"] as const) {
       expect(canViewConfidentialBehavior(userWith(role))).toBe(true);

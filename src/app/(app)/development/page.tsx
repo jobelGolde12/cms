@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Activity, BookOpenCheck, HeartHandshake, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { canViewStudentDevelopment } from "@/lib/scope";
 import {
   listAssessments,
   listBehaviorRecords,
@@ -37,6 +38,11 @@ export default async function DevelopmentPage() {
   const canBehavior = hasPermission(user.role, "behavior.view");
   const canInterventions = hasPermission(user.role, "interventions.view");
 
+  // Server-side module guard (not just a hidden sidebar link): the Student
+  // Development module is policy-excluded from the Guidance Counselor role,
+  // whose data domain is the confidential Guidance Office (/guidance) only.
+  // A manually typed /development URL redirects before any data loads.
+  if (!canViewStudentDevelopment(user)) redirect("/guidance");
   if (!canAssess && !canBehavior && !canInterventions) redirect("/dashboard");
 
   const [assessments, behavior, interventions] = await Promise.all([

@@ -3,6 +3,9 @@ import { db } from "@/db";
 import {
   employee201Records,
   employees,
+  gradeLevels,
+  schoolYears,
+  sections,
   serviceCreditTransactions,
   type Employee,
 } from "@/db/schema";
@@ -635,6 +638,36 @@ export async function officerDashboardData(): Promise<OfficerDashboardData> {
     })),
     incompleteProfiles: Number(incomplete[0]?.n ?? 0) || 0,
   };
+}
+
+export type SectionOption = { id: string; label: string };
+
+/**
+ * Active sections as dropdown options for the Adviser "Assigned section"
+ * field. Label format: "<grade level> — <section name>" (e.g.
+ * "Grade 7 — Sampaguita"). Sourced from the sections entity, never free text;
+ * ordered by grade level order, then school year, then section name so the
+ * dropdown reads naturally.
+ */
+export async function activeSectionOptions(): Promise<SectionOption[]> {
+  const rows = await db
+    .select({
+      id: sections.id,
+      name: sections.name,
+      gradeName: gradeLevels.name,
+      orderIndex: gradeLevels.orderIndex,
+      year: schoolYears.year,
+    })
+    .from(sections)
+    .innerJoin(gradeLevels, eq(gradeLevels.id, sections.gradeLevelId))
+    .innerJoin(schoolYears, eq(schoolYears.id, sections.schoolYearId))
+    .where(eq(sections.isActive, true))
+    .orderBy(asc(gradeLevels.orderIndex), desc(schoolYears.year), asc(sections.name));
+
+  return rows.map((r) => ({
+    id: r.id,
+    label: `${r.gradeName} — ${r.name} (${r.year})`,
+  }));
 }
 
 /** Registry stats for /employees header + KPI grid. */

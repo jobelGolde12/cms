@@ -990,8 +990,22 @@ export const employees = sqliteTable(
     emergencyContactNumber: text("emergency_contact_number"),
 
     /* Employment information */
+    /**
+     * Controlled school position (employee_position vocabulary, see
+     * src/lib/constants.ts). Selected via a dropdown — never arbitrary free
+     * text; legacy pre-vocabulary rows keep their original string and surface
+     * through the `other` option until re-classified.
+     */
     position: text("position"),
     designation: text("designation"),
+    /**
+     * Assigned section for position === 'adviser' (references the existing
+     * `sections` entity — validated server-side; never free text). Null for
+     * every other position and for advisers without an assignment yet.
+     */
+    assignedSectionId: text("assigned_section_id").references(() => sections.id, {
+      onDelete: "set null",
+    }),
     /** permanent | provisional | casual | contractual | substitute | part_time */
     appointmentStatus: text("appointment_status"),
     /** teaching | non_teaching | support */
@@ -1028,6 +1042,7 @@ export const employees = sqliteTable(
     index("employees_first_name_idx").on(t.firstName),
     index("employees_status_idx").on(t.status),
     index("employees_position_idx").on(t.position),
+    index("employees_assigned_section_idx").on(t.assignedSectionId),
     index("employees_created_idx").on(t.createdAt),
   ],
 );
@@ -1336,6 +1351,10 @@ export const auditLogRelations = relations(auditLogs, ({ one }) => ({
 export const employeeRelations = relations(employees, ({ one, many }) => ({
   creator: one(users, { fields: [employees.createdBy], references: [users.id] }),
   updater: one(users, { fields: [employees.updatedBy], references: [users.id] }),
+  assignedSection: one(sections, {
+    fields: [employees.assignedSectionId],
+    references: [sections.id],
+  }),
   records201: many(employee201Records),
   serviceCreditTransactions: many(serviceCreditTransactions),
 }));

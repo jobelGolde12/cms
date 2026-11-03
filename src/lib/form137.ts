@@ -94,6 +94,8 @@ export type Form137Data = {
     birthDate: string | null;
     birthPlace: string | null;
     age: number | null;
+    /** Draft state of the source record — Form 137 only prints for `verified` records. */
+    recordStatus: string;
   };
   /** Permanent-record blocks, oldest school year first (chronological). */
   blocks: Form137YearBlock[];
@@ -135,6 +137,7 @@ export async function getForm137Data(
       sex: students.sex,
       birthDate: students.birthDate,
       birthPlace: students.birthPlace,
+      recordStatus: students.recordStatus,
     })
     .from(students)
     .where(eq(students.id, studentId))
@@ -313,6 +316,7 @@ export async function getForm137Data(
       birthDate: studentRow.birthDate,
       birthPlace: studentRow.birthPlace,
       age: ageFromBirthDate(studentRow.birthDate),
+      recordStatus: studentRow.recordStatus,
     },
     blocks: out,
     principal,

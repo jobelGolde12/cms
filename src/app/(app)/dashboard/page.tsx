@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { canViewStudentDevelopment } from "@/lib/scope";
 import { recentNotifications, unreadNotificationCount } from "@/lib/queries";
 import { SCHOOL } from "@/lib/constants";
 import { dashboardData } from "@/lib/dashboard-data";
@@ -39,7 +40,7 @@ export default async function AppDashboardPage() {
   ]);
 
   const canReview = hasPermission(user.role, "verification.review");
-  const canDevelopment = hasPermission(user.role, "behavior.view");
+  const canDevelopment = canViewStudentDevelopment(user);
 
   const openConcernsTotal = data.openConcerns.reduce((sum, row) => sum + row.value, 0);
 

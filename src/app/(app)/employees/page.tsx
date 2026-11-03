@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { listEmployees, employeeRegistryStats } from "@/lib/employees";
+import { activeSectionOptions } from "@/lib/employees";
 import { AddEmployeeModal } from "@/components/employees/add-employee-modal";
 import {
   EmployeeKpiGrid,
@@ -31,9 +32,10 @@ export default async function EmployeesPage({
   const page = parseInt(str("page"), 10) || 1;
   const pageSize = parseInt(str("pageSize"), 10) || 10;
 
-  const [result, stats] = await Promise.all([
+  const [result, stats, sectionOptions] = await Promise.all([
     listEmployees({ q, status, employmentType, appointmentStatus, sort, page, pageSize }),
     employeeRegistryStats(),
+    activeSectionOptions(),
   ]);
 
   const canCreate = hasPermission(user.role, "employees.create");
@@ -46,7 +48,7 @@ export default async function EmployeesPage({
         title="Employees"
         description="Personnel records, 201 files and service credits for school employees."
         actions={
-          canCreate ? <AddEmployeeModal /> : null
+          canCreate ? <AddEmployeeModal sectionOptions={sectionOptions} /> : null
         }
       />
 

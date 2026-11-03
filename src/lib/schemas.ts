@@ -7,6 +7,7 @@ import {
   BEHAVIOR_SEVERITIES,
   CIVIL_STATUSES,
   EMPLOYEE_201_CATEGORIES,
+  EMPLOYEE_POSITIONS,
   EMPLOYMENT_TYPES,
   ENROLLMENT_STATUSES,
   FOLLOWUP_STATUSES,
@@ -291,7 +292,12 @@ export const employeeFormSchema = z.object({
   emergencyContactRelation: optionalText(40),
   emergencyContactNumber: phPhone("Emergency contact number"),
 
-  position: optionalText(120),
+  /** Controlled position vocabulary — `other` defers to `otherPosition`. */
+  position: z.enum(EMPLOYEE_POSITIONS).optional().or(z.literal("")),
+  /** Free-text override used ONLY when position === 'other' (or legacy rows). */
+  otherPosition: optionalText(120),
+  /** Adviser assignment — validated against the live sections table server-side. */
+  assignedSectionId: optionalText(64),
   designation: optionalText(120),
   appointmentStatus: z.enum(APPOINTMENT_STATUSES).optional().or(z.literal("")),
   employmentType: z.enum(EMPLOYMENT_TYPES).optional().or(z.literal("")),

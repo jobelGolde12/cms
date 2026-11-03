@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createEmployee, updateEmployee } from "@/actions/employees";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
@@ -9,12 +9,15 @@ import {
   APPOINTMENT_STATUS_LABELS,
   CIVIL_STATUSES,
   CIVIL_STATUS_LABELS,
+  EMPLOYEE_POSITIONS,
+  EMPLOYEE_POSITION_LABELS,
   EMPLOYMENT_TYPES,
   EMPLOYMENT_TYPE_LABELS,
   SEXES,
 } from "@/lib/constants";
 import type { Employee } from "@/db/schema";
 import type { ActionState } from "@/actions/helpers";
+import type { SectionOption } from "@/components/sections/section-dialog";
 
 /**
  * Create/edit form for employee records. The employee number is generated
@@ -23,10 +26,13 @@ import type { ActionState } from "@/actions/helpers";
 export function EmployeeForm({
   employee,
   mode,
+  sectionOptions = [],
   onSuccess,
 }: {
   employee?: Employee;
   mode: "create" | "edit";
+  /** Active sections (label "Grade X — Section"), for the adviser assignment. */
+  sectionOptions?: SectionOption[];
   onSuccess?: () => void;
 }) {
   const action = mode === "create" ? createEmployee : updateEmployee;
@@ -36,6 +42,22 @@ export function EmployeeForm({
     if (result.ok && onSuccess) onSuccess();
     return result;
   }, initial);
+
+  // Controlled position: the Select carries the vocabulary key; `other`
+  // reveals a text field for the free-text description (legacy rows keep
+  // their original string there until re-classified).
+  const [positionKey, setPositionKey] = useState<string>(() => {
+    const stored = employee?.position ?? "";
+    if (!stored) return "";
+    return (EMPLOYEE_POSITIONS as readonly string[]).includes(stored) ? stored : "other";
+  });
+  const legacyOtherPosition =
+    employee?.position && !(EMPLOYEE_POSITIONS as readonly string[]).includes(employee.position)
+      ? employee.position
+      : "";
+  const [otherPosition, setOtherPosition] = useState<string>(legacyOtherPosition);
+  const isAdviser = positionKey === "adviser";
+  const isOther = positionKey === "other";
 
   const err = (key: string): string | undefined =>
     state.ok === false ? state.fieldErrors?.[key] : undefined;
@@ -139,8 +161,63 @@ export function EmployeeForm({
         <h3 className="text-sm font-semibold text-brand-900">Employment Information</h3>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Position" htmlFor="employee-position" error={err("position")}>
-            <Input id="employee-position" name="position" defaultValue={employee?.position ?? ""} maxLength={120} placeholder="Teacher I, School Nurse…" />
+            <Select
+              id="employee-position"
+              name="position"
+              value={positionKey}
+              onChange={(e) => {
+                setPositionKey(e.target.value);
+                if (e.target.value !== "other") setOtherPosition("");
+              }}
+            >
+              <option value="">
+                Select position…
+              </option>
+              {EMPLOYEE_POSITIONS.map((p) => (
+                <option key={p} value={p}>
+                  {EMPLOYEE_POSITION_LABELS[p]}
+                </option>
+              ))}
+            </Select>
           </Field>
+          {isOther ? (
+            <Field
+              label="Position (specify)"
+              htmlFor="employee-otherPosition"
+              error={err("otherPosition")}
+              hint="Required when “Other” — describe the school position."
+            >
+              <Input
+                id="employee-otherPosition"
+                name="otherPosition"
+                value={otherPosition}
+                onChange={(e) => setOtherPosition(e.target.value)}
+                maxLength={120}
+                placeholder="Teacher I, School Nurse…"
+              />
+            </Field>
+          ) : null}
+          {isAdviser ? (
+            <Field
+              label="Assigned section"
+              htmlFor="employee-assignedSection"
+              error={err("assignedSectionId")}
+              hint="Referenced from Sections management — validated server-side"
+            >
+              <Select
+                id="employee-assignedSection"
+                name="assignedSectionId"
+                defaultValue={employee?.assignedSectionId ?? ""}
+              >
+                <option value="">No section assigned yet</option>
+                {sectionOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
           <Field label="Designation" htmlFor="employee-designation" error={err("designation")}>
             <Input id="employee-designation" name="designation" defaultValue={employee?.designation ?? ""} maxLength={120} />
           </Field>

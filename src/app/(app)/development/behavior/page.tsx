@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { canViewStudentDevelopment } from "@/lib/scope";
 import { listBehaviorRecords } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -19,6 +20,9 @@ export const metadata = { title: "Behavior Records" };
 export default async function DevelopmentBehaviorPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  // Module guard: Guidance Counselors are policy-excluded from Student
+  // Development (their domain is /guidance) — server-side, before any query.
+  if (!canViewStudentDevelopment(user)) redirect("/guidance");
   if (!hasPermission(user.role, "behavior.view")) redirect("/dashboard");
 
   const rows = await listBehaviorRecords(user, undefined, 1, 100);

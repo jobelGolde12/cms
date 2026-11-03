@@ -177,21 +177,25 @@ const RECORDS: Permission[] = [
   "qr.verify",
 ];
 
-/** Guidance Counselor — student development & incident management domain. */
+/**
+ * Guidance Counselor — confidential incident-management domain ONLY.
+ *
+ * 2026-11 revision (least-privilege scope): the role's workspace is the
+ * Guidance Office (/guidance) — student lookup plus confidential behavioral
+ * incident records. Deliberately holds NO grades.view, attendance.view,
+ * assessments.*, interventions.* or reports.view: the Student Development
+ * module and academic/performance/report surfaces are outside this role's
+ * scope and are additionally redirected server-side (see
+ * `canViewStudentDevelopment` in src/lib/scope.ts), so a manually typed URL
+ * can never reach them.
+ */
 const GUIDANCE: Permission[] = [
   "dashboard.view",
   "students.view",
   "guardians.view",
   "enrollment.view",
-  "grades.view",
-  "attendance.view",
   "behavior.view",
   "behavior.write",
-  "assessments.view",
-  "assessments.write",
-  "interventions.view",
-  "interventions.write",
-  "reports.view",
 ];
 
 /**
@@ -199,6 +203,12 @@ const GUIDANCE: Permission[] = [
  * `students.update` / `guardians.manage`: a Nurse can never edit a student's
  * general personal information (name, birth date, sex, address, guardians,
  * enrollment) — only health records she/he owns.
+ *
+ * 2026-11 revision (least-privilege scope): reports.view / reports.generate
+ * are WITHDRAWN — the Reports module (academic, performance and
+ * administrative reports) is outside the nurse's health domain. The /reports
+ * route and every report server action re-check permissions server-side, so
+ * hiding the sidebar link is not the enforcement mechanism.
  */
 const NURSE: Permission[] = [
   "dashboard.view",
@@ -207,8 +217,6 @@ const NURSE: Permission[] = [
   "enrollment.view",
   "health.view",
   "health.write",
-  "reports.view",
-  "reports.generate",
 ];
 
 /**

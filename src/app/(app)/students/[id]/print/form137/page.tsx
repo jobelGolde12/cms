@@ -5,6 +5,8 @@ import { ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
+import { isOfficialPrintEligible } from "@/lib/workflow";
+import { OfficialDocumentBlocked } from "@/components/students/print-blocked";
 import { getForm137Data, type Form137Data } from "@/lib/form137";
 import { SCHOOL } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
@@ -333,6 +335,18 @@ export default async function Form137Page({
 
   const data = await getForm137Data(id);
   if (!data) redirect("/students");
+
+  // Draft-state gate: the SF10 permanent record prints for `verified` records
+  // only, so incomplete draft information is never shown as finalized data.
+  if (!isOfficialPrintEligible(data.student.recordStatus)) {
+    return (
+      <OfficialDocumentBlocked
+        studentNumber={data.student.studentNumber}
+        recordStatus={data.student.recordStatus}
+        documentName="Form 137 (SF10)"
+      />
+    );
+  }
 
   const sex = data.student.sex
     ? data.student.sex.charAt(0).toUpperCase() + data.student.sex.slice(1)

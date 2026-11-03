@@ -13,6 +13,7 @@ const base: Form137Data = {
     suffix: "Jr.",
     name: "Maria Santos dela Cruz Jr.",
     sex: "female",
+    recordStatus: "verified",
     birthDate: "2009-05-14",
     birthPlace: "Sta. Magdalena, Sorsogon",
     age: 17,

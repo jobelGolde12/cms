@@ -389,6 +389,41 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   support: "Support",
 };
 
+/**
+ * Employee position — CONTROLLED vocabulary (admin-selectable dropdown, never
+ * free text). Distinct from the system login Role: a position describes the
+ * employee's school job; `users.roleId` describes application permissions.
+ * A legacy non-vocabulary value (pre-2026-11 rows) is surfaced through the
+ * `other` option with the original text preserved in `otherPosition`.
+ */
+export const EMPLOYEE_POSITIONS = [
+  "school_administrator",
+  "adviser",
+  "subject_teacher",
+  "teacher",
+  "guidance_counselor",
+  "nurse",
+  "registrar",
+  "administrative_staff",
+  "other",
+] as const;
+export type EmployeePosition = (typeof EMPLOYEE_POSITIONS)[number];
+
+export const EMPLOYEE_POSITION_LABELS: Record<EmployeePosition, string> = {
+  school_administrator: "School Administrator",
+  adviser: "Adviser",
+  subject_teacher: "Subject Teacher",
+  teacher: "Teacher",
+  guidance_counselor: "Guidance Counselor",
+  nurse: "Nurse",
+  registrar: "Registrar",
+  administrative_staff: "Administrative Staff",
+  other: "Other (specify)",
+};
+
+/** Positions that require a section assignment (drives the dynamic form). */
+export const SECTION_ASSIGNMENT_POSITIONS: EmployeePosition[] = ["adviser"];
+
 export const CIVIL_STATUSES = [
   "single",
   "married",

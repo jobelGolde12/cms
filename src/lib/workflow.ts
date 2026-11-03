@@ -69,3 +69,16 @@ export function isEditable(status: RecordStatus): boolean {
 export function isAwaitingVerification(status: RecordStatus): boolean {
   return status === "pending_validation";
 }
+
+/**
+ * Official-document print eligibility.
+ *
+ * The Student Card, Report Card and Form 137 (SF10) are official output: an
+ * unverified record's data still flows into preview but printing is blocked,
+ * so an incomplete draft can never be rendered as finalized data. The rule
+ * mirrors `QR_ELIGIBLE_RECORD_STATUSES` — only `verified` records are
+ * eligible.
+ */
+export function isOfficialPrintEligible(status: string): boolean {
+  return status === "verified";
+}

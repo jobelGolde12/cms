@@ -10,6 +10,7 @@ const mockData: ReportCardData = {
     fullName: "Maria Clara Santos",
     age: 16,
     sex: "female",
+    recordStatus: "verified",
   },
   schoolYear: "2025-2026",
   gradeLevel: "Grade 10",

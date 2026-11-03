@@ -111,6 +111,28 @@ export function canViewConfidentialBehavior(user: SessionUser): boolean {
   );
 }
 
+/**
+ * Student Development (/development) — the aggregated classroom development
+ * module (assessments, behavior overview, interventions).
+ *
+ * Policy (2026-11 least-privilege revision): the Guidance Counselor's data
+ * domain is EXCLUSIVELY the confidential Guidance Office module (/guidance);
+ * the Student Development module is out of that scope. Guidance Counselors
+ * keep `behavior.view`/`behavior.write` because the incident engine runs on
+ * behavior rows, but the broad development module behind the same permission
+ * redirects them server-side to their own workspace. Mirrors the role rule
+ * already used by the incident actions (`incidentAuthor`).
+ */
+export function canViewStudentDevelopment(user: SessionUser): boolean {
+  if (user.role === "guidance") return false;
+  return (
+    user.role === "admin" ||
+    user.role === "school_admin" ||
+    user.role === "teacher" ||
+    user.role === "literacy_coordinator"
+  );
+}
+
 /** SQL predicate excluding confidential behavior rows for the given user. */
 export function confidentialBehaviorFilter(
   user: SessionUser,

@@ -112,8 +112,8 @@ async function seedRolesAndPermissions() {
     { id: "role-teacher", name: "Adviser", description: "Assigned sections: advisory, attendance, assessments and behavior — not grade encoding." },
     { id: "role-subject-teacher", name: "Subject Teacher", description: "Encodes grades for assigned subject, grade level and section(s) only." },
     { id: "role-records", name: "Records Personnel", description: "Student records, enrollment, verification, historical records." },
-    { id: "role-guidance", name: "Guidance Counselor", description: "Records and manages student incidents, interventions, and student support information." },
-    { id: "role-nurse", name: "Nurse", description: "Health and nutrition records only — cannot edit general student information." },
+    { id: "role-guidance", name: "Guidance Counselor", description: "Guidance Office only — confidential incidents, interventions and assessments; no academic or reporting modules." },
+    { id: "role-nurse", name: "Nurse", description: "Health and nutrition records only — no academic reports or grade data." },
     { id: "role-registrar", name: "Registrar", description: "Strictly read-only official records plus student card / Form 137 printing." },
     { id: "role-literacy-coordinator", name: "Language & Literacy Coordinator", description: "Reading, literacy and numeracy assessments and statistics." },
     { id: "role-admin-officer", name: "Admin Officer", description: "Employee records, PERA/201 files and service credits — no student data access." },
@@ -681,17 +681,21 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
 
 /* --------------------------- employee demo data --------------------------- */
 
+/* Employee demo data uses the controlled position vocabulary
+ * (src/lib/constants.ts EMPLOYEE_POSITIONS) — the stored position is the
+ * vocabulary key, never free text. DepEd plantilla titles live in
+ * `salaryGrade`/`designation` context, not in the position column. */
 const EMPLOYEE_POSITIONS = [
-  { position: "Principal I", type: "teaching", dept: "Office of the School Principal", sg: "SG-19", apt: "permanent" },
-  { position: "Master Teacher I", type: "teaching", dept: "Mathematics", sg: "SG-18", apt: "permanent" },
-  { position: "Teacher III", type: "teaching", dept: "Science", sg: "SG-13", apt: "permanent" },
-  { position: "Teacher II", type: "teaching", dept: "English", sg: "SG-12", apt: "permanent" },
-  {      position: "Teacher I", type: "teaching", dept: "Filipino", sg: "SG-11", apt: "provisional" },
-  { position: "School Nurse", type: "non_teaching", dept: "Health Services", sg: "SG-11", apt: "permanent" },
-  { position: "Registrar I", type: "non_teaching", dept: "Registrar's Office", sg: "SG-10", apt: "permanent" },
-  { position: "Guidance Counselor", type: "non_teaching", dept: "Guidance Office", sg: "SG-12", apt: "permanent" },
-  { position: "Administrative Officer I", type: "non_teaching", dept: "Records Office", sg: "SG-11", apt: "permanent" },
-  { position: "Utility Worker", type: "support", dept: "General Services", sg: null, apt: "casual" },
+  { position: "school_administrator", type: "teaching", dept: "Office of the School Principal", sg: "SG-19", apt: "permanent" },
+  { position: "teacher", type: "teaching", dept: "Mathematics", sg: "SG-18", apt: "permanent" },
+  { position: "subject_teacher", type: "teaching", dept: "Science", sg: "SG-13", apt: "permanent" },
+  { position: "adviser", type: "teaching", dept: "English", sg: "SG-12", apt: "permanent", sectionSectionNo: 0 },
+  { position: "adviser", type: "teaching", dept: "Filipino", sg: "SG-11", apt: "provisional", sectionSectionNo: 3 },
+  { position: "nurse", type: "non_teaching", dept: "Health Services", sg: "SG-11", apt: "permanent" },
+  { position: "registrar", type: "non_teaching", dept: "Registrar's Office", sg: "SG-10", apt: "permanent" },
+  { position: "guidance_counselor", type: "non_teaching", dept: "Guidance Office", sg: "SG-12", apt: "permanent" },
+  { position: "administrative_staff", type: "non_teaching", dept: "Records Office", sg: "SG-11", apt: "permanent" },
+  { position: "other", otherPosition: "Utility Worker", type: "support", dept: "General Services", sg: null, apt: "casual" },
 ] as const;
 
 const E201_SEED: { category: string; title: string; kind: "personal" | "issued" }[] = [
@@ -700,7 +704,7 @@ const E201_SEED: { category: string; title: string; kind: "personal" | "issued" 
   { category: "government", title: "GSIS Membership Record", kind: "personal" },
 ];
 
-async function seedEmployees(creatorId: string) {
+async function seedEmployees(creatorId: string, sectionIds: string[] = []) {
   // Idempotency: employees cascade-clear their 201 records and credit ledger.
   await db.delete(employees);
   await db.delete(auditLogs).where(eq(auditLogs.action, "CREATE_EMPLOYEE"));
@@ -735,6 +739,11 @@ async function seedEmployees(creatorId: string) {
       emergencyContactNumber: `09${randInt(100000000, 999999999)}`,
       position: spec.position,
       designation: null,
+      /** Advisers are assigned a real seeded section — FK, not free text. */
+      assignedSectionId:
+        "sectionSectionNo" in spec
+          ? (sectionIds[spec.sectionSectionNo] ?? null)
+          : null,
       appointmentStatus: spec.apt as string,
       employmentType: spec.type as string,
       department: spec.dept,
@@ -752,6 +761,22 @@ async function seedEmployees(creatorId: string) {
       createdBy: creatorId,
       updatedBy: creatorId,
     });
+
+    let otherPosition: string | null = null;
+    if (spec.position === "other") {
+      otherPosition = (spec as { otherPosition?: string }).otherPosition ?? "Utility Worker";
+      await db.insert(employee201Records).values({
+        id: crypto.randomUUID(),
+        employeeId: id,
+        category: "appointment",
+        title: `Position description — ${otherPosition}`,
+        description: "Free-text position preserved via the `other` vocabulary path.",
+        recordDate: hireDate,
+        fileReference: null,
+        createdBy: creatorId,
+        updatedBy: creatorId,
+      });
+    }
 
     // 201 file entries.
     for (const entry of E201_SEED) {
@@ -845,7 +870,10 @@ async function main() {
     await seedSubjectAssignments(subjectTeacher.id);
   }
   await seedDemoData(people, structure);
-  await seedEmployees(people.find((p) => p.role === "admin_officer")?.id ?? people[0]!.id);
+  await seedEmployees(
+    people.find((p) => p.role === "admin_officer")?.id ?? people[0]!.id,
+    structure.sectionIds,
+  );
 }
 
 main()

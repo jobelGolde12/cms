@@ -5,6 +5,7 @@ import { canAccessStudent } from "@/lib/scope";
 import { getForm137Data } from "@/lib/form137";
 import { renderForm137Pdf } from "@/lib/reports/form137-pdf";
 import { logAudit } from "@/lib/audit";
+import { isOfficialPrintEligible } from "@/lib/workflow";
 
 /**
  * SF9 (Form 137) download route (Registrar domain).
@@ -39,6 +40,14 @@ export async function GET(
   const data = await getForm137Data(id);
   if (!data) {
     return NextResponse.json({ error: "Student not found" }, { status: 404 });
+  }
+  // Draft-state gate (server-side): the SF10 is official output — only
+  // verified records are printable, on the page AND via direct API calls.
+  if (!isOfficialPrintEligible(data.student.recordStatus)) {
+    return NextResponse.json(
+      { error: "This record is not verified yet — official printing is available for verified records only." },
+      { status: 409 },
+    );
   }
 
   try {
