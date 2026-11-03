@@ -558,9 +558,10 @@ Indexes: employee_idx, type_idx,
 | `students` | UNIQUE | `student_number` | `students_number_uq` |
 | `student_enrollments` | UNIQUE | `[student_id, school_year_id]` | `enrollment_student_sy_uq` |
 | `duplicate_candidates` | UNIQUE | `[student_id, possible_student_id]` | `duplicate_pair_uq` |
-| `qr_verifications` | UNIQUE | `verification_token` | `qr_verifications_token_uq` |
+| `qr_verifications` | INDEX | `verification_token` | `qr_verifications_token_idx` (one token spans many event rows — NOT unique) |
 | `system_settings` | UNIQUE | `key` | `system_settings_key_uq` |
 | `employees` | UNIQUE | `employee_number` | `employees_number_uq` |
+| `employees` | UNIQUE | `user_id` | `employees_user_uq` |
 | `forecasts` | UNIQUE | `[forecast_type, scope_level, target_period, model_type]` | `forecasts_type_scope_target_uq` |
 
 ---

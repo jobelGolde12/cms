@@ -483,14 +483,14 @@ TABLE: qr_verifications
 ──────────────────────────────────────────────────────────────────────────────
 id              TEXT    PK    NOT NULL
 student_id      TEXT    NOT NULL  FK → students.id ON DELETE CASCADE
-verification_token  TEXT  NOT NULL  UNIQUE  (secure opaque token; server validates, not embedded data)
+verification_token  TEXT  NOT NULL  (secure opaque token; server validates, not embedded data) — NOT unique: one token spans many event rows
 verified_by     TEXT    NULL  FK → users.id
 verification_type  TEXT  NOT NULL  ("generate" | "scan" | "revoke")
 result          TEXT    NOT NULL  DEFAULT "valid"  ("valid" | "invalid" | "expired" | "revoked")
 verified_at     INTEGER  NOT NULL  (timestamp)
 ip_address      TEXT    NULL
 user_agent      TEXT    NULL
-INDEX: qr_verifications_token_uq (verification_token)  UNIQUE
+INDEX: qr_verifications_token_idx (verification_token)
 INDEX: qr_verifications_student_idx (student_id)
 INDEX: qr_verifications_verified_at_idx (verified_at)
 
@@ -626,6 +626,8 @@ emergency_contact_relation  TEXT  NULL
 emergency_contact_number  TEXT  NULL
 position        TEXT    NULL
 designation     TEXT    NULL
+assigned_section_id  TEXT  NULL  FK → sections.id ON DELETE SET NULL  (adviser assignment)
+user_id         TEXT    NULL  FK → users.id ON DELETE SET NULL  (linked login account — subject teacher)  UNIQUE
 appointment_status  TEXT  NULL  ("permanent" | "provisional" | "casual" | "contractual" | "substitute" | "part_time")
 employment_type  TEXT  NULL  ("teaching" | "non_teaching" | "support")
 department      TEXT    NULL
@@ -645,10 +647,12 @@ updated_by      TEXT    NULL  FK → users.id
 created_at      INTEGER  NOT NULL  DEFAULT (unixepoch())
 updated_at      INTEGER  NOT NULL  DEFAULT (unixepoch())
 INDEX: employees_number_uq (employee_number)  UNIQUE
+INDEX: employees_user_uq (user_id)  UNIQUE
 INDEX: employees_last_name_idx (last_name)
 INDEX: employees_first_name_idx (first_name)
 INDEX: employees_status_idx (status)
 INDEX: employees_position_idx (position)
+INDEX: employees_assigned_section_idx (assigned_section_id)
 INDEX: employees_created_idx (created_at)
 NOTE: Zero foreign keys to any student table. Complete isolation from student data.
 

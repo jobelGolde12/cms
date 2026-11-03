@@ -123,7 +123,7 @@ Full access to student and academic work, but not health data, user management, 
 - Settings: limited to academic configuration
 
 SUBJECT TEACHER
-Granting a teaching load (a section_subject_teachers row: section + subject) is how a Subject Teacher's scope is defined. Requires admin action — academics.config; an admin UI for managing assignments is a documented follow-up.
+Granting a teaching load (a section_subject_teachers row: section + subject) is how a Subject Teacher's scope is defined. Requires admin action — academics.config; the admin UI is the Employee form (position "Subject Teacher" → Login account + Grade Encoding Scope), which links the personnel record to the login account (`employees.user_id`) and manages the (section, subject) loads of that account.
 - View students with an active enrollment in sections holding their teaching loads
 - Encode and edit grades ONLY for their (section, subject) pairs — enforced by getGradeWriter + canWriteGradesInSection on every action call, with a unique per-(enrollment, subject, period) index preventing duplicates
 - Grade draft → submit → reopen workflow where the submission ledger locks sheets
