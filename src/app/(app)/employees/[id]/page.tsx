@@ -5,6 +5,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { getEmployeeById, activeSectionOptions } from "@/lib/employees";
 import {
+  activeSubjectOptions,
+  describeTeachingLoads,
+  subjectTeacherAccountOptions,
+  teachingLoadsForEmployee,
+} from "@/lib/teaching-loads";
+import {
   APPOINTMENT_STATUS_LABELS,
   CIVIL_STATUS_LABELS,
   EMPLOYEE_STATUS_LABELS,
@@ -52,7 +58,13 @@ export default async function EmployeeProfilePage({
 
   const canUpdate = hasPermission(user.role, "employees.update");
   const canArchive = hasPermission(user.role, "employees.archive");
-  const sectionOptions = canUpdate ? await activeSectionOptions() : [];
+  const [sectionOptions, accountOptions, subjectOptions, teachingLoads] = await Promise.all([
+    canUpdate ? activeSectionOptions() : Promise.resolve([]),
+    canUpdate ? subjectTeacherAccountOptions(employee.id) : Promise.resolve([]),
+    canUpdate ? activeSubjectOptions() : Promise.resolve([]),
+    teachingLoadsForEmployee(employee.id),
+  ]);
+  const loadDescriptions = await describeTeachingLoads(teachingLoads);
 
   const fullName = [
     employee.firstName,
@@ -80,7 +92,15 @@ export default async function EmployeeProfilePage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {canUpdate ? <EditEmployeeModal employee={employee} sectionOptions={sectionOptions} /> : null}
+          {canUpdate ? (
+            <EditEmployeeModal
+              employee={employee}
+              sectionOptions={sectionOptions}
+              accountOptions={accountOptions}
+              subjectOptions={subjectOptions}
+              teachingLoads={teachingLoads}
+            />
+          ) : null}
           {canArchive && employee.status === "active" ? (
             <form action={archiveEmployeeForm}>
               <input type="hidden" name="employeeId" value={employee.id} />
@@ -183,6 +203,42 @@ export default async function EmployeeProfilePage({
           </CardBody>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader
+          title="Grade Encoding Scope"
+          description="Teaching loads define the (section, subject) pairs this teacher may encode grades for."
+        />
+        <CardBody>
+          <dl>
+            <InfoRow
+              label="Linked login account"
+              value={
+                accountOptions.find((a) => a.id === employee.userId)?.label ??
+                (employee.userId ? "Linked account (inactive or hidden)" : "Not linked")
+              }
+            />
+            <InfoRow
+              label="Teaching loads"
+              value={
+                loadDescriptions.length === 0 ? (
+                  <span className="text-[#64748B]">
+                    None — this record cannot encode grades yet.
+                  </span>
+                ) : (
+                  <ul className="space-y-1">
+                    {loadDescriptions.map((load) => (
+                      <li key={load.key}>
+                        {load.section} <span aria-hidden="true">·</span> {load.subject}
+                      </li>
+                    ))}
+                  </ul>
+                )
+              }
+            />
+          </dl>
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader title="Record" />

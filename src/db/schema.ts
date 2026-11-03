@@ -809,7 +809,13 @@ export const qrVerifications = sqliteTable(
     userAgent: text("user_agent"),
   },
   (t) => [
-    uniqueIndex("qr_verifications_token_uq").on(t.verificationToken),
+    /**
+     * NOT unique: `qr_verifications` is an append-only EVENT log — one token
+     * legitimately appears in many rows (generate → scan → scan → revoke).
+     * A UNIQUE index here made every public QR scan fail with a constraint
+     * violation; the token lookup is served by a plain index instead.
+     */
+    index("qr_verifications_token_idx").on(t.verificationToken),
     index("qr_verifications_student_idx").on(t.studentId),
     index("qr_verifications_verified_at_idx").on(t.verifiedAt),
   ],
@@ -1006,6 +1012,17 @@ export const employees = sqliteTable(
     assignedSectionId: text("assigned_section_id").references(() => sections.id, {
       onDelete: "set null",
     }),
+    /**
+     * Linked login account (`users.id`). The personnel record and the system
+     * account are separate entities; this link ties the two together so a
+     * `subject_teacher` employee can carry the teaching loads that grant
+     * grade-encoding rights (row-level enforcement reads
+     * `section_subject_teachers`, which is keyed by the account id).
+     * Null when no account is linked yet.
+     */
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     /** permanent | provisional | casual | contractual | substitute | part_time */
     appointmentStatus: text("appointment_status"),
     /** teaching | non_teaching | support */
@@ -1038,6 +1055,7 @@ export const employees = sqliteTable(
   },
   (t) => [
     uniqueIndex("employees_number_uq").on(t.employeeNumber),
+    uniqueIndex("employees_user_uq").on(t.userId),
     index("employees_last_name_idx").on(t.lastName),
     index("employees_first_name_idx").on(t.firstName),
     index("employees_status_idx").on(t.status),
@@ -1355,6 +1373,7 @@ export const employeeRelations = relations(employees, ({ one, many }) => ({
     fields: [employees.assignedSectionId],
     references: [sections.id],
   }),
+  account: one(users, { fields: [employees.userId], references: [users.id] }),
   records201: many(employee201Records),
   serviceCreditTransactions: many(serviceCreditTransactions),
 }));

@@ -6,8 +6,17 @@ import { Plus } from "lucide-react";
 import { Modal } from "./modal";
 import { EmployeeForm } from "./employee-form";
 import type { SectionOption } from "@/components/sections/section-dialog";
+import type { AccountOption, SubjectOption, TeachingLoad } from "@/lib/teaching-loads";
 
-export function AddEmployeeModal({ sectionOptions = [] }: { sectionOptions?: SectionOption[] }) {
+export function AddEmployeeModal({
+  sectionOptions = [],
+  accountOptions = [],
+  subjectOptions = [],
+}: {
+  sectionOptions?: SectionOption[];
+  accountOptions?: AccountOption[];
+  subjectOptions?: SubjectOption[];
+}) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -31,6 +40,8 @@ export function AddEmployeeModal({ sectionOptions = [] }: { sectionOptions?: Sec
         <EmployeeForm
           mode="create"
           sectionOptions={sectionOptions}
+          accountOptions={accountOptions}
+          subjectOptions={subjectOptions}
           onSuccess={() => {
             setOpen(false);
             router.refresh();
@@ -44,9 +55,15 @@ export function AddEmployeeModal({ sectionOptions = [] }: { sectionOptions?: Sec
 export function EditEmployeeModal({
   employee,
   sectionOptions = [],
+  accountOptions = [],
+  subjectOptions = [],
+  teachingLoads = [],
 }: {
   employee: Parameters<typeof EmployeeForm>[0]["employee"];
   sectionOptions?: SectionOption[];
+  accountOptions?: AccountOption[];
+  subjectOptions?: SubjectOption[];
+  teachingLoads?: TeachingLoad[];
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -56,7 +73,7 @@ export function EditEmployeeModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand-900 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-brand-800"
+        className="text-xs font-medium text-action-700 hover:text-action-800"
       >
         Edit Record
       </button>
@@ -71,6 +88,9 @@ export function EditEmployeeModal({
           employee={employee}
           mode="edit"
           sectionOptions={sectionOptions}
+          accountOptions={accountOptions}
+          subjectOptions={subjectOptions}
+          initialTeachingLoads={teachingLoads}
           onSuccess={() => {
             setOpen(false);
             router.refresh();

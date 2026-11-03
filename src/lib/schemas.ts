@@ -298,6 +298,12 @@ export const employeeFormSchema = z.object({
   otherPosition: optionalText(120),
   /** Adviser assignment — validated against the live sections table server-side. */
   assignedSectionId: optionalText(64),
+  /**
+   * Login account linked to the personnel record. Accepted only for the
+   * `subject_teacher` position (it is what carries the grade-encoding
+   * teaching loads) — validated server-side against the live accounts.
+   */
+  userId: optionalText(64),
   designation: optionalText(120),
   appointmentStatus: z.enum(APPOINTMENT_STATUSES).optional().or(z.literal("")),
   employmentType: z.enum(EMPLOYMENT_TYPES).optional().or(z.literal("")),

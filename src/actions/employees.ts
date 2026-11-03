@@ -8,12 +8,22 @@ import {
   employees,
   sections,
   serviceCreditTransactions,
+  users,
   type NewEmployee,
 } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { computeBalance, validateCreditAmount } from "@/lib/employees";
 import { nextEmployeeNumber } from "@/lib/employee-number";
+import {
+  applyTeachingLoads,
+  clearTeachingLoads,
+  parseTeachingLoads,
+  SUBJECT_TEACHER_ROLE_ID,
+  teachingLoadsForTeacher,
+  validateTeachingLoads,
+  type TeachingLoad,
+} from "@/lib/teaching-loads";
 import {
   employee201Schema,
   employeeFormSchema,
@@ -23,6 +33,32 @@ import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./h
 
 const scrub = (value: string | undefined | null | ""): string | null =>
   value && String(value).trim() ? String(value).trim() : null;
+
+/** Collect the message chain of an error (including nested `cause`s). */
+function errorText(error: unknown, depth = 0): string {
+  if (error === null || error === undefined || depth > 5) return "";
+  if (error instanceof Error) {
+    const own = `${error.name}: ${error.message}`;
+    const cause = (error as { cause?: unknown }).cause;
+    return `${own} ${cause ? errorText(cause, depth + 1) : ""}`;
+  }
+  if (typeof error === "string") return error;
+  if (typeof error === "object") {
+    const record = error as { message?: unknown; cause?: unknown };
+    const own = typeof record.message === "string" ? record.message : "";
+    return `${own} ${record.cause ? errorText(record.cause, depth + 1) : ""}`;
+  }
+  return String(error);
+}
+
+/**
+ * True when the failure is a unique-constraint violation on the employee
+ * number — the only error worth retrying with a freshly generated number.
+ */
+function isEmployeeNumberConflict(error: unknown): boolean {
+  const text = errorText(error).toLowerCase();
+  return text.includes("unique constraint failed") && text.includes("employee_number");
+}
 
 /**
  * Paid position resolved from the controlled Select: `other` stores the
@@ -61,6 +97,11 @@ function employeeValues(v: Awaited<ReturnType<typeof employeeFormSchema.parse>>)
     position: resolvedPosition(v),
     /** Section assignment only ever attaches to the adviser position. */
     assignedSectionId: resolvedPosition(v) === null || scrub(v.position) !== "adviser" ? null : scrub(v.assignedSectionId),
+    /**
+     * Login-account link only ever attaches to the subject-teacher position —
+     * it is the account that carries the grade-encoding teaching loads.
+     */
+    userId: scrub(v.position) === "subject_teacher" ? scrub(v.userId) : null,
     designation: scrub(v.designation),
     appointmentStatus: scrub(v.appointmentStatus),
     employmentType: scrub(v.employmentType),
@@ -148,6 +189,133 @@ async function validateAdviserAssignment(
   return { ok: true, sectionName: section.name };
 }
 
+/**
+ * Server-side validation of the Subject Teacher account link and the
+ * teaching loads (the grade-encoding scope):
+ *
+ *   1. only the `subject_teacher` position may carry an account link;
+ *   2. the linked account must EXIST, be ACTIVE and hold the
+ *      `subject_teacher` role — a client dropdown is never trusted;
+ *   3. an account already linked to another personnel record may not be
+ *      re-used (one account backs one employee);
+ *   4. every (section, subject) pair must point at an existing, active
+ *      section and subject.
+ */
+async function validateSubjectTeacherScope(
+  v: Awaited<ReturnType<typeof employeeFormSchema.parse>>,
+  formData: FormData,
+  excludeEmployeeId?: string,
+): Promise<
+  | { ok: true; accountId: string | null; loads: TeachingLoad[] }
+  | { ok: false; error: string; fieldErrors?: Record<string, string> }
+> {
+  if (scrub(v.position) !== "subject_teacher") {
+    // Account link and teaching loads only apply to subject teachers.
+    return { ok: true, accountId: null, loads: [] };
+  }
+
+  const accountId = scrub(v.userId);
+  const submitted = parseTeachingLoads(formData.getAll("teachingLoad").map(String));
+
+  if (!accountId) {
+    if (submitted.length > 0) {
+      return {
+        ok: false,
+        error:
+          "Link a Subject Teacher login account before assigning teaching loads — grade encoding follows the account.",
+        fieldErrors: { userId: "Link the login account first" },
+      };
+    }
+    return { ok: true, accountId: null, loads: [] };
+  }
+
+  const accountRows = await db
+    .select({
+      id: users.id,
+      roleId: users.roleId,
+      isActive: users.isActive,
+      linkedEmployeeId: employees.id,
+      linkedEmployeeNumber: employees.employeeNumber,
+    })
+    .from(users)
+    .leftJoin(employees, eq(employees.userId, users.id))
+    .where(eq(users.id, accountId))
+    .limit(1);
+  const account = accountRows[0];
+  if (!account) {
+    return {
+      ok: false,
+      error: "Linked login account not found — select a valid account.",
+      fieldErrors: { userId: "Account not found" },
+    };
+  }
+  if (!account.isActive) {
+    return {
+      ok: false,
+      error: "That login account is deactivated — re-activate it before linking it.",
+      fieldErrors: { userId: "Account is deactivated" },
+    };
+  }
+  if (account.roleId !== SUBJECT_TEACHER_ROLE_ID) {
+    return {
+      ok: false,
+      error: "The linked account must hold the Subject Teacher role to carry teaching loads.",
+      fieldErrors: { userId: "Account must hold the Subject Teacher role" },
+    };
+  }
+  if (account.linkedEmployeeId && account.linkedEmployeeId !== excludeEmployeeId) {
+    return {
+      ok: false,
+      error: `That login account is already linked to employee ${account.linkedEmployeeNumber}.`,
+      fieldErrors: { userId: "Account already linked to another employee" },
+    };
+  }
+
+  const validated = await validateTeachingLoads(submitted);
+  if (!validated.ok) {
+    return {
+      ok: false,
+      error: validated.error,
+      fieldErrors: { teachingLoad: validated.error },
+    };
+  }
+
+  return { ok: true, accountId, loads: validated.pairs };
+}
+
+/**
+ * Apply the teaching-load plan to the linked account: loads that were
+ * dropped are removed, new loads are inserted, and a (section, subject) pair
+ * owned by another teacher is moved to this teacher.
+ */
+async function syncTeachingLoads(
+  accountId: string | null,
+  previousAccountId: string | null,
+  loads: TeachingLoad[],
+): Promise<{ added: number; removed: number; moved: number }> {
+  if (!accountId) {
+    // The record no longer points at an account — the old account keeps
+    // nothing that was managed through this form.
+    if (previousAccountId) {
+      const removed = await clearTeachingLoads(previousAccountId);
+      return { added: 0, removed, moved: 0 };
+    }
+    return { added: 0, removed: 0, moved: 0 };
+  }
+
+  if (previousAccountId && previousAccountId !== accountId) {
+    await clearTeachingLoads(previousAccountId);
+  }
+
+  const current = await teachingLoadsForTeacher(accountId);
+  const result = await applyTeachingLoads(accountId, current, loads);
+  return {
+    added: result.added.length,
+    removed: result.removed.length,
+    moved: result.moved.length,
+  };
+}
+
 /** Create a new employee record. */
 export async function createEmployee(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getAuthorizedUser("employees.create");
@@ -163,6 +331,9 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
   const assignment = await validateAdviserAssignment(v);
   if (!assignment.ok) return fail(assignment.error, { assignedSectionId: "Section already assigned or invalid" });
 
+  const scope = await validateSubjectTeacherScope(v, formData);
+  if (!scope.ok) return fail(scope.error, scope.fieldErrors);
+
   let number: string;
   if (v.employeeNumber && String(v.employeeNumber).trim()) {
     number = String(v.employeeNumber).trim();
@@ -177,6 +348,7 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
 
   const employeeId = crypto.randomUUID();
   let inserted = false;
+  let lastError: unknown = null;
   for (let attempt = 0; attempt < 2 && !inserted; attempt++) {
     if (attempt > 0) number = await nextEmployeeNumber();
     try {
@@ -191,19 +363,44 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
       await db.insert(employees).values(values);
       inserted = true;
     } catch (error) {
-      // Unique constraint on employee_number — regenerate and retry once.
-      console.error("[createEmployee] insert failed", error);
+      lastError = error;
+      // Only a unique-constraint violation on the employee number is worth a
+      // retry with a fresh number. Any other failure (a missing column, a
+      // constraint violation, a connectivity error) is reported as-is —
+      // retrying it silently hid real database errors behind a generic
+      // "Could not create the record" message.
+      if (!isEmployeeNumberConflict(error)) {
+        console.error("[createEmployee] insert failed", error);
+        break;
+      }
+      console.warn("[createEmployee] employee number collision — retrying", error);
       inserted = false;
     }
   }
-  if (!inserted) return fail("Could not create the record. Please try again.");
+  if (!inserted) {
+    console.error("[createEmployee] insert failed", lastError);
+    return fail(
+      isEmployeeNumberConflict(lastError)
+        ? "Could not create the record — that employee number is already in use. Please try again."
+        : "Could not create the record. The database rejected the save — check the employee details and try again.",
+    );
+  }
+
+  // Grade-encoding scope: the teaching loads of the linked account.
+  const loadChanges = await syncTeachingLoads(scope.accountId, null, scope.loads);
 
   await logAudit({
     userId: user.id,
     action: "CREATE_EMPLOYEE",
     entityType: "employee",
     entityId: employeeId,
-    newValues: { employeeNumber: number },
+    newValues: {
+      employeeNumber: number,
+      position: resolvedPosition(v),
+      linkedAccountId: scope.accountId,
+      teachingLoads: scope.loads.length,
+      teachingLoadsChanged: loadChanges,
+    },
     ipAddress: ip,
     userAgent,
   });
@@ -235,6 +432,9 @@ export async function updateEmployee(_prev: ActionState, formData: FormData): Pr
   const assignment = await validateAdviserAssignment(v, employeeId);
   if (!assignment.ok) return fail(assignment.error, { assignedSectionId: "Section already assigned or invalid" });
 
+  const scope = await validateSubjectTeacherScope(v, formData, employeeId);
+  if (!scope.ok) return fail(scope.error, scope.fieldErrors);
+
   if (v.employeeNumber && String(v.employeeNumber).trim()) {
     const number = String(v.employeeNumber).trim();
     if (number !== employee.employeeNumber && (await employeeNumberTaken(number, employeeId))) {
@@ -261,6 +461,9 @@ export async function updateEmployee(_prev: ActionState, formData: FormData): Pr
     return fail("Could not update the record. Please try again.");
   }
 
+  // Grade-encoding scope: the teaching loads of the (possibly new) account.
+  const loadChanges = await syncTeachingLoads(scope.accountId, employee.userId, scope.loads);
+
   await logAudit({
     userId: user.id,
     action: "UPDATE_EMPLOYEE",
@@ -270,10 +473,13 @@ export async function updateEmployee(_prev: ActionState, formData: FormData): Pr
       status: employee.status,
       position: employee.position,
       assignedSectionId: employee.assignedSectionId,
+      linkedAccountId: employee.userId,
     },
     newValues: {
       position: resolvedPosition(v),
       assignedSectionId: await currentAssignedSectionId(employeeId),
+      linkedAccountId: scope.accountId,
+      teachingLoadsChanged: loadChanges,
     },
     ipAddress: ip,
     userAgent,
@@ -314,13 +520,20 @@ export async function archiveEmployee(_prev: ActionState, formData: FormData): P
     .set({ status: "archived", updatedBy: user.id, updatedAt: new Date() })
     .where(eq(employees.id, employeeId));
 
+  // An archived employee must not keep a grade-encoding scope: the teaching
+  // loads of the linked account are dropped with the record.
+  let clearedLoads = 0;
+  if (employee.userId) {
+    clearedLoads = await clearTeachingLoads(employee.userId);
+  }
+
   await logAudit({
     userId: user.id,
     action: "ARCHIVE_EMPLOYEE",
     entityType: "employee",
     entityId: employeeId,
     oldValues: { status: employee.status },
-    newValues: { status: "archived" },
+    newValues: { status: "archived", teachingLoadsCleared: clearedLoads },
     ipAddress: ip,
     userAgent,
   });

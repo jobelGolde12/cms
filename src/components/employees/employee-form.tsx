@@ -18,6 +18,7 @@ import {
 import type { Employee } from "@/db/schema";
 import type { ActionState } from "@/actions/helpers";
 import type { SectionOption } from "@/components/sections/section-dialog";
+import type { AccountOption, SubjectOption, TeachingLoad } from "@/lib/teaching-loads";
 
 /**
  * Create/edit form for employee records. The employee number is generated
@@ -27,12 +28,21 @@ export function EmployeeForm({
   employee,
   mode,
   sectionOptions = [],
+  accountOptions = [],
+  subjectOptions = [],
+  initialTeachingLoads = [],
   onSuccess,
 }: {
   employee?: Employee;
   mode: "create" | "edit";
   /** Active sections (label "Grade X — Section"), for the adviser assignment. */
   sectionOptions?: SectionOption[];
+  /** Active Subject Teacher login accounts that can be linked to this record. */
+  accountOptions?: AccountOption[];
+  /** Active subjects, for the grade-encoding teaching loads. */
+  subjectOptions?: SubjectOption[];
+  /** Teaching loads the linked account already carries. */
+  initialTeachingLoads?: TeachingLoad[];
   onSuccess?: () => void;
 }) {
   const action = mode === "create" ? createEmployee : updateEmployee;
@@ -58,6 +68,34 @@ export function EmployeeForm({
   const [otherPosition, setOtherPosition] = useState<string>(legacyOtherPosition);
   const isAdviser = positionKey === "adviser";
   const isOther = positionKey === "other";
+  const isSubjectTeacher = positionKey === "subject_teacher";
+
+  // Grade-encoding scope: the (section, subject) teaching loads of the
+  // linked Subject Teacher account.
+  const [loads, setLoads] = useState<TeachingLoad[]>(initialTeachingLoads);
+  const [loadSection, setLoadSection] = useState("");
+  const [loadSubject, setLoadSubject] = useState("");
+
+  const sectionLabel = (id: string) =>
+    sectionOptions.find((o) => o.id === id)?.label ?? id;
+  const subjectLabel = (id: string) =>
+    subjectOptions.find((o) => o.id === id)?.label ?? id;
+
+  const addLoad = () => {
+    if (!loadSection || !loadSubject) return;
+    setLoads((current) =>
+      current.some((l) => l.sectionId === loadSection && l.subjectId === loadSubject)
+        ? current
+        : [...current, { sectionId: loadSection, subjectId: loadSubject }],
+    );
+    setLoadSection("");
+    setLoadSubject("");
+  };
+
+  const removeLoad = (sectionId: string, subjectId: string) =>
+    setLoads((current) =>
+      current.filter((l) => !(l.sectionId === sectionId && l.subjectId === subjectId)),
+    );
 
   const err = (key: string): string | undefined =>
     state.ok === false ? state.fieldErrors?.[key] : undefined;
@@ -218,6 +256,27 @@ export function EmployeeForm({
               </Select>
             </Field>
           ) : null}
+          {isSubjectTeacher ? (
+            <Field
+              label="Login account"
+              htmlFor="employee-userId"
+              error={err("userId")}
+              hint="Links the personnel record to the Subject Teacher account that carries the grade-encoding loads."
+            >
+              <Select
+                id="employee-userId"
+                name="userId"
+                defaultValue={employee?.userId ?? ""}
+              >
+                <option value="">No account linked</option>
+                {accountOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label} ({o.email})
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
           <Field label="Designation" htmlFor="employee-designation" error={err("designation")}>
             <Input id="employee-designation" name="designation" defaultValue={employee?.designation ?? ""} maxLength={120} />
           </Field>
@@ -258,6 +317,105 @@ export function EmployeeForm({
           </Field>
         </div>
       </div>
+
+      {/* Grade-encoding scope — only a Subject Teacher can hold teaching loads. */}
+      {isSubjectTeacher ? (
+        <div className="border-t border-brand-200 pt-4">
+          <h3 className="text-sm font-semibold text-brand-900">Grade Encoding Scope</h3>
+          <p className="mt-1 text-xs text-[#64748B]">
+            Teaching loads define the (section, subject) pairs this teacher may encode grades
+            for. The scope is enforced server-side on every grade write.
+          </p>
+
+          {err("teachingLoad") ? (
+            <p role="alert" className="mt-2 text-xs font-medium text-red-700">
+              {err("teachingLoad")}
+            </p>
+          ) : null}
+
+          {/* The submitted pairs — one hidden field per load. */}
+          {loads.map((load) => (
+            <input
+              key={`${load.sectionId}|${load.subjectId}`}
+              type="hidden"
+              name="teachingLoad"
+              value={`${load.sectionId}|${load.subjectId}`}
+            />
+          ))}
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[2fr_2fr_auto] sm:items-end">
+            <Field label="Section" htmlFor="load-section">
+              <Select
+                id="load-section"
+                value={loadSection}
+                onChange={(e) => setLoadSection(e.target.value)}
+              >
+                <option value="">Select section…</option>
+                {sectionOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Subject" htmlFor="load-subject">
+              <Select
+                id="load-subject"
+                value={loadSubject}
+                onChange={(e) => setLoadSubject(e.target.value)}
+              >
+                <option value="">Select subject…</option>
+                {subjectOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Button type="button" variant="secondary" onClick={addLoad} disabled={!loadSection || !loadSubject}>
+              Add load
+            </Button>
+          </div>
+
+          {loads.length === 0 ? (
+            <p className="mt-3 rounded-md border border-dashed border-brand-200 px-3 py-2 text-xs text-[#64748B]">
+              No teaching load yet — this teacher cannot encode grades until a (section, subject)
+              load is added.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-1.5">
+              {loads.map((load) => (
+                <li
+                  key={`${load.sectionId}|${load.subjectId}`}
+                  className="flex items-center justify-between gap-3 rounded-md border border-brand-200 bg-brand-50/60 px-3 py-1.5 text-[13px] text-brand-900"
+                >
+                  <span>
+                    <span className="font-medium">{sectionLabel(load.sectionId)}</span>
+                    <span aria-hidden="true" className="mx-1.5 text-brand-400">
+                      ·
+                    </span>
+                    <span>{subjectLabel(load.subjectId)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeLoad(load.sectionId, load.subjectId)}
+                    className="text-xs font-medium text-red-700 hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {accountOptions.length === 0 ? (
+            <p className="mt-3 text-xs text-[#64748B]">
+              No active Subject Teacher login account is available — create one on the Users page
+              first, then link it here.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Government / personnel information */}
       <div className="border-t border-brand-200 pt-4">
