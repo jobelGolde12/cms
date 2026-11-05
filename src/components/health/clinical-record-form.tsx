@@ -4,19 +4,21 @@ import { useActionState } from "react";
 import { saveClinicalRecord } from "@/actions/health";
 import { Button } from "@/components/ui/button";
 import { HEALTH_SEED_CATEGORIES } from "@/lib/constants";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 /**
  * Clinical record form (Nurse). The server action re-validates permissions,
  * scope, and required fields — client validation is UX only, never the guard.
  */
 export function ClinicalRecordForm({ studentId }: { studentId: string }) {
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(saveClinicalRecord, {
     ok: false,
     error: "",
   });
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form ref={formRef} action={formAction} onReset={onReset} className="space-y-3">
       <input type="hidden" name="studentId" value={studentId} />
 
       {state.ok === false && state.error ? (

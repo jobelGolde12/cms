@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { changePassword } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 /** Heuristic 0–3 score: length, mixed case, digit/symbol. */
 function strengthOf(pw: string): 0 | 1 | 2 | 3 {
@@ -32,6 +33,7 @@ const STRENGTH_META = {
  * validates against its own rules).
  */
 export function SecuritySettings() {
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(changePassword, {
     ok: false,
     error: "",
@@ -61,7 +63,7 @@ export function SecuritySettings() {
   );
 
   return (
-    <form action={formAction} className="flex min-h-full flex-col">
+    <form ref={formRef} action={formAction} onReset={onReset} className="flex min-h-full flex-col">
       <header className="border-b border-brand-100 px-6 py-5">
         <h2 className="text-base font-semibold text-brand-900">Security &amp; Password</h2>
         <p className="mt-0.5 text-sm text-[#64748B]">

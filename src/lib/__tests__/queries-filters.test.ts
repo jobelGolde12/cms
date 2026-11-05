@@ -65,12 +65,13 @@ describe("studentFilters (registry query builder)", () => {
     expect(sql).toBeDefined();
   });
 
-  it("searches first name, last name, and student number", async () => {
+  it("searches first name, last name, student number, and LRN", async () => {
     const sql = await build(adminUser, { q: "cruz" });
     expect(sql).toContain("%cruz%");
     expect(sql).toContain("first_name");
     expect(sql).toContain("last_name");
     expect(sql).toContain("student_number");
+    expect(sql).toContain("lrn");
   });
 
   it("maps status/sex filters to their columns", async () => {

@@ -33,11 +33,30 @@ import {
   type Role,
 } from "../src/lib/constants";
 import { users as usersSchema } from "../src/db/schema";
-import { hashPassword } from "../src/lib/auth";
 import { eq, sql } from "drizzle-orm";
 
 const now = new Date();
 const CURRENT_YEAR = `${now.getFullYear()}-${now.getFullYear() + 1}`;
+
+/**
+ * Accounts removed from the system on 2026-11-05 as demo/test data. A seed
+ * run must never bring them back — whatever the environment variables say.
+ */
+const RETIRED_DEMO_EMAILS = new Set([
+  "admin@gmail.com",
+  "school_admin@local.dev",
+  "teacher@local.dev",
+  "guidance@local.dev",
+  "nurse@local.dev",
+  "admin_officer@local.dev",
+  "qa-integration@qa.local.dev",
+]);
+
+/** True for the retired demo addresses and for the whole `*@local.dev` domain. */
+function isRetiredDemoEmail(email: string): boolean {
+  const normalized = email.trim().toLowerCase();
+  return RETIRED_DEMO_EMAILS.has(normalized) || normalized.endsWith("@local.dev");
+}
 
 async function seedRoles() {
   const roleRows: { id: string; name: string; description: string }[] = [
@@ -88,37 +107,78 @@ async function seedRoles() {
 }
 
 async function seedUsers() {
-  const fallbackHash = await hashPassword("password123");
-  const rolesToSeed: { role: Role; emailEnv: string; hashEnv: string; id: string; name: string }[] = [
-    { role: "admin", emailEnv: "DEFAULT_ADMIN_EMAIL", hashEnv: "DEFAULT_ADMIN_PASSWORD_HASH", id: "user-admin", name: "Admin" },
-    { role: "school_admin", emailEnv: "DEFAULT_SCHOOL_ADMIN_EMAIL", hashEnv: "DEFAULT_SCHOOL_ADMIN_PASSWORD_HASH", id: "user-school-admin", name: "SchoolAdmin" },
-    { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", id: "user-teacher", name: "Adviser" },
-    { role: "subject_teacher", emailEnv: "DEFAULT_SUBJECT_TEACHER_EMAIL", hashEnv: "DEFAULT_SUBJECT_TEACHER_PASSWORD_HASH", id: "user-subject", name: "SubjectTeacher" },
-    { role: "records", emailEnv: "DEFAULT_RECORDS_EMAIL", hashEnv: "DEFAULT_RECORDS_PASSWORD_HASH", id: "user-records", name: "Records" },
-    { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", id: "user-guidance", name: "Counselor" },
-    { role: "nurse", emailEnv: "DEFAULT_NURSE_EMAIL", hashEnv: "DEFAULT_NURSE_PASSWORD_HASH", id: "user-nurse", name: "Nurse" },
-    { role: "registrar", emailEnv: "DEFAULT_REGISTRAR_EMAIL", hashEnv: "DEFAULT_REGISTRAR_PASSWORD_HASH", id: "user-registrar", name: "Registrar" },
-    { role: "literacy_coordinator", emailEnv: "DEFAULT_LITERACY_EMAIL", hashEnv: "DEFAULT_LITERACY_PASSWORD_HASH", id: "user-literacy", name: "LiteracyCoord" },
-    { role: "admin_officer", emailEnv: "DEFAULT_ADMIN_OFFICER_EMAIL", hashEnv: "DEFAULT_ADMIN_OFFICER_PASSWORD_HASH", id: "user-admin-officer", name: "AdminOfficer" },
+  const rolesToSeed: { role: Role; emailEnv: string; hashEnv: string; firstEnv: string; lastEnv: string; id: string; name: string }[] = [
+    { role: "admin", emailEnv: "DEFAULT_ADMIN_EMAIL", hashEnv: "DEFAULT_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_LAST_NAME", id: "user-admin", name: "Admin" },
+    { role: "school_admin", emailEnv: "DEFAULT_SCHOOL_ADMIN_EMAIL", hashEnv: "DEFAULT_SCHOOL_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_SCHOOL_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_SCHOOL_ADMIN_LAST_NAME", id: "user-school-admin", name: "SchoolAdmin" },
+    { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_TEACHER_LAST_NAME", id: "user-teacher", name: "Adviser" },
+    { role: "subject_teacher", emailEnv: "DEFAULT_SUBJECT_TEACHER_EMAIL", hashEnv: "DEFAULT_SUBJECT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_SUBJECT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_SUBJECT_TEACHER_LAST_NAME", id: "user-subject", name: "SubjectTeacher" },
+    { role: "records", emailEnv: "DEFAULT_RECORDS_EMAIL", hashEnv: "DEFAULT_RECORDS_PASSWORD_HASH", firstEnv: "DEFAULT_RECORDS_FIRST_NAME", lastEnv: "DEFAULT_RECORDS_LAST_NAME", id: "user-records", name: "Records" },
+    { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", firstEnv: "DEFAULT_GUIDANCE_FIRST_NAME", lastEnv: "DEFAULT_GUIDANCE_LAST_NAME", id: "user-guidance", name: "Counselor" },
+    { role: "nurse", emailEnv: "DEFAULT_NURSE_EMAIL", hashEnv: "DEFAULT_NURSE_PASSWORD_HASH", firstEnv: "DEFAULT_NURSE_FIRST_NAME", lastEnv: "DEFAULT_NURSE_LAST_NAME", id: "user-nurse", name: "Nurse" },
+    { role: "registrar", emailEnv: "DEFAULT_REGISTRAR_EMAIL", hashEnv: "DEFAULT_REGISTRAR_PASSWORD_HASH", firstEnv: "DEFAULT_REGISTRAR_FIRST_NAME", lastEnv: "DEFAULT_REGISTRAR_LAST_NAME", id: "user-registrar", name: "Registrar" },
+    { role: "literacy_coordinator", emailEnv: "DEFAULT_LITERACY_EMAIL", hashEnv: "DEFAULT_LITERACY_PASSWORD_HASH", firstEnv: "DEFAULT_LITERACY_FIRST_NAME", lastEnv: "DEFAULT_LITERACY_LAST_NAME", id: "user-literacy", name: "LiteracyCoord" },
+    { role: "admin_officer", emailEnv: "DEFAULT_ADMIN_OFFICER_EMAIL", hashEnv: "DEFAULT_ADMIN_OFFICER_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_OFFICER_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_OFFICER_LAST_NAME", id: "user-admin-officer", name: "AdminOfficer" },
   ];
+
+  const skipped: string[] = [];
   for (const d of rolesToSeed) {
-    const email = process.env[d.emailEnv];
-    if (!email) continue; // never invent credentials
-    const existing = await db.select({ id: usersSchema.id }).from(usersSchema).where(eq(usersSchema.id, d.id)).limit(1);
-    const values = {
-      id: d.id,
-      roleId: `role-${d.role.replace(/_/g, "-")}`,
-      firstName: process.env[`${d.role.toUpperCase()}_FIRST_NAME`] ?? d.name,
-      lastName: process.env[`${d.role.toUpperCase()}_LAST_NAME`] ?? "Demo",
-      email,
-      passwordHash: existing.length ? undefined : (process.env[d.hashEnv] ?? fallbackHash),
-      isActive: true,
-    };
-    if (existing.length) {
-      await db.update(usersSchema).set(values).where(eq(usersSchema.id, d.id));
-    } else {
-      await db.insert(usersSchema).values({ ...values, passwordHash: process.env[d.hashEnv] ?? fallbackHash });
+    const email = process.env[d.emailEnv]?.trim();
+    const hash = process.env[d.hashEnv]?.trim();
+    // Never invent credentials and never reset a password that already
+    // exists: an account is created only when BOTH the e-mail and the hash
+    // are configured, and an existing account keeps its password hash.
+    if (!email) {
+      skipped.push(d.role);
+      continue;
     }
+    if (isRetiredDemoEmail(email)) {
+      console.warn(
+        `Refusing to provision ${email}: this is a retired demo account and must not be recreated.`,
+      );
+      skipped.push(d.role);
+      continue;
+    }
+
+    const roleId = `role-${d.role.replace(/_/g, "-")}`;
+    const first = process.env[d.firstEnv]?.trim() || d.name;
+    const last = process.env[d.lastEnv]?.trim() || "Staff";
+
+    const existing = await db
+      .select({ id: usersSchema.id })
+      .from(usersSchema)
+      .where(eq(usersSchema.email, email))
+      .limit(1);
+    const targetId = existing[0]?.id ?? d.id;
+
+    if (existing.length > 0) {
+      await db
+        .update(usersSchema)
+        .set({ roleId, firstName: first, lastName: last, email, isActive: true, updatedAt: new Date() })
+        .where(eq(usersSchema.id, targetId));
+      continue;
+    }
+
+    if (!hash) {
+      skipped.push(d.role);
+      continue;
+    }
+
+    await db.insert(usersSchema).values({
+      id: targetId,
+      roleId,
+      firstName: first,
+      lastName: last,
+      email,
+      passwordHash: hash,
+      isActive: true,
+    });
+  }
+
+  if (skipped.length > 0) {
+    console.log(
+      `Users skipped (no e-mail + hash configured): ${skipped.join(", ")}. ` +
+        "Set DEFAULT_<ROLE>_EMAIL and DEFAULT_<ROLE>_PASSWORD_HASH to provision them.",
+    );
   }
 }
 

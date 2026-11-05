@@ -7,6 +7,7 @@ import { Modal } from "./modal";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import type { ActionState } from "@/actions/helpers";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 /**
  * Correct an existing service-credit transaction. Reuses the server-side
@@ -43,6 +44,7 @@ export function ServiceCreditEditButton({
   const [confirmChecked, setConfirmChecked] = useState(false);
   const initial: ActionState = { ok: false, error: "" };
 
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
       const result = await updateServiceCreditTransaction(prev, formData);
@@ -84,7 +86,7 @@ export function ServiceCreditEditButton({
         title={`Correct Transaction — ${employeeName}`}
         description={`Editing the ${transaction.type === "earned" ? "earned" : "consumed"} entry of ${transaction.transactionDate} (${transaction.credits.toFixed(2)} credits). The previous values stay in the audit history.`}
       >
-        <form action={formAction} className="space-y-4" noValidate>
+        <form ref={formRef} action={formAction} onReset={onReset} className="space-y-4" noValidate>
           <input type="hidden" name="employeeId" value={employeeId} />
           <input type="hidden" name="transactionId" value={transaction.id} />
           {state.ok === false && state.error ? (

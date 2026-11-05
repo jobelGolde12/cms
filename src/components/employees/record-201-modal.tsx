@@ -11,6 +11,7 @@ import {
   EMPLOYEE_201_CATEGORY_LABELS,
 } from "@/lib/constants";
 import type { ActionState } from "@/actions/helpers";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 type Editable201Record = {
   id: string;
@@ -26,6 +27,7 @@ const initial: ActionState = { ok: false, error: "" };
 
 export function Add201RecordModal({ employeeId }: { employeeId: string }) {
   const [open, setOpen] = useState(false);
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(async (prev: ActionState, formData: FormData) => {
     const result = await create201Record(prev, formData);
     if (result.ok) setOpen(false);
@@ -47,7 +49,7 @@ export function Add201RecordModal({ employeeId }: { employeeId: string }) {
         description="Personnel documents are categorized and dated; entries are never deleted."
         wide
       >
-        <form action={formAction} className="space-y-4" noValidate>
+        <form ref={formRef} action={formAction} onReset={onReset} className="space-y-4" noValidate>
           <input type="hidden" name="employeeId" value={employeeId} />
           {state.ok === false && state.error ? (
             <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
@@ -97,6 +99,7 @@ export function Add201RecordModal({ employeeId }: { employeeId: string }) {
 
 export function Edit201RecordModal({ record }: { record: Editable201Record }) {
   const [open, setOpen] = useState(false);
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(async (prev: ActionState, formData: FormData) => {
     const result = await update201Record(prev, formData);
     if (result.ok) setOpen(false);
@@ -121,7 +124,7 @@ export function Edit201RecordModal({ record }: { record: Editable201Record }) {
         title={`Edit 201 Entry — ${record.title}`}
         wide
       >
-        <form action={formAction} className="space-y-4" noValidate>
+        <form ref={formRef} action={formAction} onReset={onReset} className="space-y-4" noValidate>
           <input type="hidden" name="recordId" value={record.id} />
           <input type="hidden" name="employeeId" value={record.employeeId} />
           {state.ok === false && state.error ? (

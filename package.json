@@ -12,6 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:drift": "tsx scripts/check-remote-drift.mts",
     "seed": "tsx scripts/seed.mts",
+    "seed:reference": "tsx scripts/seed-remote-reference.mts",
     "test": "vitest run"
   },
   "dependencies": {

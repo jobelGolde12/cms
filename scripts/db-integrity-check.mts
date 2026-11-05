@@ -45,9 +45,6 @@ function check(name: string, ok: boolean, detail = "") {
 async function main() {
   console.log("\n=== 1. Existing data intact ===");
 
-  const countOf = async (table: Parameters<typeof db.select>[0] extends never ? never : never) => 0;
-  void countOf;
-
   const [studentCount] = await db.select({ n: count() }).from(students);
   const [gradeCount] = await db.select({ n: count() }).from(studentGrades);
   const [userCount] = await db.select({ n: count() }).from(users);

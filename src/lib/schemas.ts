@@ -222,7 +222,16 @@ export const userFormSchema = z.object({
     .max(128)
     .optional()
     .or(z.literal("")),
-  isActive: z.boolean().optional().default(true),
+  /**
+   * `FormData` carries strings, so the flag arrives as "true"/"false" (the
+   * hidden field + checkbox pair used by the form). Accepting the raw string
+   * keeps "uncheck Active" meaningful — a missing field must not silently
+   * default back to active.
+   */
+  isActive: z
+    .union([z.boolean(), z.enum(["true", "false", "on", "off", "1", "0"])])
+    .transform((v) => v === true || v === "true" || v === "on" || v === "1")
+    .default(true),
 });
 
 export type UserFormValues = z.infer<typeof userFormSchema>;

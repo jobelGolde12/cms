@@ -5,6 +5,7 @@ import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { login } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 type LoginState = Awaited<ReturnType<typeof login>>;
 
@@ -14,6 +15,8 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, INITIAL_STATE);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  // Keeps the typed email/password when the sign-in is rejected.
+  const { formRef, onReset } = useFormResetGuard();
 
   const emailId = useId();
   const passwordId = useId();
@@ -59,7 +62,7 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="w-full rounded-[6px] border border-[#DCE4F0] bg-white px-6 py-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)] sm:px-8 sm:py-8">
-          <form action={formAction} className="space-y-5" noValidate>
+          <form ref={formRef} action={formAction} onReset={onReset} className="space-y-5" noValidate>
             {hasError ? (
               <div
                 id={errorId}

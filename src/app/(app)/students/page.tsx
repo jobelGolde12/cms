@@ -80,7 +80,7 @@ export default async function StudentsPage({
     q || status || sex || gradeLevel || sectionId || lifecycle !== "active",
   );
 
-  const filterValues = { q, status, sex, gradeLevel, sectionId, lifecycle };
+  const filterValues = { q, status, sex, gradeLevel, sectionId, lifecycle, sort };
 
   return (
     <div className="space-y-5">
@@ -187,8 +187,6 @@ export default async function StudentsPage({
           rows={result.rows}
           canEdit={canEdit}
           hasFilters={hasFilters}
-          activeSort={sort}
-          searchParams={params}
         />
         <RegistryPagination
           page={result.page}

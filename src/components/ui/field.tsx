@@ -1,9 +1,4 @@
-import type {
-  InputHTMLAttributes,
-  LabelHTMLAttributes,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
-} from "react";
+import { cloneElement, isValidElement, type InputHTMLAttributes, type LabelHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const controlBase =
@@ -28,13 +23,28 @@ export function Select({ className, children, ...props }: SelectHTMLAttributes<H
 }
 
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(controlBase, "min-h-[88px] py-2", className)} {...props} />;
+  return (
+    <textarea className={cn(controlBase, "min-h-[88px] py-2", className)} {...props} />
+  );
 }
 
-export function FieldError({ message }: { message?: string }) {
+/** Stable description id for a field's hint / error text. */
+const hintId = (htmlFor: string) => `${htmlFor}-hint`;
+const errorId = (htmlFor: string) => `${htmlFor}-error`;
+
+export function FieldHint({ id, children }: { id: string; children?: string | undefined }) {
+  if (!children) return null;
+  return (
+    <p id={id} className="text-xs text-[#64748B]">
+      {children}
+    </p>
+  );
+}
+
+export function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p role="alert" className="text-sm font-medium text-red-700">
+    <p id={id} role="alert" className="text-sm font-medium text-red-700">
       {message}
     </p>
   );
@@ -55,6 +65,18 @@ export function Field({
   required?: boolean;
   children: React.ReactNode;
 }) {
+  // Link the control to its error/hint text: aria-invalid flags the failing
+  // control; aria-describedby points at the actual message for screen readers.
+  const describedBy = error ? errorId(htmlFor) : hint ? hintId(htmlFor) : undefined;
+  const control = isValidElement(children)
+    ? cloneElement(
+        children as React.ReactElement<{ "aria-invalid"?: boolean; "aria-describedby"?: string }>,
+        {
+          "aria-invalid": error ? (true as const) : undefined,
+          "aria-describedby": describedBy,
+        },
+      )
+    : children;
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={htmlFor}>
@@ -65,9 +87,9 @@ export function Field({
           </span>
         ) : null}
       </Label>
-      {children}
-      {hint ? <p className="text-xs text-[#64748B]">{hint}</p> : null}
-      <FieldError message={error} />
+      {control}
+      <FieldHint id={hintId(htmlFor)}>{hint}</FieldHint>
+      <FieldError id={errorId(htmlFor)} message={error} />
     </div>
   );
 }

@@ -34,9 +34,11 @@ import {
   type Sex,
   type StudentStatus,
   type AssessmentDomain,
+  ROLES,
 } from "./constants";
 import type { SessionUser } from "./auth";
 import { userSectionScope } from "./scope";
+import { currentQrToken } from "./qr";
 import { ageFromBirthDate } from "./utils";
 
 export const PAGE_SIZE = 10;
@@ -153,7 +155,7 @@ export async function studentFilters(user: SessionUser, q: StudentQuery): Promis
   if (q.q) {
     const needle = `%${q.q}%`;
     conditions.push(
-      sql`(${students.firstName} LIKE ${needle} OR ${students.lastName} LIKE ${needle} OR ${students.studentNumber} LIKE ${needle})`,
+      sql`(${students.firstName} LIKE ${needle} OR ${students.lastName} LIKE ${needle} OR ${students.studentNumber} LIKE ${needle} OR ${students.lrn} LIKE ${needle})`,
     );
   }
   if (q.status) conditions.push(eq(students.recordStatus, q.status as RecordStatus));
@@ -182,6 +184,8 @@ export async function studentFilters(user: SessionUser, q: StudentQuery): Promis
 export type StudentRow = {
   id: string;
   studentNumber: string;
+  /** DepEd LRN — the student-facing identifier shown in the registry. */
+  lrn: string | null;
   firstName: string;
   lastName: string;
   suffix: string | null;
@@ -221,6 +225,7 @@ export async function listStudents(
     .select({
       id: students.id,
       studentNumber: students.studentNumber,
+      lrn: students.lrn,
       firstName: students.firstName,
       lastName: students.lastName,
       suffix: students.suffix,
@@ -675,6 +680,11 @@ export async function getQrEvents(studentId: string) {
     .where(eq(qrVerifications.studentId, studentId))
     .orderBy(desc(qrVerifications.verifiedAt))
     .limit(10);
+}
+
+/** The student's live QR token, if any (newest event per token decides). */
+export async function getCurrentQrToken(studentId: string) {
+  return currentQrToken(studentId);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1663,7 +1673,9 @@ export async function listUsersWithRoles(page = 1, pageSize = 25) {
       id: users.id,
       email: users.email,
       firstName: users.firstName,
+      middleName: users.middleName,
       lastName: users.lastName,
+      phone: users.phone,
       roleLabel: roles.name,
       roleId: users.roleId,
       isActive: users.isActive,
@@ -1675,6 +1687,22 @@ export async function listUsersWithRoles(page = 1, pageSize = 25) {
     .orderBy(asc(users.createdAt))
     .limit(pageSize)
     .offset(offset);
+}
+
+/** Roles that can be assigned to an account, in the canonical role order. */
+export async function listAssignableRoles() {
+  const rows = await db
+    .select({ id: roles.id, name: roles.name, description: roles.description })
+    .from(roles);
+  // The roles table may still hold retired roles (barangay / lgu). Only the
+  // roles the application actually knows may be offered — `userFormSchema`
+  // rejects anything else, so listing them would be a dead choice.
+  const order = new Map<string, number>(
+    ROLES.map((role, index) => [`role-${role.replace(/_/g, "-")}`, index]),
+  );
+  return rows
+    .filter((r) => order.has(r.id))
+    .sort((a, b) => order.get(a.id)! - order.get(b.id)!);
 }
 
 export async function listAuditLogs(page = 1, limit = 50) {

@@ -1,0 +1,29 @@
+# Files that must never reach the Vercel build.
+# The Vercel CLI falls back to .gitignore when this file is missing — keep the
+# two in sync when adding an entry here.
+
+# Local database exports (contain production data — never upload them).
+database-backups/
+
+# Local environment files — the project uses Vercel environment variables.
+.env
+.env.*
+!.env.example
+
+# Agent/scratch directories.
+.tmp-qa/
+.tmp-integration/
+scripts/tmp/
+.kilo/
+
+# Build output and caches.
+.next/
+out/
+build/
+coverage/
+node_modules/
+*.tsbuildinfo
+
+# Local tooling.
+.vercel/
+*.log

@@ -17,6 +17,7 @@ import {
   getInterventionsForStudent,
   getVerificationHistory,
   getQrEvents,
+  getCurrentQrToken,
 } from "@/lib/queries";
 import { formatDate, formatDateTime, fullName, ageFromBirthDate } from "@/lib/utils";
 import { Badge, RecordStatusBadge } from "@/components/ui/badge";
@@ -35,9 +36,15 @@ import {
 } from "@/lib/constants";
 import { ValidationReviewForm } from "@/components/validation/review-form";
 import { ArchiveStudentButton } from "@/components/archive-student-button";
+import { QrActions } from "@/components/qr/qr-actions";
 import { HealthRecordForm } from "@/components/health/health-record-form";
 import { ClinicalRecordForm } from "@/components/health/clinical-record-form";
-import { NUTRITIONAL_STATUS_LABELS, type NutritionalStatus } from "@/lib/constants";
+import {
+  NUTRITIONAL_STATUS_LABELS,
+  QR_ELIGIBLE_RECORD_STATUSES,
+  type NutritionalStatus,
+  type RecordStatus,
+} from "@/lib/constants";
 import { Printer } from "lucide-react";
 
 function Section({
@@ -91,7 +98,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   const canEncodeGrades = hasPermission(user.role, "grades.write");
   const isPending = student.recordStatus === "pending_validation";
 
-  const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents, health, clinical] =
+  const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents, qrToken, health, clinical] =
     await Promise.all([
       getGuardiansForStudent(id),
       getEnrollmentHistory(id),
@@ -103,6 +110,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
       getInterventionsForStudent(id),
       getVerificationHistory(id),
       getQrEvents(id),
+      getCurrentQrToken(id),
       getHealthForStudent(id),
       getClinicalForStudent(id),
     ]);
@@ -128,11 +136,16 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             <RecordStatusBadge status={student.recordStatus as never} />
           </div>
           <p className="numeric mt-1 flex items-center gap-2 text-sm text-[#64748B]">
+            {/* LRN is the student-facing identifier; the internally generated
+                record number is only a fallback while the LRN is unfiled. */}
             <span>
-              {student.studentNumber} · {ageFromBirthDate(student.birthDate) ?? "—"} yrs ·{" "}
+              {student.lrn
+                ? student.lrn
+                : `${student.studentNumber} · no LRN filed yet`} ·{" "}
+              {ageFromBirthDate(student.birthDate) ?? "—"} yrs ·{" "}
               {student.sex === "male" ? "Male" : "Female"}
             </span>
-            <CopyButton value={student.studentNumber} />
+            <CopyButton value={student.lrn ?? student.studentNumber} />
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -517,21 +530,43 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
           {canQr ? (
           <Section title="QR Events" icon={<QrCode aria-hidden="true" className="h-4 w-4" />}>
-            {qrEvents.length === 0 ? (
-              <p className="text-xs text-[#64748B]">No QR events.</p>
-            ) : (
-              <ul className="divide-y divide-brand-100">
-                {qrEvents.map((t) => (
-                  <li key={t.id} className="py-2.5 text-xs first:pt-0 last:pb-0">
-                    <span className="numeric text-brand-800">{t.verificationToken.slice(0, 12)}…</span>
-                    <span className="ml-2 capitalize text-brand-400">
-                      {t.verificationType} · {t.result}
-                    </span>
-                    <span className="block text-brand-400">{formatDateTime(t.verifiedAt)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="space-y-3">
+              <QrActions
+                studentId={id}
+                canGenerate={QR_ELIGIBLE_RECORD_STATUSES.includes(student.recordStatus as RecordStatus)}
+                hasActiveToken={Boolean(qrToken)}
+              />
+              {qrToken ? (
+                <p className="text-[11px] text-[#64748B]">
+                  Live token{" "}
+                  <span className="numeric text-brand-800">
+                    {qrToken.token.slice(0, 12)}…
+                  </span>{" "}
+                  issued {formatDateTime(qrToken.verifiedAt)} — verification link{" "}
+                  <Link
+                    href={`/verify/${qrToken.token}`}
+                    className="font-medium text-action-700 underline underline-offset-2 hover:text-action-800"
+                  >
+                    /verify/{qrToken.token.slice(0, 12)}…
+                  </Link>
+                </p>
+              ) : null}
+              {qrEvents.length === 0 ? (
+                <p className="text-xs text-[#64748B]">No QR events.</p>
+              ) : (
+                <ul className="divide-y divide-brand-100">
+                  {qrEvents.map((t) => (
+                    <li key={t.id} className="py-2.5 text-xs first:pt-0 last:pb-0">
+                      <span className="numeric text-brand-800">{t.verificationToken.slice(0, 12)}…</span>
+                      <span className="ml-2 capitalize text-brand-400">
+                        {t.verificationType} · {t.result}
+                      </span>
+                      <span className="block text-brand-400">{formatDateTime(t.verifiedAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </Section>
           ) : null}
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { studentFormSchema, verificationReviewSchema } from "../schemas";
+import { studentFormSchema, userFormSchema, verificationReviewSchema } from "../schemas";
 
 describe("studentFormSchema", () => {
   const validBase = {
@@ -96,5 +96,57 @@ describe("verificationReviewSchema", () => {
       remarks: "x".repeat(501),
     });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe("userFormSchema", () => {
+  const validBase = {
+    firstName: "Maria",
+    lastName: "Santos",
+    email: "maria.santos@example.edu",
+    roleId: "role-records",
+  };
+
+  it("accepts a minimal valid submission", () => {
+    expect(userFormSchema.safeParse(validBase).success).toBe(true);
+  });
+
+  it("rejects an unknown role", () => {
+    expect(userFormSchema.safeParse({ ...validBase, roleId: "role-superuser" }).success).toBe(false);
+  });
+
+  describe("isActive", () => {
+    it("reads the FormData strings a checkbox produces", () => {
+      const off = userFormSchema.safeParse({ ...validBase, isActive: "false" });
+      expect(off.success).toBe(true);
+      if (off.success) expect(off.data.isActive).toBe(false);
+
+      const on = userFormSchema.safeParse({ ...validBase, isActive: "true" });
+      expect(on.success).toBe(true);
+      if (on.success) expect(on.data.isActive).toBe(true);
+    });
+
+    it("defaults to active when the flag is absent", () => {
+      const parsed = userFormSchema.safeParse(validBase);
+      expect(parsed.success).toBe(true);
+      if (parsed.success) expect(parsed.data.isActive).toBe(true);
+    });
+
+    it("still accepts a real boolean", () => {
+      const parsed = userFormSchema.safeParse({ ...validBase, isActive: false });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) expect(parsed.data.isActive).toBe(false);
+    });
+  });
+
+  describe("password", () => {
+    it("accepts an empty password (edit keeps the current one)", () => {
+      const parsed = userFormSchema.safeParse({ ...validBase, password: "" });
+      expect(parsed.success).toBe(true);
+    });
+
+    it("rejects a password shorter than 8 characters", () => {
+      expect(userFormSchema.safeParse({ ...validBase, password: "short" }).success).toBe(false);
+    });
   });
 });

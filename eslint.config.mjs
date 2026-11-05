@@ -14,6 +14,12 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Git worktrees / agent sandboxes — not part of the build.
     ".kilo/**",
+    // Scratch/probe directories (git-ignored, not part of the build).
+    ".tmp-qa/**",
+    ".tmp-integration/**",
+    "scripts/tmp/**",
+    // Local database exports (git-ignored backups).
+    "database-backups/**",
   ]),
 ]);
 

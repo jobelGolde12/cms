@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { reviewVerification } from "@/actions/students";
 import { Button } from "@/components/ui/button";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 /**
  * Reviewer decision form for a record in the verification queue.
@@ -11,13 +12,14 @@ import { Button } from "@/components/ui/button";
  * remains authoritative.
  */
 export function ValidationReviewForm({ studentId }: { studentId: string }) {
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(reviewVerification, {
     ok: false,
     error: "",
   });
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form ref={formRef} action={formAction} onReset={onReset} className="space-y-3">
       <input type="hidden" name="studentId" value={studentId} />
 
       {state.ok === false && state.error ? (

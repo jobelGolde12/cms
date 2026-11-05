@@ -7,6 +7,7 @@ import { Modal } from "./modal";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import type { ActionState } from "@/actions/helpers";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 /**
  * Record a service-credit transaction (earned or consumed). Consumed amounts
@@ -25,6 +26,7 @@ export function AddServiceCreditModal({
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("");
   const initial: ActionState = { ok: false, error: "" };
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
       const result = await addServiceCreditTransaction(prev, formData);
@@ -48,7 +50,7 @@ export function AddServiceCreditModal({
         title={`Service Credit — ${employeeName}`}
         description={`Available balance: ${balance.toFixed(2)}. Consumed amounts cannot exceed the balance.`}
       >
-        <form action={formAction} className="space-y-4" noValidate>
+        <form ref={formRef} action={formAction} onReset={onReset} className="space-y-4" noValidate>
           <input type="hidden" name="employeeId" value={employeeId} />
           {state.ok === false && state.error ? (
             <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">

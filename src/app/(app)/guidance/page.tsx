@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
 import { ClientNavForm } from "@/components/ui/client-nav-form";
 import { buttonStyles } from "@/components/ui/button";
+import { IncidentDeleteButton } from "@/components/guidance/incident-delete-button";
 
 export const metadata = { title: "Guidance Office · Records Management System" };
 
@@ -214,12 +215,18 @@ export default async function GuidancePage({
                     </span>
                   </Td>
                   <Td align="right">
-                    <Link
-                      href={`/guidance/incidents/${r.id}/edit`}
-                      className="text-xs font-medium text-action-700 hover:text-action-800"
-                    >
-                      Edit
-                    </Link>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        href={`/guidance/incidents/${r.id}/edit`}
+                        className="text-xs font-medium text-action-700 hover:text-action-800"
+                      >
+                        Edit
+                      </Link>
+                      <IncidentDeleteButton
+                        incidentId={r.id}
+                        studentLabel={`${r.lastName}, ${r.firstName}`}
+                      />
+                    </div>
                   </Td>
                 </tr>
               ))

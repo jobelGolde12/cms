@@ -138,6 +138,7 @@ export type RegistryFilterValues = {
   sex: string;
   status: string;
   lifecycle: string;
+  sort: string;
 };
 
 const inputClass =
@@ -207,7 +208,7 @@ export function RegistryFilters({
             type="search"
             name="q"
             defaultValue={values.q}
-            placeholder="Search by learner name or student number…"
+            placeholder="Search by learner name, LRN or student number…"
             className={cn(inputClass, "h-10 pl-9")}
           />
         </div>
@@ -295,7 +296,20 @@ export function RegistryFilters({
             );
           })}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="registry-sort" className="sr-only">
+            Sort records
+          </label>
+          <select
+            id="registry-sort"
+            name="sort"
+            defaultValue={values.sort || "recent"}
+            className={cn(inputClass, "h-9 w-auto")}
+          >
+            <option value="recent">Recently added</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name">Name (A–Z)</option>
+          </select>
           <Link
             href="/students"
             className="inline-flex h-9 items-center rounded-md border border-brand-200 bg-white px-3.5 text-[13px] font-medium text-brand-700 transition-colors hover:bg-brand-50"
@@ -345,77 +359,22 @@ export function ActiveFilterChips({ filters }: { filters: { label: string; value
 /*  Table                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/** Sortable header link — only the sort keys supported by `listStudents`. */
-function SortHeader({
-  label,
-  keyName,
-  nextKey,
-  activeSort,
-  searchParams,
-  className,
-}: {
-  label: string;
-  keyName: "name" | "recent" | "oldest";
-  /** Sort key applied when clicked (enables recent ⇄ oldest toggling). */
-  nextKey: "name" | "recent" | "oldest";
-  activeSort: string;
-  searchParams: Record<string, string | string[] | undefined>;
-  className?: string;
-}) {
-  const next = new URLSearchParams();
-  for (const [k, v] of Object.entries(searchParams)) {
-    if (k !== "sort" && k !== "page" && typeof v === "string" && v) next.set(k, v);
-  }
-  next.set("sort", nextKey);
-  const isActive = activeSort === keyName;
-  return (
-    <th scope="col" className={cn("px-4 py-2.5", className)}>
-      <Link
-        href={`/students?${next}`}
-        aria-label={`Sort by ${label}`}
-        className={cn(
-          "inline-flex items-center gap-1 transition-colors hover:text-action-700",
-          isActive && "text-action-700 underline decoration-action-300 underline-offset-2",
-        )}
-      >
-        {label}
-      </Link>
-    </th>
-  );
-}
-
 export function StudentRegistryTable({
   rows,
   canEdit,
   hasFilters,
-  activeSort = "recent",
-  searchParams = {},
 }: {
   rows: StudentRow[];
   canEdit: boolean;
   hasFilters?: boolean;
-  activeSort?: string;
-  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[820px] border-collapse text-left">
         <thead>
           <tr className="bg-brand-100 text-[11px] font-semibold uppercase tracking-wide text-brand-800">
-            <SortHeader
-              label={`Student No.${activeSort === "recent" ? " ↓" : activeSort === "oldest" ? " ↑" : ""}`}
-              keyName={activeSort === "oldest" ? "oldest" : "recent"}
-              nextKey={activeSort === "oldest" ? "recent" : "oldest"}
-              activeSort={activeSort === "oldest" ? "oldest" : "recent"}
-              searchParams={searchParams}
-            />
-            <SortHeader
-              label={`Learner Name${activeSort === "name" ? " ↑" : ""}`}
-              keyName="name"
-              nextKey="name"
-              activeSort={activeSort}
-              searchParams={searchParams}
-            />
+            <th scope="col" className="px-4 py-2.5">LRN / Student No.</th>
+            <th scope="col" className="px-4 py-2.5">Learner Name</th>
             <th scope="col" className="px-4 py-2.5">Age / Sex</th>
             <th scope="col" className="px-4 py-2.5">Grade / Section</th>
             <th scope="col" className="px-4 py-2.5">Status</th>
@@ -439,13 +398,19 @@ export function StudentRegistryTable({
           ) : (
             rows.map((r) => (
               <tr key={r.id} className="transition-colors hover:bg-brand-50/70">
+                {/* The displayed student identifier is the DepEd LRN. Records
+                    whose LRN is not filed yet fall back to the internal
+                    student number — always labelled, never silently. */}
                 <td className="px-4 py-2.5">
                   <Link
                     href={`/students/${r.id}`}
                     className="numeric text-[13px] font-semibold text-brand-900 hover:text-action-700"
                   >
-                    {r.studentNumber}
+                    {r.lrn ?? r.studentNumber}
                   </Link>
+                  {r.lrn ? null : (
+                    <span className="block text-[11px] text-amber-700">LRN not filed</span>
+                  )}
                 </td>
                 <td className="px-4 py-2.5">
                   <Link

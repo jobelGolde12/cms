@@ -6,7 +6,13 @@ import { notify } from "@/lib/audit";
 
 export type ActionState =
   | { ok: true; message?: string; redirectTo?: string }
-  | { ok: false; error: string; fieldErrors?: Record<string, string> };
+  | { ok: false; error: string; fieldErrors?: Record<string, string>; /**
+      Submitted form values echoed back after a failure. React 19 resets
+      uncontrolled inputs once a form action completes — even on validation
+      errors — so client wrappers attach the snapshot here and the form
+      re-renders with the user's own values as defaults (never losing input).
+      */
+    values?: Record<string, string> };
 
 export const ok = (message?: string, redirectTo?: string): ActionState => ({
   ok: true,

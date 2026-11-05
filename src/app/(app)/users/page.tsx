@@ -1,13 +1,19 @@
 import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { listUsersWithRoles } from "@/lib/queries";
+import { listAssignableRoles, listUsersWithRoles } from "@/lib/queries";
 import { hasPermission } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  AddUserButton,
+  UserDisableButton,
+  UserEditButton,
+  type UserRowData,
+} from "@/components/users/user-management";
 
 export default async function UsersPage() {
   const user = await getCurrentUser();
@@ -15,6 +21,8 @@ export default async function UsersPage() {
   if (!hasPermission(user.role, "users.view")) redirect("/dashboard");
 
   const rows = await listUsersWithRoles();
+  const roleOptions = await listAssignableRoles();
+  const canManage = hasPermission(user.role, "users.manage");
 
   return (
     <div className="space-y-6">
@@ -29,8 +37,9 @@ export default async function UsersPage() {
           title="All accounts"
           description={`${rows.length} account${rows.length === 1 ? "" : "s"} in the system.`}
           icon={<Users aria-hidden="true" className="h-4 w-4" />}
+          actions={canManage ? <AddUserButton roleOptions={roleOptions} /> : null}
         />
-        <TableWrap minWidth={760}>
+        <TableWrap minWidth={860}>
           <thead>
             <tr>
               <Th>Name</Th>
@@ -38,34 +47,56 @@ export default async function UsersPage() {
               <Th>Role</Th>
               <Th>Status</Th>
               <Th>Last login</Th>
+              {canManage ? <Th align="right">Actions</Th> : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-brand-100">
             {rows.length === 0 ? (
               <TableEmptyState
-                colSpan={5}
+                colSpan={canManage ? 6 : 5}
                 icon={<Users className="h-10 w-10" />}
                 title="No user accounts"
                 description="User accounts will appear here once created."
               />
             ) : (
-              rows.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-brand-50/70">
-                  <Td className="font-medium text-brand-900">
-                    {r.firstName} {r.lastName}
-                  </Td>
-                  <Td className="text-brand-600">{r.email}</Td>
-                  <Td className="text-xs text-brand-700">{r.roleLabel}</Td>
-                  <Td>
-                    <Badge tone={r.isActive ? "verified" : "error"}>
-                      {r.isActive ? "Active" : "Disabled"}
-                    </Badge>
-                  </Td>
-                  <Td className="text-xs text-[#64748B]">
-                    {r.lastLoginAt ? formatDateTime(r.lastLoginAt) : "—"}
-                  </Td>
-                </tr>
-              ))
+              rows.map((r) => {
+                const row: UserRowData = {
+                  id: r.id,
+                  email: r.email,
+                  firstName: r.firstName,
+                  middleName: r.middleName,
+                  lastName: r.lastName,
+                  phone: r.phone,
+                  roleId: r.roleId,
+                  roleLabel: r.roleLabel,
+                  isActive: r.isActive,
+                };
+                return (
+                  <tr key={r.id} className="transition-colors hover:bg-brand-50/70">
+                    <Td className="font-medium text-brand-900">
+                      {r.firstName} {r.lastName}
+                    </Td>
+                    <Td className="text-brand-600">{r.email}</Td>
+                    <Td className="text-xs text-brand-700">{r.roleLabel}</Td>
+                    <Td>
+                      <Badge tone={r.isActive ? "verified" : "error"}>
+                        {r.isActive ? "Active" : "Disabled"}
+                      </Badge>
+                    </Td>
+                    <Td className="text-xs text-[#64748B]">
+                      {r.lastLoginAt ? formatDateTime(r.lastLoginAt) : "—"}
+                    </Td>
+                    {canManage ? (
+                      <Td align="right">
+                        <div className="flex items-center justify-end gap-1">
+                          <UserEditButton user={row} roleOptions={roleOptions} />
+                          <UserDisableButton user={row} currentUserId={user.id} />
+                        </div>
+                      </Td>
+                    ) : null}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </TableWrap>

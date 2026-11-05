@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { createEmployee, updateEmployee } from "@/actions/employees";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 import {
   APPOINTMENT_STATUSES,
   APPOINTMENT_STATUS_LABELS,
@@ -21,8 +22,27 @@ import type { SectionOption } from "@/components/sections/section-dialog";
 import type { AccountOption, SubjectOption, TeachingLoad } from "@/lib/teaching-loads";
 
 /**
+ * String snapshot of a submitted FormData — echoed back inside the failed
+ * ActionState so uncontrolled fields can restore the user's own values as
+ * defaults (React 19 otherwise resets them to their initial defaults after
+ * every completed action, including failed ones).
+ */
+function submittedValues(formData: FormData): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (typeof value === "string" && !(key in out)) out[key] = value;
+  }
+  return out;
+}
+
+/**
  * Create/edit form for employee records. The employee number is generated
  * server-side when left blank, so the field is optional and clearly hinted.
+ *
+ * Error paths never clear input: the wrapper action snapshots the submitted
+ * values before the server call and merges them into every failed result; the
+ * form then renders those values as the uncontrolled fields' defaults, so the
+ * post-action reset re-applies the user's typed data (see submittedValues).
  */
 export function EmployeeForm({
   employee,
@@ -47,15 +67,40 @@ export function EmployeeForm({
 }) {
   const action = mode === "create" ? createEmployee : updateEmployee;
   const initial: ActionState = { ok: false, error: "" };
-  const [state, formAction, pending] = useActionState(async (prev: ActionState, formData: FormData) => {
+  const { formRef, onReset } = useFormResetGuard();
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(
+    async (prev, formData) => {
+    // Snapshot before the server call so even client-side aborts/failures can
+    // restore what the user typed.
+    const submitted = submittedValues(formData);
     const result = await action(prev, formData);
-    if (result.ok && onSuccess) onSuccess();
-    return result;
-  }, initial);
+    if (result.ok) {
+      if (onSuccess) onSuccess();
+      return result;
+    }
+      // Preserve the user's input through validation/server/database failures.
+      return { ...result, values: submitted };
+    },
+    initial,
+  );
 
-  // Controlled position: the Select carries the vocabulary key; `other`
-  // reveals a text field for the free-text description (legacy rows keep
-  // their original string there until re-classified).
+  /** The values submitted with the failed attempt (when one exists). */
+  const failedWith = state.ok === false ? state.values : undefined;
+  /** Default value: the user's submitted value after a failure, otherwise
+   *  the stored employee value (edit) or blank (create). */
+  const val = (key: string, fallback: string | null | undefined = ""): string =>
+    (failedWith && failedWith[key] !== undefined ? failedWith[key] : (fallback ?? ""));
+
+  // Focus the first invalid field after a failed submission so the user can
+  // correct it without hunting through the form.
+  useEffect(() => {
+    if (state.ok !== false || !state.fieldErrors || Object.keys(state.fieldErrors).length === 0) {
+      return;
+    }
+    const firstInvalid = formRef.current?.querySelector<HTMLElement>("[aria-invalid='true']");
+    if (firstInvalid) firstInvalid.focus();
+  }, [state, formRef]);
+
   const [positionKey, setPositionKey] = useState<string>(() => {
     const stored = employee?.position ?? "";
     if (!stored) return "";
@@ -101,7 +146,7 @@ export function EmployeeForm({
     state.ok === false ? state.fieldErrors?.[key] : undefined;
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form ref={formRef} action={formAction} onReset={onReset} className="space-y-5" noValidate>
       {mode === "edit" ? <input type="hidden" name="employeeId" value={employee?.id ?? ""} /> : null}
 
       {state.ok === false && state.error ? (
@@ -129,13 +174,13 @@ export function EmployeeForm({
             <Input
               id="employeeNumber"
               name="employeeNumber"
-              defaultValue={employee?.employeeNumber ?? ""}
+              defaultValue={val("employeeNumber", employee?.employeeNumber)}
               maxLength={30}
               placeholder="Auto"
             />
           </Field>
           <Field label="Sex" htmlFor="employee-sex" required error={err("sex")}>
-            <Select id="employee-sex" name="sex" defaultValue={employee?.sex ?? ""} required>
+            <Select id="employee-sex" name="sex" defaultValue={val("sex", employee?.sex)} required>
               <option value="" disabled>
                 Select…
               </option>
@@ -147,22 +192,22 @@ export function EmployeeForm({
             </Select>
           </Field>
           <Field label="First name" htmlFor="employee-firstName" required error={err("firstName")}>
-            <Input id="employee-firstName" name="firstName" defaultValue={employee?.firstName ?? ""} required maxLength={60} autoComplete="given-name" />
+            <Input id="employee-firstName" name="firstName" defaultValue={val("firstName", employee?.firstName)} required maxLength={60} autoComplete="given-name" />
           </Field>
           <Field label="Middle name" htmlFor="employee-middleName" error={err("middleName")}>
-            <Input id="employee-middleName" name="middleName" defaultValue={employee?.middleName ?? ""} maxLength={60} />
+            <Input id="employee-middleName" name="middleName" defaultValue={val("middleName", employee?.middleName)} maxLength={60} />
           </Field>
           <Field label="Last name" htmlFor="employee-lastName" required error={err("lastName")}>
-            <Input id="employee-lastName" name="lastName" defaultValue={employee?.lastName ?? ""} required maxLength={60} autoComplete="family-name" />
+            <Input id="employee-lastName" name="lastName" defaultValue={val("lastName", employee?.lastName)} required maxLength={60} autoComplete="family-name" />
           </Field>
           <Field label="Suffix" htmlFor="employee-suffix" error={err("suffix")}>
-            <Input id="employee-suffix" name="suffix" defaultValue={employee?.suffix ?? ""} maxLength={10} placeholder="Jr., III…" />
+            <Input id="employee-suffix" name="suffix" defaultValue={val("suffix", employee?.suffix)} maxLength={10} placeholder="Jr., III…" />
           </Field>
           <Field label="Birth date" htmlFor="employee-birthDate" error={err("birthDate")}>
-            <Input id="employee-birthDate" name="birthDate" type="date" defaultValue={employee?.birthDate ?? ""} />
+            <Input id="employee-birthDate" name="birthDate" type="date" defaultValue={val("birthDate", employee?.birthDate)} />
           </Field>
           <Field label="Civil status" htmlFor="employee-civilStatus" error={err("civilStatus")}>
-            <Select id="employee-civilStatus" name="civilStatus" defaultValue={employee?.civilStatus ?? ""}>
+            <Select id="employee-civilStatus" name="civilStatus" defaultValue={val("civilStatus", employee?.civilStatus)}>
               <option value="">Select…</option>
               {CIVIL_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -172,24 +217,24 @@ export function EmployeeForm({
             </Select>
           </Field>
           <Field label="Contact number" htmlFor="employee-contactNumber" error={err("contactNumber")} hint="PH format — 0917 123 4567.">
-            <Input id="employee-contactNumber" name="contactNumber" defaultValue={employee?.contactNumber ?? ""} inputMode="tel" maxLength={20} />
+            <Input id="employee-contactNumber" name="contactNumber" defaultValue={val("contactNumber", employee?.contactNumber)} inputMode="tel" maxLength={20} />
           </Field>
           <Field label="Email" htmlFor="employee-email" error={err("email")}>
-            <Input id="employee-email" name="email" type="email" defaultValue={employee?.email ?? ""} maxLength={120} />
+            <Input id="employee-email" name="email" type="email" defaultValue={val("email", employee?.email)} maxLength={120} />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Address" htmlFor="employee-address" error={err("address")}>
-              <Textarea id="employee-address" name="address" defaultValue={employee?.address ?? ""} maxLength={300} />
+              <Textarea id="employee-address" name="address" defaultValue={val("address", employee?.address)} maxLength={300} />
             </Field>
           </div>
           <Field label="Emergency contact name" htmlFor="employee-ecName" error={err("emergencyContactName")}>
-            <Input id="employee-ecName" name="emergencyContactName" defaultValue={employee?.emergencyContactName ?? ""} maxLength={120} />
+            <Input id="employee-ecName" name="emergencyContactName" defaultValue={val("emergencyContactName", employee?.emergencyContactName)} maxLength={120} />
           </Field>
           <Field label="Emergency contact relation" htmlFor="employee-ecRelation" error={err("emergencyContactRelation")}>
-            <Input id="employee-ecRelation" name="emergencyContactRelation" defaultValue={employee?.emergencyContactRelation ?? ""} maxLength={40} placeholder="Spouse, parent…" />
+            <Input id="employee-ecRelation" name="emergencyContactRelation" defaultValue={val("emergencyContactRelation", employee?.emergencyContactRelation)} maxLength={40} placeholder="Spouse, parent…" />
           </Field>
           <Field label="Emergency contact number" htmlFor="employee-ecNumber" error={err("emergencyContactNumber")}>
-            <Input id="employee-ecNumber" name="emergencyContactNumber" defaultValue={employee?.emergencyContactNumber ?? ""} inputMode="tel" maxLength={20} />
+            <Input id="employee-ecNumber" name="emergencyContactNumber" defaultValue={val("emergencyContactNumber", employee?.emergencyContactNumber)} inputMode="tel" maxLength={20} />
           </Field>
         </div>
       </div>
@@ -245,7 +290,7 @@ export function EmployeeForm({
               <Select
                 id="employee-assignedSection"
                 name="assignedSectionId"
-                defaultValue={employee?.assignedSectionId ?? ""}
+                defaultValue={val("assignedSectionId", employee?.assignedSectionId)}
               >
                 <option value="">No section assigned yet</option>
                 {sectionOptions.map((o) => (
@@ -266,7 +311,7 @@ export function EmployeeForm({
               <Select
                 id="employee-userId"
                 name="userId"
-                defaultValue={employee?.userId ?? ""}
+                defaultValue={val("userId", employee?.userId)}
               >
                 <option value="">No account linked</option>
                 {accountOptions.map((o) => (
@@ -278,10 +323,10 @@ export function EmployeeForm({
             </Field>
           ) : null}
           <Field label="Designation" htmlFor="employee-designation" error={err("designation")}>
-            <Input id="employee-designation" name="designation" defaultValue={employee?.designation ?? ""} maxLength={120} />
+            <Input id="employee-designation" name="designation" defaultValue={val("designation", employee?.designation)} maxLength={120} />
           </Field>
           <Field label="Appointment status" htmlFor="employee-appointmentStatus" error={err("appointmentStatus")}>
-            <Select id="employee-appointmentStatus" name="appointmentStatus" defaultValue={employee?.appointmentStatus ?? ""}>
+            <Select id="employee-appointmentStatus" name="appointmentStatus" defaultValue={val("appointmentStatus", employee?.appointmentStatus)}>
               <option value="">Select…</option>
               {APPOINTMENT_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -291,7 +336,7 @@ export function EmployeeForm({
             </Select>
           </Field>
           <Field label="Employment type" htmlFor="employee-employmentType" error={err("employmentType")}>
-            <Select id="employee-employmentType" name="employmentType" defaultValue={employee?.employmentType ?? ""}>
+            <Select id="employee-employmentType" name="employmentType" defaultValue={val("employmentType", employee?.employmentType)}>
               <option value="">Select…</option>
               {EMPLOYMENT_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -301,19 +346,19 @@ export function EmployeeForm({
             </Select>
           </Field>
           <Field label="Department / office" htmlFor="employee-department" error={err("department")}>
-            <Input id="employee-department" name="department" defaultValue={employee?.department ?? ""} maxLength={120} />
+            <Input id="employee-department" name="department" defaultValue={val("department", employee?.department)} maxLength={120} />
           </Field>
           <Field label="Date hired" htmlFor="employee-dateHired" error={err("dateHired")}>
-            <Input id="employee-dateHired" name="dateHired" type="date" defaultValue={employee?.dateHired ?? ""} />
+            <Input id="employee-dateHired" type="date" name="dateHired" defaultValue={val("dateHired", employee?.dateHired)} />
           </Field>
           <Field label="Date of appointment" htmlFor="employee-dateAppointment" error={err("dateOfAppointment")}>
-            <Input id="employee-dateAppointment" name="dateOfAppointment" type="date" defaultValue={employee?.dateOfAppointment ?? ""} />
+            <Input id="employee-dateAppointment" type="date" name="dateOfAppointment" defaultValue={val("dateOfAppointment", employee?.dateOfAppointment)} />
           </Field>
           <Field label="Salary grade" htmlFor="employee-salaryGrade" error={err("salaryGrade")}>
-            <Input id="employee-salaryGrade" name="salaryGrade" defaultValue={employee?.salaryGrade ?? ""} maxLength={20} placeholder="SG-11" />
+            <Input id="employee-salaryGrade" name="salaryGrade" defaultValue={val("salaryGrade", employee?.salaryGrade)} maxLength={20} placeholder="SG-11" />
           </Field>
           <Field label="Step" htmlFor="employee-step" error={err("step")}>
-            <Input id="employee-step" name="step" defaultValue={employee?.step ?? ""} maxLength={20} placeholder="Step 1" />
+            <Input id="employee-step" name="step" defaultValue={val("step", employee?.step)} maxLength={20} placeholder="Step 1" />
           </Field>
         </div>
       </div>
@@ -422,22 +467,22 @@ export function EmployeeForm({
         <h3 className="text-sm font-semibold text-brand-900">Government / Personnel Information</h3>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="GSIS number" htmlFor="employee-gsis" error={err("gsisNumber")}>
-            <Input id="employee-gsis" name="gsisNumber" defaultValue={employee?.gsisNumber ?? ""} maxLength={40} />
+            <Input id="employee-gsis" name="gsisNumber" defaultValue={val("gsisNumber", employee?.gsisNumber)} maxLength={40} />
           </Field>
           <Field label="PhilHealth number" htmlFor="employee-philhealth" error={err("philhealthNumber")}>
-            <Input id="employee-philhealth" name="philhealthNumber" defaultValue={employee?.philhealthNumber ?? ""} maxLength={40} />
+            <Input id="employee-philhealth" name="philhealthNumber" defaultValue={val("philhealthNumber", employee?.philhealthNumber)} maxLength={40} />
           </Field>
           <Field label="Pag-IBIG number" htmlFor="employee-pagibig" error={err("pagibigNumber")}>
-            <Input id="employee-pagibig" name="pagibigNumber" defaultValue={employee?.pagibigNumber ?? ""} maxLength={40} />
+            <Input id="employee-pagibig" name="pagibigNumber" defaultValue={val("pagibigNumber", employee?.pagibigNumber)} maxLength={40} />
           </Field>
           <Field label="TIN" htmlFor="employee-tin" error={err("tinNumber")}>
-            <Input id="employee-tin" name="tinNumber" defaultValue={employee?.tinNumber ?? ""} maxLength={40} />
+            <Input id="employee-tin" name="tinNumber" defaultValue={val("tinNumber", employee?.tinNumber)} maxLength={40} />
           </Field>
           <Field label="PRC license no." htmlFor="employee-prc" error={err("prcLicenseNumber")}>
-            <Input id="employee-prc" name="prcLicenseNumber" defaultValue={employee?.prcLicenseNumber ?? ""} maxLength={40} />
+            <Input id="employee-prc" name="prcLicenseNumber" defaultValue={val("prcLicenseNumber", employee?.prcLicenseNumber)} maxLength={40} />
           </Field>
           <Field label="Eligibility" htmlFor="employee-eligibility" error={err("eligibility")}>
-            <Input id="employee-eligibility" name="eligibility" defaultValue={employee?.eligibility ?? ""} maxLength={200} placeholder="Civil Service Professional…" />
+            <Input id="employee-eligibility" name="eligibility" defaultValue={val("eligibility", employee?.eligibility)} maxLength={200} placeholder="Civil Service Professional…" />
           </Field>
         </div>
       </div>

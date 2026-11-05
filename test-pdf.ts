@@ -1,5 +1,4 @@
 import { getReportCardData } from "./src/lib/report-card";
-import { renderReportCardPdf } from "./src/lib/reports/report-card-pdf";
 
 async function test() {
   try {

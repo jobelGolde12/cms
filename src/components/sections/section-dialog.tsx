@@ -9,6 +9,7 @@ import { Modal } from "@/components/employees/modal";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import type { ActionState } from "@/actions/helpers";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 export type SectionOption = { id: string; label: string };
 
@@ -132,6 +133,7 @@ function SectionForm({
 }) {
   const action = mode === "create" ? createSection : updateSection;
   const initial: ActionState = { ok: false, error: "" };
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
       const result = await action(prev, formData);
@@ -145,7 +147,7 @@ function SectionForm({
     state.ok === false ? state.fieldErrors?.[key] : undefined;
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form ref={formRef} action={formAction} onReset={onReset} className="space-y-4" noValidate>
       {mode === "edit" ? <input type="hidden" name="id" value={section?.id ?? ""} /> : null}
 
       {state.ok === false && state.error ? (

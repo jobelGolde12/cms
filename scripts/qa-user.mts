@@ -6,7 +6,7 @@
  */
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { roles, users } from "@/db/schema";
+import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 
 const EMAIL = "qa-audit@qa.example";

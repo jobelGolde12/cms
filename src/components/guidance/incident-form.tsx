@@ -7,6 +7,7 @@ import { saveGuidanceIncident } from "@/actions/guidance";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { BEHAVIOR_SEVERITIES, BEHAVIOR_RECORD_STATUSES } from "@/lib/constants";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 const SEVERITY_LABELS: Record<string, string> = {
   low: "Low",
@@ -51,6 +52,7 @@ export function IncidentForm({
   categories: { id: string; name: string }[];
   initial?: Partial<IncidentFormValues>;
 }) {
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(saveGuidanceIncident, {
     ok: false as const,
     error: "",
@@ -68,7 +70,7 @@ export function IncidentForm({
   }, [state.ok, router]);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form ref={formRef} action={formAction} onReset={onReset} className="space-y-4">
       {initial?.id ? <input type="hidden" name="id" value={initial.id} /> : null}
       <input type="hidden" name="studentId" value={studentId} />
 

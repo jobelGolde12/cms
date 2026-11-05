@@ -5,6 +5,7 @@ import { Lock } from "lucide-react";
 import { updateProfile } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 /**
  * Profile Information — the editable name fields plus read-only account
@@ -23,11 +24,12 @@ export function ProfileSettings({
   email: string;
   roleLabel: string;
 }) {
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(updateProfile, { ok: false, error: "" });
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
 
   return (
-    <form action={formAction} className="flex min-h-full flex-col">
+    <form ref={formRef} action={formAction} onReset={onReset} className="flex min-h-full flex-col">
       <header className="border-b border-brand-100 px-6 py-5">
         <h2 className="text-base font-semibold text-brand-900">Profile Information</h2>
         <p className="mt-0.5 text-sm text-[#64748B]">

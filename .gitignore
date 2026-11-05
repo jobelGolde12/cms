@@ -55,6 +55,7 @@ local.db.stale-backup
 
 # local database backups
 *.db.stale-backup
+database-backups/
 
 # temp/debug folders
 .freebuff/

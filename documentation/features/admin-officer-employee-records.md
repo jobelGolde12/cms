@@ -167,10 +167,11 @@ DEFAULT_ADMIN_OFFICER_FIRST_NAME
 DEFAULT_ADMIN_OFFICER_LAST_NAME
 ```
 
-If unset it falls back to `admin_officer@local.dev` with the shared
-development fallback password hash (`password123`), identical to the other
-default dev accounts. **Passwords are stored hashed (bcrypt cost 10); login
-uses the plaintext password.** Do not commit real hashes.
+If either the e-mail or the password hash is unset, the role is skipped and
+reported on the console — the seed never invents a login. **Passwords are
+stored hashed (bcrypt cost 10); login uses the plaintext password.** Do not
+commit real hashes. The retired `admin_officer@local.dev` demo address is on
+the seed deny-list and can no longer be provisioned.
 
 The seed also creates 10 fictional employees with 201-file entries and
 service-credit ledgers. All demo data is fictional.

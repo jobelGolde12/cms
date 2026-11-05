@@ -40,23 +40,16 @@ Handles employee records only (201 files and service credits). This role is kept
 The barangay and lgu roles have been removed, since the municipality-level scope no longer exists.
 
 
-DEFAULT SEED ACCOUNTS
+ACCOUNT PROVISIONING
 
-Running the seed script creates one demo account per role. The email and password come from your .env file if the DEFAULT_* values are set. If they aren't, the script falls back to the values below.
+Running the seed script never invents credentials. An account is created only when BOTH of the following environment variables are set for that role:
 
-Role                  Default email                  Default password   Display name
-admin                 admin@local.dev                password123        Admin Demo
-school_admin          school_admin@local.dev         password123        SchoolAdmin Demo
-teacher               teacher@local.dev              password123        Adviser Demo
-subject_teacher       subject_teacher@local.dev      password123        SubjectTeacher Demo
-records               records@local.dev              password123        Records Demo
-guidance              guidance@local.dev             password123        Counselor Demo
-nurse                 nurse@local.dev                password123        Nurse Demo
-registrar             registrar@local.dev            password123        Registrar Demo
-literacy_coordinator  literacy_coordinator@local.dev password123        LiteracyCoord Demo
-admin_officer         admin_officer@local.dev        password123        AdminOfficer Demo
+    DEFAULT_<ROLE>_EMAIL
+    DEFAULT_<ROLE>_PASSWORD_HASH
 
-Environment variables that override these defaults (each role has an email, a password hash, a first name, and a last name):
+If either one is missing, that role is skipped and reported on the console. There is no shared fallback password and no `*@local.dev` fallback address, so a seed run can never resurrect a demo login.
+
+Environment variables per role (each role has an e-mail, a password hash, a first name, and a last name):
 
 admin: DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD_HASH, DEFAULT_ADMIN_FIRST_NAME, DEFAULT_ADMIN_LAST_NAME
 school_admin: DEFAULT_SCHOOL_ADMIN_EMAIL, DEFAULT_SCHOOL_ADMIN_PASSWORD_HASH, and so on
@@ -69,7 +62,11 @@ registrar: DEFAULT_REGISTRAR_EMAIL, DEFAULT_REGISTRAR_PASSWORD_HASH, and so on
 literacy_coordinator: DEFAULT_LITERACY_EMAIL, DEFAULT_LITERACY_PASSWORD_HASH, and so on
 admin_officer: DEFAULT_ADMIN_OFFICER_EMAIL, DEFAULT_ADMIN_OFFICER_PASSWORD_HASH, and so on
 
-Two things to keep in mind. First, the password hash variables hold a hash, not the password itself, so if you've set one in .env, the real password can't be read from this file. Second, these are development accounts only. Change or remove them before the system holds any real student or employee data.
+Two things to keep in mind. First, the password hash variables hold a hash, not the password itself, so if you've set one in .env, the real password can't be read from this file. Second, these accounts are created for whatever database the seed is pointed at — provision real personnel accounts from the User Management screen (System Administrator → /users → New Account), which hashes the password server-side and writes an audit entry.
+
+RETIRED DEMO ACCOUNTS
+
+The demo/test accounts removed on November 5, 2026 are on a deny-list inside both seed scripts (RETIRED_DEMO_EMAILS in scripts/seed.mts and scripts/seed-remote-reference.mts), together with the whole `*@local.dev` domain. The seeds refuse to provision those addresses even if an environment variable still points at one, so they cannot come back through a seed run.
 
 
 WHO CAN SEE WHICH STUDENTS
@@ -202,4 +199,8 @@ GRADE ENCODING (2026-10 REVISION B)
 grades.write is held ONLY by the subject_teacher role. Admin, school_admin, and every other role are deliberately excluded (see TEACHER_ONLY_WRITE in src/lib/permissions.ts). On top of the role check, every grade action re-establishes the assignment check server-side: the caller must hold a section_subject_teachers row for the exact (section, subject) pair being written. Attempting to tamper with section/subject/period ids in a request payload fails the row-level check even when the role passes.
 
 The "Requires Attention" indicators follow the neutral terminology rule. They're visible to the same people who can see the underlying data.
+
+
+WHAT "201" MEANS IN EMPLOYEE RECORDS
+The "201 file" is an employee's personnel record — a per-employee log of official documents (appointments, eligibility, training, performance, leave, certificates, and so on), separate from the core employee profile and from service credits. It lives in the employee_201_records table and is reachable at /employees/[id]/201. Each entry has a category, title, description, record date, and an optional file reference to stored documentation. Entries can be archived (soft-deleted) but never physically removed, so the personnel history is preserved. Access requires employee_201.view to read and employee_201.manage to create, edit, or archive entries.
 

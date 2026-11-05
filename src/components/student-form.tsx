@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { createStudent, updateStudent } from "@/actions/students";
+import type { ActionState } from "@/actions/helpers";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 import { SEXES } from "@/lib/constants";
 import {
   birthDateError,
@@ -73,17 +75,13 @@ export function StudentForm({
   compact?: boolean;
 }) {
   const action = mode === "create" ? createStudent : updateStudent;
-  const initial: Awaited<ReturnType<typeof createStudent>> = { ok: false, error: "" };
-  const [state, formAction, pending] = useActionState(action, initial);
-
-  const err = (key: string): string | undefined =>
-    state.ok === false ? state.fieldErrors?.[key] : undefined;
+  const initial: ActionState = { ok: false, error: "" };
 
   // ------------------------------------------------------------------ //
   //  Realtime validation state (touched-based to avoid shouting early)  //
   // ------------------------------------------------------------------ //
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [values, setValues] = useState<SourceOfTruth>(() => ({
+  const initialValues = (): SourceOfTruth => ({
     firstName: defaults.firstName ?? "",
     lastName: defaults.lastName ?? "",
     birthDate: defaults.birthDate ?? "",
@@ -92,7 +90,37 @@ export function StudentForm({
     guardianLastName: defaults.guardianLastName ?? "",
     guardianContactNumber: defaults.guardianContactNumber ?? "",
     guardianEmail: defaults.guardianEmail ?? "",
-  }));
+  });
+  const [values, setValues] = useState<SourceOfTruth>(initialValues);
+
+  // React 19 resets the form as soon as the action starts; cancelling that
+  // reset keeps the typed values when the server rejects the submission.
+  const { formRef, onReset, resetNow } = useFormResetGuard();
+
+  // The action wrapper owns every post-submit side effect: the modal wrapper
+  // is notified on success, and page mode starts a clean form. Doing this
+  // inside the action (instead of an effect) keeps the reset tied to the
+  // submission that caused it.
+  const [state, formAction, pending] = useActionState(
+    async (prev: ActionState, formData: FormData): Promise<ActionState> => {
+      const result = await action(prev, formData);
+      if (result.ok) {
+        if (onSuccess) {
+          const id = typeof result.redirectTo === "string" ? result.redirectTo.replace("/students/", "") : "";
+          onSuccess(id, result.message);
+        } else {
+          resetNow();
+          setValues(initialValues());
+          setTouched({});
+        }
+      }
+      return result;
+    },
+    initial,
+  );
+
+  const err = (key: string): string | undefined =>
+    state.ok === false ? state.fieldErrors?.[key] : undefined;
 
   const live = useMemo(
     () =>
@@ -130,20 +158,12 @@ export function StudentForm({
   };
 
   // Broadcast success to the modal wrapper (closes itself).
-  useEffect(() => {
-    if (state.ok === true && onSuccess) {
-      const id = state.ok && "redirectTo" in state && typeof state.redirectTo === "string"
-        ? state.redirectTo.replace("/students/", "")
-        : "";
-      onSuccess(id, state.message);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  // Page mode (no modal wrapper): start a clean form after a successful save.
 
   const isDialog = Boolean(onSuccess) || compact;
 
   const body = (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form ref={formRef} action={formAction} onReset={onReset} className="space-y-5" noValidate>
       {mode === "edit" ? (
         <input type="hidden" name="studentId" value={defaults.id ?? ""} />
       ) : null}
@@ -173,7 +193,6 @@ export function StudentForm({
           <Input
             id="firstName"
             name="firstName"
-            defaultValue={defaults.firstName ?? ""}
             value={values.firstName}
             onChange={setValue("firstName")}
             onBlur={() => touch("firstName")}
@@ -190,7 +209,6 @@ export function StudentForm({
           <Input
             id="lastName"
             name="lastName"
-            defaultValue={defaults.lastName ?? ""}
             value={values.lastName}
             onChange={setValue("lastName")}
             onBlur={() => touch("lastName")}
@@ -230,7 +248,6 @@ export function StudentForm({
             type="date"
             min={birthDateMin()}
             max={birthDateMax()}
-            defaultValue={defaults.birthDate ?? ""}
             value={values.birthDate}
             onChange={setValue("birthDate")}
             onBlur={() => touch("birthDate")}

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { saveHealthRecord } from "@/actions/health";
 import { Button } from "@/components/ui/button";
 import { NUTRITIONAL_STATUSES, NUTRITIONAL_STATUS_LABELS, HEIGHT_FOR_AGE_STATUSES, HEIGHT_FOR_AGE_LABELS } from "@/lib/constants";
+import { useFormResetGuard } from "@/components/ui/form-reset-guard";
 
 /**
  * Nutritional status form (Nurse). The server action re-validates
@@ -11,13 +12,14 @@ import { NUTRITIONAL_STATUSES, NUTRITIONAL_STATUS_LABELS, HEIGHT_FOR_AGE_STATUSE
  * mirrors the same validation for early feedback.
  */
 export function HealthRecordForm({ studentId }: { studentId: string }) {
+  const { formRef, onReset } = useFormResetGuard();
   const [state, formAction, pending] = useActionState(saveHealthRecord, {
     ok: false,
     error: "",
   });
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form ref={formRef} action={formAction} onReset={onReset} className="space-y-3">
       <input type="hidden" name="studentId" value={studentId} />
 
       {state.ok === false && state.error ? (

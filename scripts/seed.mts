@@ -56,7 +56,6 @@ import {
   users,
 } from "../src/db/schema";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "../src/lib/permissions";
-import { hashPassword } from "../src/lib/auth";
 import {
   BEHAVIOR_SEED_CATEGORIES,
   DEFAULT_ASSESSMENT_LEVELS,
@@ -177,19 +176,46 @@ async function seedUsers() {
     { role: "admin_officer", emailEnv: "DEFAULT_ADMIN_OFFICER_EMAIL", hashEnv: "DEFAULT_ADMIN_OFFICER_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_OFFICER_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_OFFICER_LAST_NAME", id: "user-admin-officer", name: "AdminOfficer" },
   ];
 
-  const fallbackHash = await hashPassword("password123");
   const out: { id: string; role: Role }[] = [];
+  const skipped: string[] = [];
 
   for (const d of defaults) {
-    const email = process.env[d.emailEnv] ?? `${d.role}@local.dev`;
-    const hash = process.env[d.hashEnv] ?? fallbackHash;
-    const first = process.env[d.firstEnv] ?? d.name;
-    const last = process.env[d.lastEnv] ?? "Demo";
+    const email = process.env[d.emailEnv]?.trim();
+    const hash = process.env[d.hashEnv]?.trim();
+    // Never invent credentials. An account is created ONLY when its e-mail
+    // AND its password hash are explicitly configured — there is no fallback
+    // to `password123` or to a `*@local.dev` address, so a seed run can never
+    // resurrect the demo accounts that were removed from the system.
+    if (!email || !hash) {
+      skipped.push(d.role);
+      continue;
+    }
+    if (isRetiredDemoEmail(email)) {
+      console.warn(
+        `Refusing to provision ${email}: this is a retired demo account and must not be recreated.`,
+      );
+      skipped.push(d.role);
+      continue;
+    }
+
+    const first = process.env[d.firstEnv]?.trim() || d.name;
+    const last = process.env[d.lastEnv]?.trim() || "Staff";
+    const roleId = `role-${d.role.replace(/_/g, "-")}`;
+
+    // The e-mail is unique: reuse the existing row instead of failing on the
+    // unique index (an account may have been provisioned by hand).
+    const byEmail = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    const targetId = byEmail[0]?.id ?? d.id;
+
     await db
       .insert(users)
       .values({
-        id: d.id,
-        roleId: `role-${d.role.replace(/_/g, "-")}`,
+        id: targetId,
+        roleId,
         firstName: first,
         lastName: last,
         email,
@@ -198,11 +224,44 @@ async function seedUsers() {
       })
       .onConflictDoUpdate({
         target: users.id,
-        set: { email, roleId: `role-${d.role.replace(/_/g, "-")}`, firstName: first, lastName: last, updatedAt: new Date() },
+        set: { roleId, firstName: first, lastName: last, email, updatedAt: new Date() },
       });
-    out.push({ id: d.id, role: d.role });
+    out.push({ id: targetId, role: d.role });
+  }
+
+  if (skipped.length > 0) {
+    console.log(
+      `Users skipped (no e-mail + hash configured): ${skipped.join(", ")}. ` +
+        "Set DEFAULT_<ROLE>_EMAIL and DEFAULT_<ROLE>_PASSWORD_HASH to provision them.",
+    );
   }
   return out;
+}
+
+/**
+ * Accounts removed from the system on 2026-11-05 as demo/test data. A seed
+ * run must never bring them back — whatever the environment variables say.
+ */
+const RETIRED_DEMO_EMAILS = new Set([
+  "admin@gmail.com",
+  "school_admin@local.dev",
+  "teacher@local.dev",
+  "guidance@local.dev",
+  "nurse@local.dev",
+  "admin_officer@local.dev",
+  "qa-integration@qa.local.dev",
+]);
+
+/** True for the retired demo addresses and for the whole `*@local.dev` domain. */
+export function isRetiredDemoEmail(email: string): boolean {
+  const normalized = email.trim().toLowerCase();
+  return RETIRED_DEMO_EMAILS.has(normalized) || normalized.endsWith("@local.dev");
+}
+
+/** Any existing account — used as the fallback recorder for demo rows. */
+async function firstExistingUserId(): Promise<string | null> {
+  const rows = await db.select({ id: users.id }).from(users).limit(1);
+  return rows[0]?.id ?? null;
 }
 
 async function seedAcademicStructure(teacherId: string) {
@@ -358,14 +417,24 @@ async function seedDemoData(people: { id: string; role: Role }[], structure: { y
   await db.delete(studentEnrollments);
   await db.delete(students);
 
-  const creator = people[0]!.id;
-  const teacherId = people.find((p) => p.role === "teacher")!.id;
+  const creator = people[0]?.id ?? (await firstExistingUserId());
+  if (!creator) {
+    console.error(
+      "No user account exists — demo data cannot be created because every record references a user. " +
+        "Provision an administrator first (User Management → New Account), then re-run the seed.",
+    );
+    return;
+  }
+  // Missing role accounts fall back to the creator: the foreign keys only
+  // require *a* valid user id, and inventing accounts would defeat the
+  // "no demo logins" rule enforced in seedUsers().
+  const teacherId = people.find((p) => p.role === "teacher")?.id ?? creator;
   // Advisers no longer encode grades — demo grades are recorded by the
   // Subject Teacher, falling back to the teacher row if the role is absent.
   const subjectTeacherId = people.find((p) => p.role === "subject_teacher")?.id ?? teacherId;
   const gradeRecorderId = subjectTeacherId;
-  const guidanceId = people.find((p) => p.role === "guidance")!.id;
-  const nurseId = people.find((p) => p.role === "nurse")!.id;
+  const guidanceId = people.find((p) => p.role === "guidance")?.id ?? creator;
+  const nurseId = people.find((p) => p.role === "nurse")?.id ?? creator;
 
   const subjectRows = await db.select({ id: subjects.id }).from(subjects);
   const periodRows = await db
@@ -860,10 +929,31 @@ async function seedEmployees(creatorId: string, sectionIds: string[] = []) {
 }
 
 async function main() {
+  // The dev seed DELETES demo rows before recreating them. Refuse to run it
+  // against a remote database unless the operator opts in explicitly — the
+  // remote reference seed (`npm run seed:reference`) is the safe tool there.
+  const target = process.env.TURSO_DATABASE_URL || process.env.LIBSQL_URL || "";
+  const isRemote = target.startsWith("libsql://") || target.startsWith("https://");
+  if (isRemote && process.env.ALLOW_REMOTE_SEED !== "1") {
+    console.error("Refusing to run the destructive dev seed against a remote database.");
+    console.error(
+      "Use `npm run seed:reference` for remote databases, or set ALLOW_REMOTE_SEED=1 to override.",
+    );
+    process.exit(1);
+  }
+
   await seedRolesAndPermissions();
   const people = await seedUsers();
-  const teacher = people.find((p) => p.role === "teacher")!;
-  const structure = await seedAcademicStructure(teacher.id);
+  const fallbackUser = people[0]?.id ?? (await firstExistingUserId());
+  if (!fallbackUser) {
+    console.error(
+      "No user account available — provision an administrator before seeding. " +
+        "The seed never creates a login with an invented e-mail or password.",
+    );
+    process.exit(1);
+  }
+  const teacher = people.find((p) => p.role === "teacher")?.id ?? fallbackUser;
+  const structure = await seedAcademicStructure(teacher);
   await seedCategoriesAndSettings();
   const subjectTeacher = people.find((p) => p.role === "subject_teacher");
   if (subjectTeacher) {
@@ -871,7 +961,7 @@ async function main() {
   }
   await seedDemoData(people, structure);
   await seedEmployees(
-    people.find((p) => p.role === "admin_officer")?.id ?? people[0]!.id,
+    people.find((p) => p.role === "admin_officer")?.id ?? fallbackUser,
     structure.sectionIds,
   );
 }
