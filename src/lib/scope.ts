@@ -20,6 +20,8 @@ import type { SessionUser } from "./auth";
  *   user input)
  * - subject_teacher → students with an active enrollment in a section holding
  *   one of the user's `section_subject_teachers` teaching loads
+ * - Adviser + Subject Teacher → the UNION of both sets (one teacher may be
+ *   both without a second account)
  * - unknown roles → nothing
  *
  * Used by every read *and* write path so that authorization cannot be
@@ -44,6 +46,31 @@ export async function subjectTeacherSectionIds(userId: string): Promise<string[]
   return Array.from(new Set(rows.map((r) => r.id)));
 }
 
+/** True when the account holds the Adviser role. */
+export function isAdviser(user: SessionUser): boolean {
+  return user.roles.includes("teacher");
+}
+
+/** True when the account holds the Subject Teacher role. */
+export function isSubjectTeacher(user: SessionUser): boolean {
+  return user.roles.includes("subject_teacher");
+}
+
+/**
+ * Every section the account may reach through a teaching responsibility:
+ * the sections it advises PLUS the sections it holds a subject load in.
+ */
+export async function teachingSectionIds(user: SessionUser): Promise<string[]> {
+  const ids = new Set<string>();
+  if (isAdviser(user)) {
+    for (const id of await adviserSectionIds(user.id)) ids.add(id);
+  }
+  if (isSubjectTeacher(user)) {
+    for (const id of await subjectTeacherSectionIds(user.id)) ids.add(id);
+  }
+  return Array.from(ids);
+}
+
 /**
  * SQL `inArray` predicate over the enrollment join for the given sections.
  * Per the permission matrix the teacher/adviser scope covers students with an
@@ -65,6 +92,13 @@ function enrollmentInSection(studentIdColumn: SQL, sectionIds: string[]): SQL {
  * predicate for teachers with no sections / unknown roles.
  */
 export function studentScope(user: SessionUser, sectionIds?: string[]): SQL | undefined {
+  // A teaching responsibility ALWAYS narrows the scope to the account's own
+  // sections, whatever its primary role is.
+  if (isAdviser(user) || isSubjectTeacher(user)) {
+    const ids = sectionIds ?? [];
+    if (ids.length === 0) return sql`1 = 0`;
+    return enrollmentInSection(sql`students.id`, ids);
+  }
   switch (user.role) {
     case "admin":
     case "school_admin":
@@ -74,12 +108,6 @@ export function studentScope(user: SessionUser, sectionIds?: string[]): SQL | un
     case "registrar":
     case "literacy_coordinator":
       return undefined; // school-wide
-    case "teacher":
-    case "subject_teacher": {
-      const ids = sectionIds ?? [];
-      if (ids.length === 0) return sql`1 = 0`;
-      return enrollmentInSection(sql`students.id`, ids);
-    }
     default:
       return sql`1 = 0`;
   }
@@ -87,11 +115,8 @@ export function studentScope(user: SessionUser, sectionIds?: string[]): SQL | un
 
 /** Convenience: resolve the user's section ids then build the scope. */
 export async function userSectionScope(user: SessionUser): Promise<SQL | undefined> {
-  if (user.role === "teacher") {
-    return studentScope(user, await adviserSectionIds(user.id));
-  }
-  if (user.role === "subject_teacher") {
-    return studentScope(user, await subjectTeacherSectionIds(user.id));
+  if (isAdviser(user) || isSubjectTeacher(user)) {
+    return studentScope(user, await teachingSectionIds(user));
   }
   return studentScope(user);
 }
@@ -142,22 +167,15 @@ export function confidentialBehaviorFilter(
   return eq(column, false);
 }
 
-/** Resolve which sections gate this scoped teaching role's row access. */
-async function scopedTeachingSectionIds(user: SessionUser): Promise<string[]> {
-  return user.role === "subject_teacher"
-    ? subjectTeacherSectionIds(user.id)
-    : adviserSectionIds(user.id);
-}
-
 /** Can this user read this student's record? Used before detail views/writes. */
 export async function canAccessStudent(
   user: SessionUser,
   ref: StudentScopeRef,
 ): Promise<boolean> {
-  if (user.role !== "teacher" && user.role !== "subject_teacher") {
+  if (!isAdviser(user) && !isSubjectTeacher(user)) {
     return studentScope(user) === undefined;
   }
-  const ids = await scopedTeachingSectionIds(user);
+  const ids = await teachingSectionIds(user);
   if (ids.length === 0) return false;
   const rows = await db
     .select({ id: studentEnrollments.id })

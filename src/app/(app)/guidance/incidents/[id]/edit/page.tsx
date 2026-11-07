@@ -6,6 +6,8 @@ import { canViewConfidentialBehavior } from "@/lib/scope";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { IncidentForm } from "@/components/guidance/incident-form";
+import { AiAnalysisPanel } from "@/components/ai/ai-analysis-panel";
+import { draftGuidanceFollowUp, summarizeGuidanceCase } from "@/actions/ai";
 
 export const metadata = { title: "Edit Incident · Records Management System" };
 
@@ -63,6 +65,26 @@ export default async function EditIncidentPage({
           />
         </div>
       </Card>
+
+      {/* Guidance Office AI assistance — drafts only; the incident record is
+          edited solely through the form above. Case summary and draft note
+          are generated server-side from incidents the role may read. */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <AiAnalysisPanel
+          feature="guidanceNote"
+          action={draftGuidanceFollowUp}
+          hidden={{ incidentId: incident.id }}
+          triggerLabel="Draft follow-up note"
+          pendingLabel="Drafting follow-up..."
+        />
+        <AiAnalysisPanel
+          feature="guidanceCase"
+          action={summarizeGuidanceCase}
+          hidden={{ studentId: incident.studentId }}
+          triggerLabel="Summarize case history"
+          pendingLabel="Summarizing case..."
+        />
+      </div>
     </div>
   );
 }

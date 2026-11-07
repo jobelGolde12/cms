@@ -7,11 +7,28 @@ import { users } from "@/db/schema";
 import { countOtherActiveAdmins, getAuthorizedUser, hashPassword } from "@/lib/auth";
 import { logAudit, notify } from "@/lib/audit";
 import { userFormSchema } from "@/lib/schemas";
+import { isAdditionalRoleId, syncAdditionalRoles } from "@/lib/user-roles";
 import { ROLE_IDS } from "./helpers";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
 const scrub = (value: string | null | undefined): string | null =>
   value && value.trim() ? value.trim() : null;
+
+/**
+ * Additional teaching roles submitted with the account form. Only the
+ * canonical extra roles (Adviser / Subject Teacher) are accepted, so a
+ * crafted request can never attach an administrative role through this path.
+ */
+function additionalRolesFrom(formData: FormData): string[] {
+  return Array.from(
+    new Set(
+      formData
+        .getAll("additionalRoleId")
+        .map(String)
+        .filter(isAdditionalRoleId),
+    ),
+  );
+}
 
 /** Create a new system user (users.create permission). */
 export async function createUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -50,6 +67,11 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
     isActive: data.isActive ?? true,
   });
 
+  // Dual responsibilities: an Adviser account may also hold the Subject
+  // Teacher role (and vice versa) without a second employee record.
+  const additionalRoles = additionalRolesFrom(formData);
+  await syncAdditionalRoles(newId, data.roleId, additionalRoles);
+
   await notify({
     userId: newId,
     type: "system",
@@ -64,7 +86,7 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
     action: "CREATE_USER",
     entityType: "user",
     entityId: newId,
-    newValues: { email: data.email, roleId: data.roleId },
+    newValues: { email: data.email, roleId: data.roleId, additionalRoles },
     ipAddress: ip,
     userAgent,
   });
@@ -125,13 +147,23 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
       .where(eq(users.id, target.id));
   }
 
+  // Keep the account's role set in sync (primary + additional teaching roles).
+  const additionalRoles = additionalRolesFrom(formData);
+  const roleChanges = await syncAdditionalRoles(target.id, data.roleId, additionalRoles);
+
   await logAudit({
     userId: actor.id,
     action: "UPDATE_USER",
     entityType: "user",
     entityId: target.id,
     oldValues: { roleId: target.roleId, isActive: target.isActive },
-    newValues: { roleId: data.roleId, isActive: data.isActive ?? true, resetPassword: Boolean(data.password) },
+    newValues: {
+      roleId: data.roleId,
+      isActive: data.isActive ?? true,
+      resetPassword: Boolean(data.password),
+      additionalRoles,
+      roleChanges,
+    },
     ipAddress: ip,
     userAgent,
   });

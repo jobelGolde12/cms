@@ -30,21 +30,21 @@ const base: Form137Data = {
         {
           subjectCode: "FIL",
           subjectName: "Filipino",
-          quarters: [88, 90, null, null],
+          terms: [88, 90, null],
           finalGrade: 89,
           remark: "Passed",
         },
         {
           subjectCode: "SPE-01",
           subjectName: "Computer Systems Servicing",
-          quarters: [70, null, null, null],
+          terms: [70, null, null],
           finalGrade: 70,
           remark: "Failed",
         },
         {
           subjectCode: "EMPTY-1",
           subjectName: "Physical Education and Health 03",
-          quarters: [null, null, null, null],
+          terms: [null, null, null],
           finalGrade: null,
           remark: null,
         },
@@ -106,7 +106,7 @@ describe("renderForm137Pdf", () => {
               subjectCode: "LONG-1",
               subjectName:
                 "Introduction to the Philosophy of the Human Person/Pambungad sa Pilosopiya ng Tao",
-              quarters: [90, null, null, null],
+              terms: [90, null, null],
               finalGrade: 90,
               remark: "Passed",
             },

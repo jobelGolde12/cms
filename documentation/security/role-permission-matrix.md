@@ -120,7 +120,7 @@ Full access to student and academic work, but not health data, user management, 
 - Settings: limited to academic configuration
 
 SUBJECT TEACHER
-Granting a teaching load (a section_subject_teachers row: section + subject) is how a Subject Teacher's scope is defined. Requires admin action — academics.config; the admin UI is the Employee form (position "Subject Teacher" → Login account + Grade Encoding Scope), which links the personnel record to the login account (`employees.user_id`) and manages the (section, subject) loads of that account.
+Granting a teaching load (a section_subject_teachers row: section + subject) is how a Subject Teacher's scope is defined. Requires admin action — `academics.config` — from **Teacher Assignments** (`/assignments`), where an administrator picks a section, a subject and an active teacher account. The same loads can also be managed from the Employee form (position "Subject Teacher" or "Adviser + Subject Teacher" with a linked login account). Assigning a load grants the Subject Teacher role automatically, so the permission gate and the assignment never disagree.
 - View students with an active enrollment in sections holding their teaching loads
 - Encode and edit grades ONLY for their (section, subject) pairs — enforced by getGradeWriter + canWriteGradesInSection on every action call, with a unique per-(enrollment, subject, period) index preventing duplicates
 - Grade draft → submit → reopen workflow where the submission ledger locks sheets
@@ -132,7 +132,8 @@ TEACHER (ADVISER)
 Everything below applies to the adviser's own assigned sections only.
 - View students, enrollment, and full profiles
 - View guardians of assigned students
-- View grades (read-only — the Adviser never encodes grades; encoding is the Subject Teacher's role)
+- View grades (read-only — the Adviser role alone never encodes grades; encoding is the Subject Teacher's role)
+- **Adviser + Subject Teacher:** one account may hold both roles. The adviser assignment (`sections.adviser_id`) and the (section, subject) teaching load are independent, so the same teacher keeps the advisory scope below AND can encode grades for their assigned subjects. The effective permission set is the union of both roles (`hasUserPermission`); no duplicate account is needed.
 - Record and view attendance
 - Record behavior notes and view behavior records
 - Record and view assessments

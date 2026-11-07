@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { getAuthorizedUser, type SessionUser } from "./auth";
 import { collectGradeIssues, MAX_GRADE, MIN_GRADE, type GradeValidationIssue } from "./grade-validation";
+import { hasUserPermission } from "./permissions";
 
 export { collectGradeIssues, MAX_GRADE, MIN_GRADE };
 export type { GradeValidationIssue };
@@ -22,11 +23,18 @@ export type { GradeValidationIssue };
 /**
  * Grade-encoding domain layer.
  *
- * Rule enforced here (and re-checked in every action): **only the SUBJECT
- * TEACHER role may input and modify student grades**, and only for the
- * (section, subject) pairs listed in `section_subject_teachers` (row-level).
- * Advisers keep read-only grade access. Direct calls to the actions cannot
- * bypass UI hiding of buttons.
+ * Rule enforced here (and re-checked in every action): **grade writing is
+ * AUTHORISATION-based, not role-based**. The caller must
+ *
+ *   1. hold the `grades.write` permission (contributed by the Subject Teacher
+ *      role — an account may hold that role IN ADDITION to the Adviser role),
+ *   2. be the ASSIGNED subject teacher for the exact (section, subject) pair
+ *      in `section_subject_teachers`, and
+ *   3. be working on a valid grading period of the section's school year.
+ *
+ * An Adviser who is not an assigned subject teacher never encodes grades; an
+ * Adviser who IS assigned a subject encodes exactly that subject — never the
+ * whole section. Direct calls to the actions cannot bypass UI hiding.
  *
  * Lifecycle: Not Started → Draft → (Review) → Submitted.
  * Submitted sheets are locked; only the current assigned subject teacher can
@@ -35,33 +43,36 @@ export type { GradeValidationIssue };
 
 /* --------------------------------- guards --------------------------------- */
 
-export type GradeWriter = SessionUser & { role: "subject_teacher" };
+export type GradeWriter = SessionUser;
 
 /**
- * Server-side grade-write guard: must hold `grades.write` AND be a subject
- * teacher (row-level assignment is re-checked separately in
- * `canWriteGradesInSection`). Returns null when the caller is not authorized
- * — actions turn this into a user-facing error instead of a redirect.
+ * Server-side grade-write guard: the account must hold `grades.write`.
+ *
+ * The permission comes from the Subject Teacher role — which an account may
+ * hold together with the Adviser role. The row-level assignment check
+ * (`canWriteGradesInSection`) is applied separately by every action.
+ * Returns null when the caller is not authorized — actions turn this into a
+ * user-facing error instead of a redirect.
  */
 export async function getGradeWriter(): Promise<GradeWriter | null> {
   const user = await getAuthorizedUser("grades.write");
   if (!user) return null;
-  if (user.role !== "subject_teacher") return null;
-  return user as GradeWriter;
+  return user;
 }
 
 /**
- * Can this user encode grades here? Only departmentally: the caller must be
- * an assigned subject teacher for this exact (section, subject) pair. This
- * replaces the previous advisory path — an Adviser can never encode grades.
- * Row-level either way.
+ * Can this user encode grades here? ASSIGNMENT-BASED: the caller must be the
+ * assigned subject teacher for this exact (section, subject) pair.
+ *
+ * Being the section's adviser is NOT sufficient and being a subject teacher
+ * somewhere else is NOT sufficient — only the matching assignment row counts.
  */
 export async function canWriteGradesInSection(
   user: SessionUser,
   sectionId: string,
   subjectId?: string,
 ): Promise<boolean> {
-  if (user.role !== "subject_teacher") return false;
+  if (!hasUserPermission(user.roles, "grades.write")) return false;
   const assignments = await teacherSubjectAssignments(user.id);
   if (subjectId) return assignments.some((a) => a.sectionId === sectionId && a.subjectId === subjectId);
   return assignments.some((a) => a.sectionId === sectionId);
@@ -78,15 +89,17 @@ export async function teacherSubjectAssignments(userId: string): Promise<
   return rows;
 }
 
-/** Pure grouping helper (unit-testable): assignments → section → subject ids. */
+/**
+ * Pure grouping helper (unit-testable): assignments → section → subject ids.
+ *
+ * Only the assignments count — a section the user merely advises grants NO
+ * subject, because grade encoding follows the teaching load and nothing else.
+ */
 export function groupAssignmentsBySection(
   assignments: { sectionId: string; subjectId: string }[],
-  advisorySectionIds: string[] = [],
 ): Record<string, string[]> {
-  const advisory = new Set(advisorySectionIds);
   const grouped: Record<string, string[]> = {};
   for (const a of assignments) {
-    if (advisory.has(a.sectionId)) continue; // advisory sections allow every subject
     const list = grouped[a.sectionId] ?? [];
     if (!list.includes(a.subjectId)) list.push(a.subjectId);
     grouped[a.sectionId] = list;
@@ -114,9 +127,12 @@ export type TeacherSection = {
 };
 
 /**
- * Every section the subject teacher can encode in: the active sections that
- * hold at least one of their `section_subject_teachers` teaching loads.
- * (Adviser-only sections appear only in the read-only grade views.)
+ * Every section the account can encode in: the active sections that hold at
+ * least one of their `section_subject_teachers` teaching loads.
+ *
+ * Works identically for a pure Subject Teacher and for an Adviser who ALSO
+ * holds the Subject Teacher role — the teaching loads are the only source of
+ * truth.
  */
 export async function teacherEncodingSections(user: SessionUser): Promise<TeacherSection[]> {
   const assignments = await teacherSubjectAssignments(user.id);
@@ -219,10 +235,11 @@ export async function resolveGradeSliceContext(
     gradingPeriodId?: string;
   },
 ): Promise<{ ok: true; context: GradeSheetContext } | { ok: false; error: string }> {
-  // 1) Section — default to the subject teacher's first assignment; everyone
-  // else gets the first section of the current year (read-only context).
+  // 1) Section — default to the account's first teaching load; everyone else
+  // gets the first section of the current year (read-only context).
   let primarySectionId = params.sectionId || "";
-  const teacherSections = user.role === "subject_teacher" ? await teacherEncodingSections(user) : [];
+  const canEncode = hasUserPermission(user.roles, "grades.write");
+  const teacherSections = canEncode ? await teacherEncodingSections(user) : [];
   if (!primarySectionId) {
     if (teacherSections[0]) {
       primarySectionId = teacherSections[0].id;

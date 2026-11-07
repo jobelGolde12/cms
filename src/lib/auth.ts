@@ -5,13 +5,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
-import { sessions, users } from "@/db/schema";
+import { sessions, userRoles, users } from "@/db/schema";
 import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
   type Role,
 } from "./constants";
-import { hasPermission, type Permission } from "./permissions";
+import { hasUserPermission, type Permission } from "./permissions";
 
 /* ------------------------------ passwords -------------------------------- */
 
@@ -35,7 +35,17 @@ export type SessionUser = {
   firstName: string;
   lastName: string;
   roleId: string;
+  /**
+   * PRIMARY role — drives the default workspace and the role badge. Always
+   * present in `roles` (an unknown primary role ⇒ no access at all).
+   */
   role: Role;
+  /**
+   * EVERY role the account holds (primary role first). One teacher can be both
+   * an Adviser and a Subject Teacher without a second account; the effective
+   * permission set is the union of the roles (see `hasUserPermission`).
+   */
+  roles: Role[];
 };
 
 /** Resolve the application role key from the DB role id (stable seed ids). */
@@ -65,6 +75,20 @@ export function roleNameFromId(roleId: string): Role | null {
       return null;
   }
 }
+
+/** DB role id → application role key (inverse of `roleNameFromId`). */
+export const ROLE_KEY_TO_ID: Record<Role, string> = {
+  admin: "role-admin",
+  school_admin: "role-school-admin",
+  subject_teacher: "role-subject-teacher",
+  teacher: "role-teacher",
+  records: "role-records",
+  guidance: "role-guidance",
+  nurse: "role-nurse",
+  registrar: "role-registrar",
+  literacy_coordinator: "role-literacy-coordinator",
+  admin_officer: "role-admin-officer",
+};
 
 /**
  * Returns the authenticated user for the current request (deduped per render),
@@ -97,6 +121,17 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const role = roleNameFromId(row.roleId);
   if (!role) return null; // unknown role ⇒ no access
 
+  // Additional roles (Adviser + Subject Teacher, …).
+  const extra = await db
+    .select({ roleId: userRoles.roleId })
+    .from(userRoles)
+    .where(eq(userRoles.userId, row.id));
+  const roles: Role[] = [role];
+  for (const r of extra) {
+    const key = roleNameFromId(r.roleId);
+    if (key && !roles.includes(key)) roles.push(key);
+  }
+
   return {
     id: row.id,
     email: row.email,
@@ -104,6 +139,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
     lastName: row.lastName,
     roleId: row.roleId,
     role,
+    roles,
   };
 });
 
@@ -114,19 +150,25 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
-/** Page guard: redirect to /dashboard with a message when lacking permission. */
+/**
+ * Page guard: redirect to /dashboard with a message when lacking permission.
+ * The check runs over EVERY role the account holds.
+ */
 export async function requirePermission(permission: Permission): Promise<SessionUser> {
   const user = await requireUser();
-  if (!hasPermission(user.role, permission)) {
+  if (!hasUserPermission(user.roles, permission)) {
     redirect("/dashboard?denied=" + encodeURIComponent(permission));
   }
   return user;
 }
 
-/** Action guard: return null instead of redirecting (actions return errors). */
+/**
+ * Action guard: return null instead of redirecting (actions return errors).
+ * The check runs over EVERY role the account holds.
+ */
 export async function getAuthorizedUser(permission: Permission): Promise<SessionUser | null> {
   const user = await getCurrentUser();
-  if (!user || !hasPermission(user.role, permission)) return null;
+  if (!user || !hasUserPermission(user.roles, permission)) return null;
   return user;
 }
 
@@ -168,11 +210,29 @@ export async function destroySession(): Promise<void> {
   store.delete(SESSION_COOKIE_NAME);
 }
 
-/** Guard against demoting/deactivating the last active administrator. */
+/**
+ * Guard against demoting/deactivating the last active administrator.
+ *
+ * Counts every ACTIVE account that holds the administrator role — either as
+ * its primary role (`users.role_id`) or as an additional role (`user_roles`).
+ */
 export async function countOtherActiveAdmins(excludeUserId: string): Promise<number> {
   const rows = await db
-    .select({ id: users.id })
+    .select({ id: users.id, roleId: users.roleId })
     .from(users)
-    .where(and(eq(users.roleId, "role-admin"), eq(users.isActive, true)));
-  return rows.filter((r) => r.id !== excludeUserId).length;
+    .where(and(eq(users.isActive, true)));
+  const primaryAdmins = rows.filter((r) => r.id !== excludeUserId && roleNameFromId(r.roleId) === "admin");
+
+  const extraAdmins = await db
+    .select({ userId: userRoles.userId })
+    .from(userRoles)
+    .where(eq(userRoles.roleId, "role-admin"));
+  const extraIds = new Set(extraAdmins.map((r) => r.userId));
+
+  let count = primaryAdmins.length;
+  for (const r of rows) {
+    if (r.id === excludeUserId) continue;
+    if (extraIds.has(r.id) && roleNameFromId(r.roleId) !== "admin") count += 1;
+  }
+  return count;
 }

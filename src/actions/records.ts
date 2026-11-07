@@ -358,12 +358,32 @@ export async function saveAssessment(_prev: ActionState, formData: FormData): Pr
   if (!parsed.success) return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
   const { studentId, domain, assessmentType, skillArea, date, level, score, notes } = parsed.data;
 
-  const guard = await studentInScope(studentId, "assessments.write");
+  const recordId = String(formData.get("id") ?? "").trim();
+
+  // EDIT: the record that is being updated decides the student it belongs to.
+  // The submitted studentId is never trusted for an update — otherwise a
+  // caller in scope of student A could rewrite an assessment of student B by
+  // passing B's assessment id together with A's student id.
+  let targetStudentId = studentId;
+  if (recordId) {
+    const existing = await db
+      .select({ id: assessments.id, studentId: assessments.studentId })
+      .from(assessments)
+      .where(eq(assessments.id, recordId))
+      .limit(1);
+    if (!existing[0]) {
+      return fail("That assessment no longer exists. Refresh the page and try again.");
+    }
+    if (existing[0].studentId !== studentId) {
+      return fail("That assessment belongs to a different student. Refresh the page and try again.");
+    }
+    targetStudentId = existing[0].studentId;
+  }
+
+  const guard = await studentInScope(targetStudentId, "assessments.write");
   if (!guard.ok) return fail(guard.error);
   const user = (await getAuthorizedUser("assessments.write"))!;
   const { ip, userAgent } = await sessionMetadata();
-
-  const recordId = String(formData.get("id") ?? "");
 
   try {
     if (recordId) {
@@ -403,14 +423,15 @@ export async function saveAssessment(_prev: ActionState, formData: FormData): Pr
     userId: user.id,
     action: "SAVE_ASSESSMENT",
     entityType: "assessment",
-    entityId: recordId || studentId,
-    newValues: { studentId, domain, date },
+    entityId: recordId || targetStudentId,
+    newValues: { studentId: targetStudentId, domain, date },
     ipAddress: ip,
     userAgent,
   });
 
-  revalidatePath(`/students/${studentId}`);
-  revalidatePath("/development/assessments");
+  revalidatePath(`/students/${targetStudentId}`);
+  revalidatePath("/students");
+  revalidatePath("/development");
   revalidatePath("/performance");
   return ok("Assessment saved.");
 }

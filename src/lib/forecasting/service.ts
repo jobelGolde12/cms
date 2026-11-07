@@ -5,13 +5,13 @@ import {
   schoolWideSeries,
   gradeLevelSeries,
   subjectSeries,
-  minQuartersFor,
+  minPeriodsFor,
   type ScopeLevel,
   type TimeSeriesPoint,
 } from "./time-series";
 import { generateForecast, type ForecastResult } from "./arima";
 import { readCachedForecast, saveForecast, type PersistedForecast } from "./storage";
-import { completedQuarters } from "./time-series";
+import { completedPeriods } from "./time-series";
 
 /* -------------------------------------------------------------------------- */
 /*  Authorization (plan §27 — reuses existing permission strings so DB seeds   */
@@ -94,18 +94,18 @@ export async function getForecastWithCache(
   userId: string | null,
 ): Promise<ServiceResponse> {
   const series = await loadSeries(params);
-  const minQuarters = minQuartersFor(params.type);
-  const usable = completedQuarters(series);
-  const sufficiencyPct = Math.min(100, Math.round((usable / minQuarters) * 100));
+  const minPeriods = minPeriodsFor(params.type);
+  const usable = completedPeriods(series);
+  const sufficiencyPct = Math.min(100, Math.round((usable / minPeriods) * 100));
 
   // If data is insufficient regardless of cache, report that state directly
   // so the UI shows an accurate explanation (plan §8.2).
-  if (series.length < minQuarters) {
+  if (series.length < minPeriods) {
     return {
       type: params.type,
       scopeLevel: params.scopeLevel,
       status: "insufficient_data",
-      message: `A minimum of ${minQuarters} completed grading periods is required for a reliable forecast.`,
+      message: `A minimum of ${minPeriods} completed grading periods is required for a reliable forecast.`,
       dataPoints: usable,
       sufficiencyPct,
       horizon: [],

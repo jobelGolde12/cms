@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, Clock, GraduationCap, QrCode, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
 import {
   getStudentProfile,
@@ -19,7 +19,7 @@ import {
   getQrEvents,
   getCurrentQrToken,
 } from "@/lib/queries";
-import { formatDate, formatDateTime, fullName, ageFromBirthDate } from "@/lib/utils";
+import { formatDate, formatDateTime, fullName, ageFromBirthDate, cn } from "@/lib/utils";
 import { Badge, RecordStatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -27,11 +27,9 @@ import { CopyButton } from "@/components/copy-button";
 import {
   ENROLLMENT_STATUS_LABELS,
   ATTENDANCE_STATUS_LABELS,
-  ASSESSMENT_DOMAIN_LABELS,
   INTERVENTION_STATUS_LABELS,
   type EnrollmentStatus,
   type AttendanceStatus,
-  type AssessmentDomain,
   type InterventionStatus,
 } from "@/lib/constants";
 import { ValidationReviewForm } from "@/components/validation/review-form";
@@ -39,6 +37,11 @@ import { ArchiveStudentButton } from "@/components/archive-student-button";
 import { QrActions } from "@/components/qr/qr-actions";
 import { HealthRecordForm } from "@/components/health/health-record-form";
 import { ClinicalRecordForm } from "@/components/health/clinical-record-form";
+import { AiAnalysisPanel } from "@/components/ai/ai-analysis-panel";
+import { AssessmentsPanel } from "@/components/students/assessments-panel";
+import { getAssessmentLevels } from "@/lib/assessment-levels";
+import { analyzeStudentPerformance, summarizeStudent, suggestInterventions } from "@/actions/ai";
+import { canViewStudentDevelopment } from "@/lib/scope";
 import {
   NUTRITIONAL_STATUS_LABELS,
   QR_ELIGIBLE_RECORD_STATUSES,
@@ -82,23 +85,26 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
   // Domain gates — every section of this profile visible to a role is
   // explicitly allowed; sensitive data is never rendered "by default".
-  const canReview = hasPermission(user.role, "verification.review");
+  // The checks run over the UNION of the account's roles, so a teacher who is
+  // both Adviser and Subject Teacher gets every capability of either role.
+  const canReview = hasUserPermission(user.roles, "verification.review");
   const canArchive =
-    hasPermission(user.role, "students.archive") && student.status === "active";
-  const canEditBasic = hasPermission(user.role, "students.update");
-  const canGrades = hasPermission(user.role, "grades.view");
-  const canAssessments = hasPermission(user.role, "assessments.view");
-  const canBehavior = hasPermission(user.role, "behavior.view");
-  const canInterventions = hasPermission(user.role, "interventions.view");
-  const canAttendance = hasPermission(user.role, "attendance.view");
-  const canQr = hasPermission(user.role, "qr.verify");
-  const canHealth = hasPermission(user.role, "health.view");
-  const canWriteHealth = hasPermission(user.role, "health.write");
-  const canPrint = hasPermission(user.role, "documents.print");
-  const canEncodeGrades = hasPermission(user.role, "grades.write");
+    hasUserPermission(user.roles, "students.archive") && student.status === "active";
+  const canEditBasic = hasUserPermission(user.roles, "students.update");
+  const canGrades = hasUserPermission(user.roles, "grades.view");
+  const canAssessments = hasUserPermission(user.roles, "assessments.view");
+  const canWriteAssessments = hasUserPermission(user.roles, "assessments.write");
+  const canBehavior = hasUserPermission(user.roles, "behavior.view");
+  const canInterventions = hasUserPermission(user.roles, "interventions.view");
+  const canAttendance = hasUserPermission(user.roles, "attendance.view");
+  const canQr = hasUserPermission(user.roles, "qr.verify");
+  const canHealth = hasUserPermission(user.roles, "health.view");
+  const canWriteHealth = hasUserPermission(user.roles, "health.write");
+  const canPrint = hasUserPermission(user.roles, "documents.print");
+  const canEncodeGrades = hasUserPermission(user.roles, "grades.write");
   const isPending = student.recordStatus === "pending_validation";
 
-  const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents, qrToken, health, clinical] =
+  const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents, qrToken, health, clinical, assessmentLevels] =
     await Promise.all([
       getGuardiansForStudent(id),
       getEnrollmentHistory(id),
@@ -113,6 +119,8 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
       getCurrentQrToken(id),
       getHealthForStudent(id),
       getClinicalForStudent(id),
+      // Configurable proficiency levels (system_settings.assessment_levels).
+      getAssessmentLevels(),
     ]);
 
   return (
@@ -176,6 +184,42 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             </Link>
           ) : null}
         </div>
+      </div>
+
+      {/* AI decision support — server-authorized, clearly labelled as
+          interpretation, never persisted. Panel triggers map 1:1 to the
+          permission gates the rest of this page already uses. */}
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-4",
+          canGrades || (canInterventions && canViewStudentDevelopment(user)) ? "xl:grid-cols-2" : "",
+        )}
+      >
+        <AiAnalysisPanel
+          feature="studentSummary"
+          action={summarizeStudent}
+          hidden={{ studentId: student.id }}
+          triggerLabel="Summarize this student"
+          pendingLabel="Summarizing student..."
+        />
+        {canGrades ? (
+          <AiAnalysisPanel
+            feature="performance"
+            action={analyzeStudentPerformance}
+            hidden={{ studentId: student.id }}
+            triggerLabel="Analyze performance"
+            pendingLabel="Analyzing grades..."
+          />
+        ) : null}
+        {canInterventions && canViewStudentDevelopment(user) ? (
+          <AiAnalysisPanel
+            feature="suggestions"
+            action={suggestInterventions}
+            hidden={{ studentId: student.id }}
+            triggerLabel="Suggest possible interventions"
+            pendingLabel="Considering records..."
+          />
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
@@ -313,28 +357,12 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
           {canAssessments ? (
           <Section title="Assessments">
-            {assessments.length === 0 ? (
-              <EmptyHint>No assessment records.</EmptyHint>
-            ) : (
-              <ul className="divide-y divide-brand-100">
-                {assessments.map((a) => (
-                  <li key={a.id} className="py-2.5 text-sm first:pt-0 last:pb-0">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium text-brand-900">
-                        {ASSESSMENT_DOMAIN_LABELS[a.domain as AssessmentDomain] ?? a.domain}
-                        {a.assessmentType ? <span className="text-[#64748B]"> · {a.assessmentType}</span> : null}
-                      </span>
-                      <span className="shrink-0 text-xs text-[#64748B]">
-                        {a.level ?? "—"}
-                        {a.score != null ? <span className="numeric"> · {a.score}</span> : null}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 text-xs text-brand-400">{formatDate(a.date)}</div>
-                    {a.notes ? <div className="mt-0.5 text-xs text-[#64748B]">{a.notes}</div> : null}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AssessmentsPanel
+              studentId={student.id}
+              levels={assessmentLevels}
+              assessments={assessments}
+              canWrite={canWriteAssessments}
+            />
           </Section>
           ) : null}
 

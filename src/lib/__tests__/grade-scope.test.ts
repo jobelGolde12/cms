@@ -16,8 +16,12 @@ describe("groupAssignmentsBySection", () => {
     });
   });
 
-  it("drops advisory sections (they may encode every subject already)", () => {
-    expect(groupAssignmentsBySection(assignments, ["sec-1"])).toEqual({
+  it("keeps advisory sections — an adviser assignment is still an assignment", () => {
+    // Grade encoding follows the teaching load only. A section the user merely
+    // advises contributes no subject, and an advisory section is NOT dropped
+    // from the map: the assignment list is the single source of truth.
+    expect(groupAssignmentsBySection(assignments)).toEqual({
+      "sec-1": ["math", "science"],
       "sec-2": ["math"],
     });
   });

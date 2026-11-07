@@ -15,6 +15,7 @@ const admin: SessionUser = {
   lastName: "Dmin",
   roleId: "role-admin",
   role: "admin",
+  roles: ["admin"],
 };
 
 const schoolAdmin: SessionUser = {
@@ -22,6 +23,7 @@ const schoolAdmin: SessionUser = {
   id: "u-school-admin",
   roleId: "role-school-admin",
   role: "school_admin",
+  roles: ["school_admin"],
 };
 
 const recordsUser: SessionUser = {
@@ -29,6 +31,7 @@ const recordsUser: SessionUser = {
   id: "u-records",
   roleId: "role-records",
   role: "records",
+  roles: ["records"],
 };
 
 const guidanceUser: SessionUser = {
@@ -36,6 +39,7 @@ const guidanceUser: SessionUser = {
   id: "u-guidance",
   roleId: "role-guidance",
   role: "guidance",
+  roles: ["guidance"],
 };
 
 const teacher: SessionUser = {
@@ -43,6 +47,7 @@ const teacher: SessionUser = {
   id: "u-teacher",
   roleId: "role-teacher",
   role: "teacher",
+  roles: ["teacher"],
 };
 
 const ref: StudentScopeRef = { studentId: "s1" };

@@ -9,6 +9,7 @@ import { Modal } from "@/components/employees/modal";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { useFormResetGuard } from "@/components/ui/form-reset-guard";
+import { ADDITIONAL_ROLE_OPTIONS } from "@/lib/constants";
 
 export type RoleOption = { id: string; name: string; description?: string | null };
 
@@ -21,6 +22,8 @@ export type UserRowData = {
   phone: string | null;
   roleId: string;
   roleLabel: string;
+  /** Additional teaching roles (Adviser / Subject Teacher) the account holds. */
+  additionalRoleIds: string[];
   isActive: boolean;
 };
 
@@ -292,6 +295,30 @@ function UserForm({
             ))}
           </Select>
         </Field>
+        <fieldset className="sm:col-span-2 rounded-md border border-brand-200 px-3 py-3">
+          <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+            Additional teaching roles
+          </legend>
+          <p className="mb-2 text-xs text-[#64748B]">
+            One teacher may be both an Adviser and a Subject Teacher. The extra role is granted to
+            this same account — never a second employee record — and the effective permissions are
+            the union of both roles.
+          </p>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            {ADDITIONAL_ROLE_OPTIONS.map((option) => (
+              <label key={option.id} className="flex items-center gap-2 text-sm text-brand-800">
+                <input
+                  type="checkbox"
+                  name="additionalRoleId"
+                  value={option.id}
+                  defaultChecked={user?.additionalRoleIds.includes(option.id) ?? false}
+                  className="h-4 w-4 rounded border-brand-300 text-action-700 focus:ring-action-600"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <Field label="Phone" htmlFor="user-phone" error={err("phone")} hint="Optional contact number.">
           <Input
             id="user-phone"

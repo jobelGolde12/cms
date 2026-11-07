@@ -39,7 +39,7 @@ export default async function ForecastPanel() {
         />
         <CardBody>
           <p className="py-6 text-center text-sm text-brand-400">
-            Insufficient data for forecasting. A minimum of 4 completed grading
+            Insufficient data for forecasting. A minimum of 3 completed grading
             periods are required ({result.dataPoints} available so far).
           </p>
         </CardBody>
@@ -113,7 +113,7 @@ export default async function ForecastPanel() {
             grades.
           </p>
           <p className="mt-1">
-            Requires at least 4 completed grading periods of verified data.
+            Requires at least 3 completed grading periods of verified data.
             Prediction intervals indicate uncertainty around the projection.
           </p>
         </div>

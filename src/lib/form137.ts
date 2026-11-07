@@ -31,7 +31,7 @@ import { ageFromBirthDate, fullName } from "@/lib/utils";
  * grade level (DepEd Order No. 58, s. 2017 structure). Data comes from:
  * - students                        → name components / LRN / sex / birth date
  * - student_enrollments (+SY/grade/section) → one scholastic block per school year
- * - student_grades (+grading_periods)   → quarter ratings per learning area
+ * - student_grades (+grading_periods)   → term ratings per learning area
  * - final rating & remarks          → the application's existing COMPUTED
  *   logic (`computeFinalGrade` + `mapGradeToDescriptor` from report-card.ts —
  *   the same calculation shown everywhere else in the system)
@@ -51,18 +51,13 @@ import { ageFromBirthDate, fullName } from "@/lib/utils";
 /*  Data contract                                                             */
 /* -------------------------------------------------------------------------- */
 
-export const SF9_QUARTERS = [
-  "1st Quarter",
-  "2nd Quarter",
-  "3rd Quarter",
-  "4th Quarter",
-] as const;
+export const SF9_TERMS = ["Term 1", "Term 2", "Term 3"] as const;
 
 export type Form137Subject = {
   subjectCode: string;
   subjectName: string;
-  /** Grades keyed by quarter index (0 = 1st Quarter). */
-  quarters: Array<number | null>;
+  /** Grades keyed by term index (0 = Term 1). */
+  terms: Array<number | null>;
   finalGrade: number | null;
   remark: string | null;
 };
@@ -188,7 +183,7 @@ export async function getForm137Data(
     sectionId: string; // for adviser lookup
     sectionName: string | null;
     promotionStatus: string | null;
-    perSubject: Map<string, { name: string; perQuarter: Map<number, number> }>;
+    perSubject: Map<string, { name: string; perTerm: Map<number, number> }>;
   };
   const blocks = new Map<string, BlockAcc>();
 
@@ -207,10 +202,10 @@ export async function getForm137Data(
     }
     let subj = block.perSubject.get(r.subjectCode);
     if (!subj) {
-      subj = { name: r.subjectName, perQuarter: new Map() };
+      subj = { name: r.subjectName, perTerm: new Map() };
       block.perSubject.set(r.subjectCode, subj);
     }
-    subj.perQuarter.set(r.periodOrder, r.grade);
+    subj.perTerm.set(r.periodOrder, r.grade);
   }
 
   const blockList = [...blocks.entries()].sort(([, a], [, b]) =>
@@ -227,19 +222,18 @@ export async function getForm137Data(
 
   const out = blockList.map(([enrollmentId, block]) => {
     const subjects: Form137Subject[] = [...block.perSubject.entries()].map(
-      ([code, { name, perQuarter }]) => {
-        const quarters: Array<number | null> = [
-          perQuarter.get(1) ?? null,
-          perQuarter.get(2) ?? null,
-          perQuarter.get(3) ?? null,
-          perQuarter.get(4) ?? null,
+      ([code, { name, perTerm }]) => {
+        const terms: Array<number | null> = [
+          perTerm.get(1) ?? null,
+          perTerm.get(2) ?? null,
+          perTerm.get(3) ?? null,
         ];
-        const finalGrade = computeFinalGrade(quarters);
+        const finalGrade = computeFinalGrade(terms);
         const descriptor = mapGradeToDescriptor(finalGrade);
         return {
           subjectCode: code,
           subjectName: name,
-          quarters,
+          terms,
           finalGrade,
           remark: descriptor ? descriptor.remark : null,
         };

@@ -4,6 +4,8 @@ import { AlertTriangle, GitCompare, ScanSearch, Search } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { listDuplicates, verificationStats } from "@/lib/queries";
 import { reviewDuplicate } from "@/actions/duplicates";
+import { explainDuplicateEvidence } from "@/actions/ai";
+import { AiAnalysisPanel } from "@/components/ai/ai-analysis-panel";
 import { hasPermission } from "@/lib/permissions";
 import {
   DUPLICATE_STATUS_LABELS,
@@ -251,6 +253,17 @@ export default async function DuplicatesPage({
                     <RecordComparison item={selected} />
                   </div>
                 </div>
+
+                {/* AI evidence explanation — narration of the deterministic
+                    detector's agreement indicators ONLY. It never marks,
+                    merges, or deletes; the decision below stays human. */}
+                <AiAnalysisPanel
+                  feature="duplicateEvidence"
+                  action={explainDuplicateEvidence}
+                  hidden={{ candidateId: selected.id }}
+                  triggerLabel="Explain evidence with AI"
+                  pendingLabel="Reviewing indicators..."
+                />
 
                 {selected.reviewNotes ? (
                   <p className="rounded-md border border-brand-100 bg-brand-50/60 px-3 py-2 text-xs text-brand-600">

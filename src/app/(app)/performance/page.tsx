@@ -237,18 +237,18 @@ export default async function PerformancePage({
         <Card>
           <CardHeader
             title="Average by Grading Period"
-            description="Mean grade recorded per quarter."
+            description="Mean grade recorded per term."
             icon={<ClipboardList aria-hidden="true" className="h-4 w-4" />}
           />
           <CardBody>
             {data.periodAverages.length === 0 ? (
               <EmptyState
                 icon={<ClipboardList className="h-10 w-10" />}
-                title={hasFilters ? "No quarter data matches your filters" : "No quarter data yet"}
+                title={hasFilters ? "No term data matches your filters" : "No term data yet"}
                 description={
                   hasFilters
                     ? "Try adjusting your grading-period or grade-level filters."
-                    : "Quarterly averages appear as soon as grades are recorded."
+                    : "Term averages appear as soon as grades are recorded."
                 }
               />
             ) : (

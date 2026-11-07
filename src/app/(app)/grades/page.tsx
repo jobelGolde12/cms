@@ -4,7 +4,7 @@ import { GraduationCap, Info, ListChecks } from "lucide-react";
 import { db } from "@/db";
 import { gradeLevels, gradingPeriods, schoolYears, sections } from "@/db/schema";
 import { getCurrentUser, type SessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import {
   getGradeSheet,
   groupAssignmentsBySection,
@@ -29,10 +29,11 @@ export const metadata = { title: "Grade Encoding · Records Management System" }
  * grades and submission state are always a fresh DB read):
  *   School Year → Grade Level → Section → Subject → Grading Period → Students
  *
- * Authorization: the page is readable with `grades.view` (read-only for every
- * other role — including the Adviser); encoding/submitting is done only by
- * Subject Teachers with an assignment in that (section, subject), re-enforced
- * inside the actions (never here alone).
+ * Authorization (server-side, not cosmetic):
+ *   - the MODULE is gated by `grades.encode` — the Registrar deliberately does
+ *     NOT hold it, so a manually typed /grades URL is redirected away;
+ *   - encoding/submitting is gated by `grades.write` + the row-level teaching
+ *     load: only the teacher ASSIGNED to that (section, subject) may write.
  */
 export default async function GradesPage({
   searchParams,
@@ -41,7 +42,9 @@ export default async function GradesPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "grades.view")) redirect("/dashboard?denied=grades.view");
+  if (!hasUserPermission(user.roles, "grades.encode")) {
+    redirect("/dashboard?denied=" + encodeURIComponent("grades.encode"));
+  }
 
   const sp = await searchParams;
   const param = (key: string): string | undefined => {
@@ -55,8 +58,10 @@ export default async function GradesPage({
   const periodParam = param("period");
 
   /* ----------------------- candidate sections & refs ---------------------- */
-  const isSubjectTeacher = user.role === "subject_teacher";
-  if (isSubjectTeacher) {
+  // Encoder = the account may write grades (Subject Teacher role), restricted
+  // to the sections it actually holds a teaching load in.
+  const isEncoder = hasUserPermission(user.roles, "grades.write");
+  if (isEncoder) {
     // Departmental teaching loads only: the subject dropdown is restricted to
     // the teacher's (section, subject) assignments — wrong-subject encoding is
     // impossible from the UI and re-checked in every action.
@@ -79,8 +84,8 @@ export default async function GradesPage({
     });
   }
 
-  // Adviser and every other role: read-only grade view over every active
-  // section (any year). Advisers may no longer encode grades (2026-10 rev B).
+  // Every other role with module access: read-only grade view over every
+  // active section (any year).
   const allSections = await allSectionsAcrossYears();
   const [subjectRows, periodRows] = await Promise.all([listSubjects(), allPeriods()]);
   return render({

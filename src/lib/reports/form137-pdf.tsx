@@ -225,16 +225,8 @@ function BlankField({ label, flex }: { label: string; flex: number }) {
   );
 }
 
-/* Scholastic-record column widths (portrait): areas / Q1..Q4 / final / remarks */
-const GRADE_COL_WIDTHS = [
-  "28%",
-  "8.5%",
-  "8.5%",
-  "8.5%",
-  "8.5%",
-  "9.5%",
-  "28.5%",
-];
+/* Scholastic-record column widths (portrait): areas / T1..T3 / final / remarks */
+const GRADE_COL_WIDTHS = ["30%", "10%", "10%", "10%", "10%", "30%"];
 
 /** One school-year block of the permanent record. */
 function ScholasticRecordBlock({
@@ -266,10 +258,9 @@ function ScholasticRecordBlock({
       <View style={styles.tableRow}>
         {[
           "Learning Areas",
-          "1st Quarter",
-          "2nd Quarter",
-          "3rd Quarter",
-          "4th Quarter",
+          "Term 1",
+          "Term 2",
+          "Term 3",
           "Final Rating",
           "Remarks",
         ].map((h, i) => (
@@ -278,10 +269,10 @@ function ScholasticRecordBlock({
             style={[
               styles.th,
               { width: GRADE_COL_WIDTHS[i] },
-              i >= 1 && i <= 4
+              i >= 1 && i <= 3
                 ? { borderRight: "none", borderLeft: BORDER }
                 : undefined,
-              i === 6 ? styles.lastCol : undefined,
+              i === 5 ? styles.lastCol : undefined,
             ]}
           >
             {h}
@@ -299,13 +290,13 @@ function ScholasticRecordBlock({
               <Text style={[styles.tdLeft, { width: GRADE_COL_WIDTHS[0] }]}>
                 {s.subjectName}
               </Text>
-              {s.quarters.map((g, i) => (
+              {s.terms.map((g, i) => (
                 <Text
                   key={i}
                   style={[
                     styles.td,
                     { width: GRADE_COL_WIDTHS[i + 1] },
-                    i < 3 ? { borderLeft: BORDER } : undefined,
+                    i < 2 ? { borderLeft: BORDER } : undefined,
                   ]}
                 >
                   {fmt(g)}
@@ -315,7 +306,7 @@ function ScholasticRecordBlock({
                 style={[
                   styles.td,
                   styles.lastCol,
-                  { width: GRADE_COL_WIDTHS[5], fontWeight: "bold" },
+                  { width: GRADE_COL_WIDTHS[4], fontWeight: "bold" },
                   { borderLeft: BORDER },
                 ]}
               >
@@ -325,7 +316,7 @@ function ScholasticRecordBlock({
                 style={[
                   styles.td,
                   styles.lastCol,
-                  { width: GRADE_COL_WIDTHS[6], borderLeft: BORDER },
+                  { width: GRADE_COL_WIDTHS[5], borderLeft: BORDER },
                 ]}
               >
                 {orBlank(s.remark)}
@@ -341,13 +332,13 @@ function ScholasticRecordBlock({
             >
               General Average
             </Text>
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2].map((i) => (
               <Text
                 key={i}
                 style={[
                   styles.td,
                   { width: GRADE_COL_WIDTHS[i + 1] },
-                  i < 3 ? { borderLeft: BORDER } : undefined,
+                  i < 2 ? { borderLeft: BORDER } : undefined,
                 ]}
               />
             ))}
@@ -356,7 +347,7 @@ function ScholasticRecordBlock({
                 styles.td,
                 styles.lastCol,
                 {
-                  width: GRADE_COL_WIDTHS[5],
+                  width: GRADE_COL_WIDTHS[4],
                   fontWeight: "bold",
                   borderLeft: BORDER,
                 },
@@ -368,7 +359,7 @@ function ScholasticRecordBlock({
               style={[
                 styles.td,
                 styles.lastCol,
-                { width: GRADE_COL_WIDTHS[6], borderLeft: BORDER },
+                { width: GRADE_COL_WIDTHS[5], borderLeft: BORDER },
               ]}
             />
           </View>

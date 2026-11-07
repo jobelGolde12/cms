@@ -28,6 +28,7 @@ import {
   subjects,
   users,
   roles,
+  userRoles,
 } from "@/db/schema";
 import {
   type RecordStatus,
@@ -35,8 +36,10 @@ import {
   type StudentStatus,
   type AssessmentDomain,
   ROLES,
+  roleLabelsFor,
 } from "./constants";
-import type { SessionUser } from "./auth";
+import { roleNameFromId, type SessionUser } from "./auth";
+import { ADDITIONAL_ROLE_IDS } from "./user-roles";
 import { userSectionScope } from "./scope";
 import { currentQrToken } from "./qr";
 import { ageFromBirthDate } from "./utils";
@@ -1668,7 +1671,7 @@ export async function performanceOverview(
 
 export async function listUsersWithRoles(page = 1, pageSize = 25) {
   const offset = (page - 1) * pageSize;
-  return db
+  const rows = await db
     .select({
       id: users.id,
       email: users.email,
@@ -1676,7 +1679,7 @@ export async function listUsersWithRoles(page = 1, pageSize = 25) {
       middleName: users.middleName,
       lastName: users.lastName,
       phone: users.phone,
-      roleLabel: roles.name,
+      roleName: roles.name,
       roleId: users.roleId,
       isActive: users.isActive,
       lastLoginAt: users.lastLoginAt,
@@ -1687,6 +1690,46 @@ export async function listUsersWithRoles(page = 1, pageSize = 25) {
     .orderBy(asc(users.createdAt))
     .limit(pageSize)
     .offset(offset);
+
+  // Every role the account holds (primary + additional teaching roles), so a
+  // dual-role teacher reads as "Adviser + Subject Teacher" in the list.
+  const ids = rows.map((r) => r.id);
+  const extras = ids.length
+    ? await db
+        .select({ userId: userRoles.userId, roleId: userRoles.roleId })
+        .from(userRoles)
+        .where(inArray(userRoles.userId, ids))
+    : [];
+  const extrasByUser = new Map<string, string[]>();
+  for (const row of extras) {
+    const list = extrasByUser.get(row.userId) ?? [];
+    if (row.roleId !== rows.find((r) => r.id === row.userId)?.roleId) list.push(row.roleId);
+    extrasByUser.set(row.userId, list);
+  }
+
+  return rows.map((r) => {
+    const primary = roleNameFromId(r.roleId);
+    const additionalRoleIds = extrasByUser.get(r.id) ?? [];
+    const roles = primary
+      ? [primary, ...additionalRoleIds.map(roleNameFromId).filter((x): x is NonNullable<typeof x> => Boolean(x))]
+      : [];
+    return {
+      id: r.id,
+      email: r.email,
+      firstName: r.firstName,
+      middleName: r.middleName,
+      lastName: r.lastName,
+      phone: r.phone,
+      roleId: r.roleId,
+      roleLabel: roles.length > 0 ? roleLabelsFor(roles) : r.roleName,
+      additionalRoleIds: additionalRoleIds.filter((id) =>
+        (ADDITIONAL_ROLE_IDS as readonly string[]).includes(id),
+      ),
+      isActive: r.isActive,
+      lastLoginAt: r.lastLoginAt,
+      createdAt: r.createdAt,
+    };
+  });
 }
 
 /** Roles that can be assigned to an account, in the canonical role order. */

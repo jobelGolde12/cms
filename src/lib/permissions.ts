@@ -26,6 +26,17 @@ export const PERMISSIONS = [
   "academics.config",
   "grades.view",
   "grades.write",
+  /**
+   * Access to the Grade Encoding MODULE (the /grades grade-sheet screen).
+   *
+   * Deliberately separate from `grades.view` (which every academic role may
+   * hold to read a student's grades on the profile / performance screens) and
+   * from `grades.write` (which only an assigned teacher may hold). The module
+   * gate is what lets the Registrar be a legitimate reader of academic records
+   * while being completely locked out of grade encoding — enforced server-side
+   * on the page and in every grade action.
+   */
+  "grades.encode",
   // Attendance
   "attendance.view",
   "attendance.write",
@@ -72,13 +83,21 @@ export const PERMISSIONS = [
 export type Permission = (typeof PERMISSIONS)[number];
 
 /**
- * Grade-encoding rule (2026-10, revision B): only the SUBJECT TEACHER role may
- * input and modify student grades — and even then only for the (section,
- * subject) pairs in `section_subject_teachers`. Advisers keep `grades.view`
- * (read-only oversight). `grades.write` stays withheld from admin,
- * school_admin and every other role here AND is re-checked server-side in the
- * grade actions (role === "subject_teacher" + row-level assignment check in
- * `canWriteGradesInSection`), so this cannot be bypassed.
+ * Grade-encoding rule (2026-11 revision C): grade writing is AUTHORISATION-
+ * BASED, not role-based.
+ *
+ * `grades.write` is held by the Subject Teacher role, and the grade actions
+ * re-check the row-level assignment (`section_subject_teachers`: the caller
+ * must be the assigned teacher for that exact (section, subject) pair) before
+ * anything is written. Because a teacher may hold BOTH the Adviser role and
+ * the Subject Teacher role, the permission check is resolved over the UNION of
+ * every role the account holds (`hasUserPermission`) — an Adviser who is also
+ * an assigned Subject Teacher encodes grades exactly like a Subject Teacher,
+ * and an Adviser who is not assigned any subject never can.
+ *
+ * `grades.encode` is the module gate for the /grades screen. The Registrar
+ * deliberately does NOT hold it: the Registrar may read academic records and
+ * print official documents, but may never open the grade-encoding module.
  */
 const TEACHER_ONLY_WRITE = new Set<Permission>(["grades.write"]);
 
@@ -96,6 +115,7 @@ const SCHOOL_ADMIN: Permission[] = [
   "enrollment.manage",
   "academics.config",
   "grades.view",
+  "grades.encode",
   // grades.write: teachers/advisers ONLY (see TEACHER_ONLY_WRITE above)
   "attendance.view",
   "attendance.write",
@@ -118,8 +138,12 @@ const SCHOOL_ADMIN: Permission[] = [
 
 /**
  * Adviser — assigned sections: attendance, assessments, behavior, viewing of
- * the section's academic records. The Adviser does NOT encode grades
- * (2026-10 revision B): encoding is the Subject Teacher's role.
+ * the section's academic records.
+ *
+ * An Adviser on its own does NOT open the Grade Encoding module and does NOT
+ * encode grades. When the same account also holds the Subject Teacher role
+ * (and carries a teaching load), the module and the write permission come
+ * from the Subject Teacher role — see `hasUserPermission`.
  */
 const TEACHER: Permission[] = [
   "dashboard.view",
@@ -151,6 +175,7 @@ const SUBJECT_TEACHER: Permission[] = [
   "enrollment.view",
   "grades.view",
   "grades.write",
+  "grades.encode",
   "reports.view",
   "reports.generate",
 ];
@@ -166,6 +191,7 @@ const RECORDS: Permission[] = [
   "enrollment.view",
   "enrollment.manage",
   "grades.view",
+  "grades.encode",
   "attendance.view",
   "assessments.view",
   "verification.review",
@@ -222,6 +248,13 @@ const NURSE: Permission[] = [
 /**
  * Registrar — STRICTLY read-only plus official document generation.
  * No create/update/archive/write permissions on any student domain.
+ *
+ * Grade Encoding is OUT OF SCOPE for the Registrar (2026-11 revision C):
+ * the role deliberately does NOT hold `grades.encode`, so the module is
+ * absent from the sidebar and the /grades route redirects server-side. The
+ * Registrar keeps `grades.view` for read-only academic context (student
+ * profile, performance, report cards) and `documents.print` for the Student
+ * Card and Form 137.
  */
 const REGISTRAR: Permission[] = [
   "dashboard.view",
@@ -293,4 +326,32 @@ export function hasPermission(role: Role, permission: Permission): boolean {
 /** Permissions granted to a role, for display and seeding. */
 export function permissionsForRole(role: Role): readonly Permission[] {
   return ROLE_PERMISSIONS[role];
+}
+
+/**
+ * Effective permission check for an account that may hold SEVERAL roles.
+ *
+ * The effective set is the union of the permissions of every role the account
+ * holds. This is what makes the Adviser + Subject Teacher combination work:
+ * the adviser contributes the advisory permissions, the subject-teacher role
+ * contributes `grades.write` + `grades.encode`, and the grade actions then
+ * narrow it down to the rows the account is actually assigned to.
+ *
+ * An account with no known role holds nothing.
+ */
+export function hasUserPermission(
+  roles: readonly Role[] | undefined,
+  permission: Permission,
+): boolean {
+  if (!roles || roles.length === 0) return false;
+  return roles.some((role) => ROLE_PERMISSIONS[role]?.includes(permission) ?? false);
+}
+
+/** Every permission granted to an account (union across its roles). */
+export function userPermissions(roles: readonly Role[] | undefined): Permission[] {
+  const out = new Set<Permission>();
+  for (const role of roles ?? []) {
+    for (const p of ROLE_PERMISSIONS[role] ?? []) out.add(p);
+  }
+  return Array.from(out);
 }

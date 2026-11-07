@@ -1,10 +1,11 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
   employees,
   sections,
   sectionSubjectTeachers,
   subjects,
+  userRoles,
   users,
 } from "@/db/schema";
 
@@ -14,7 +15,9 @@ import {
  *
  * Domain rules (enforced here and re-checked in the employee actions):
  *   1. only a login account holding the `subject_teacher` role can carry a
- *      teaching load (`canWriteGradesInSection` re-checks this per request);
+ *      teaching load (`canWriteGradesInSection` re-checks this per request).
+ *      The role may be PRIMARY or an ADDITIONAL role on the account: an
+ *      Adviser who also teaches keeps one account with both roles;
  *   2. a load is a (section, subject) pair — both must exist and be active;
  *   3. one teacher owns a (section, subject) pair — the unique index
  *      `section_subject_teacher_uq` enforces it, so moving a subject to
@@ -93,6 +96,14 @@ export type AccountOption = {
 export async function subjectTeacherAccountOptions(
   excludeEmployeeId?: string,
 ): Promise<AccountOption[]> {
+  // Accounts holding the Subject Teacher role EITHER as their primary role or
+  // as an additional role (Adviser + Subject Teacher). The assignment — not a
+  // single primary role — is what grants grade-encoding scope.
+  const extraRoleHolders = db
+    .select({ id: userRoles.userId })
+    .from(userRoles)
+    .where(eq(userRoles.roleId, SUBJECT_TEACHER_ROLE_ID));
+
   const rows = await db
     .select({
       id: users.id,
@@ -106,7 +117,15 @@ export async function subjectTeacherAccountOptions(
     })
     .from(users)
     .leftJoin(employees, eq(employees.userId, users.id))
-    .where(and(eq(users.roleId, SUBJECT_TEACHER_ROLE_ID), eq(users.isActive, true)))
+    .where(
+      and(
+        eq(users.isActive, true),
+        or(
+          eq(users.roleId, SUBJECT_TEACHER_ROLE_ID),
+          inArray(users.id, extraRoleHolders),
+        ),
+      ),
+    )
     .orderBy(users.lastName, users.firstName);
 
   return rows

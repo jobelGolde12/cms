@@ -27,7 +27,7 @@ export type StoredForecast = {
   errorMessage: string | null;
 };
 
-/** One persisted forecast row per (type, scope, target-quarter). */
+/** One persisted forecast row per (type, scope, target-period). */
 export type PersistedForecast = {
   type: ScopeLevel;
   scopeLevel: string;

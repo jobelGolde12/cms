@@ -44,6 +44,27 @@ export const ROLE_LABELS: Record<Role, string> = {
   admin_officer: "Admin Officer",
 };
 
+/**
+ * Human label for the role set an account holds. One teacher can be both an
+ * Adviser and a Subject Teacher, so the badge lists every role — e.g.
+ * "Adviser + Subject Teacher".
+ */
+export function roleLabelsFor(roles: readonly Role[]): string {
+  if (roles.length === 0) return "—";
+  return roles.map((r) => ROLE_LABELS[r]).join(" + ");
+}
+
+/**
+ * Teaching roles that may be granted IN ADDITION to an account's primary role.
+ *
+ * A teacher is frequently both an Adviser and a Subject Teacher; the account
+ * carries both roles (see `user_roles`) instead of duplicating the employee.
+ */
+export const ADDITIONAL_ROLE_OPTIONS = [
+  { id: "role-teacher", label: ROLE_LABELS.teacher },
+  { id: "role-subject-teacher", label: ROLE_LABELS.subject_teacher },
+] as const;
+
 /* -------------------------------------------------------------------------- */
 /*  Student lifecycle & record verification workflow                           */
 /* -------------------------------------------------------------------------- */
@@ -87,12 +108,21 @@ export const GRADE_LEVELS = [
   "Grade 12",
 ] as const;
 
+/**
+ * Active grading periods of a school year.
+ *
+ * The school runs THREE terms (DepEd senior high school grading — Terms 1, 2
+ * and 3). There is deliberately NO fourth period: the former "Quarter 1–4"
+ * vocabulary was replaced by terms in the 2026-11 revision.
+ */
 export const GRADING_PERIOD_NAMES = [
-  "Quarter 1",
-  "Quarter 2",
-  "Quarter 3",
-  "Quarter 4",
+  "TERM 1",
+  "TERM 2",
+  "TERM 3",
 ] as const;
+
+/** Number of active grading periods per school year (3 terms — never 4). */
+export const GRADING_PERIOD_COUNT = GRADING_PERIOD_NAMES.length;
 
 export const ENROLLMENT_STATUSES = [
   "active",
@@ -399,6 +429,7 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
 export const EMPLOYEE_POSITIONS = [
   "school_administrator",
   "adviser",
+  "adviser_subject_teacher",
   "subject_teacher",
   "teacher",
   "guidance_counselor",
@@ -412,6 +443,7 @@ export type EmployeePosition = (typeof EMPLOYEE_POSITIONS)[number];
 export const EMPLOYEE_POSITION_LABELS: Record<EmployeePosition, string> = {
   school_administrator: "School Administrator",
   adviser: "Adviser",
+  adviser_subject_teacher: "Adviser + Subject Teacher",
   subject_teacher: "Subject Teacher",
   teacher: "Teacher",
   guidance_counselor: "Guidance Counselor",
@@ -422,7 +454,10 @@ export const EMPLOYEE_POSITION_LABELS: Record<EmployeePosition, string> = {
 };
 
 /** Positions that require a section assignment (drives the dynamic form). */
-export const SECTION_ASSIGNMENT_POSITIONS: EmployeePosition[] = ["adviser"];
+export const SECTION_ASSIGNMENT_POSITIONS: EmployeePosition[] = [
+  "adviser",
+  "adviser_subject_teacher",
+];
 
 export const CIVIL_STATUSES = [
   "single",

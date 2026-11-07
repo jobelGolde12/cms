@@ -65,6 +65,37 @@ export const rolePermissions = sqliteTable(
   ],
 );
 
+/**
+ * User ↔ role assignment (many-to-many).
+ *
+ * `users.role_id` remains the PRIMARY role — it drives the default workspace,
+ * the role badge and the "single purpose" screens (Nurse, Registrar, …).
+ * This table carries the ADDITIONAL roles an account holds, so one teacher can
+ * legitimately be both an Adviser (`role-teacher`) and a Subject Teacher
+ * (`role-subject-teacher`) without ever creating a second employee record.
+ *
+ * Backed by the unique index below, so a role can only be granted once. The
+ * effective permission set of an account is the UNION of the permissions of
+ * every role it holds; see `src/lib/permissions.ts` (`hasUserPermission`).
+ */
+export const userRoles = sqliteTable(
+  "user_roles",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    roleId: text("role_id")
+      .notNull()
+      .references(() => roles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.roleId] }),
+    index("user_roles_user_idx").on(t.userId),
+    index("user_roles_role_idx").on(t.roleId),
+  ],
+);
+
 /* -------------------------------------------------------------------------- */
 /*  Users & sessions                                                          */
 /* -------------------------------------------------------------------------- */
@@ -936,7 +967,7 @@ export const forecasts = sqliteTable(
     forecastType: text("forecast_type").notNull(),
     /** Aggregation scope: 'school', grade level id, or subject id */
     scopeLevel: text("scope_level").notNull(),
-    /** ISO timestamp of the forecast target period (quarter end) */
+    /** ISO timestamp of the forecast target period (term end) */
     targetPeriod: text("target_period").notNull(),
     forecastValue: real("forecast_value").notNull(),
     lowerBound: real("lower_bound").notNull(),
@@ -1166,6 +1197,12 @@ export const userRelations = relations(users, ({ one, many }) => ({
   role: one(roles, { fields: [users.roleId], references: [roles.id] }),
   sessions: many(sessions),
   advisedSections: many(sections),
+  userRoles: many(userRoles),
+}));
+
+export const userRoleRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, { fields: [userRoles.userId], references: [users.id] }),
+  role: one(roles, { fields: [userRoles.roleId], references: [roles.id] }),
 }));
 
 export const schoolYearRelations = relations(schoolYears, ({ many }) => ({
@@ -1231,6 +1268,21 @@ export const enrollmentRelations = relations(studentEnrollments, ({ one, many })
 
 export const subjectRelations = relations(subjects, ({ many }) => ({
   grades: many(studentGrades),
+}));
+
+export const sectionSubjectTeacherRelations = relations(sectionSubjectTeachers, ({ one }) => ({
+  section: one(sections, {
+    fields: [sectionSubjectTeachers.sectionId],
+    references: [sections.id],
+  }),
+  subject: one(subjects, {
+    fields: [sectionSubjectTeachers.subjectId],
+    references: [subjects.id],
+  }),
+  teacher: one(users, {
+    fields: [sectionSubjectTeachers.teacherId],
+    references: [users.id],
+  }),
 }));
 
 export const gradingPeriodRelations = relations(gradingPeriods, ({ one, many }) => ({
@@ -1401,6 +1453,7 @@ export const serviceCreditTransactionRelations = relations(serviceCreditTransact
 export type RoleRow = typeof roles.$inferSelect;
 export type PermissionRow = typeof permissions.$inferSelect;
 export type RolePermissionRow = typeof rolePermissions.$inferSelect;
+export type UserRoleRow = typeof userRoles.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;

@@ -3,7 +3,7 @@ import {
   FORECAST_SUFFICIENCY,
   type TimeSeriesPoint,
   fillGaps,
-  minQuartersFor,
+  minPeriodsFor,
   type ScopeLevel,
 } from "./time-series";
 
@@ -12,9 +12,9 @@ import {
 /* -------------------------------------------------------------------------- */
 
 export type ForecastPoint = {
-  /** Label of the forecast target period, e.g. "2027-2028·Q1" */
+  /** Label of the forecast target period, e.g. "2027-2028·TERM 1" */
   key: string;
-  /** Projected quarter mean (clamped to [0, 100]) */
+  /** Projected term mean (clamped to [0, 100]) */
   forecast: number;
   /** 95% prediction-interval lower bound (clamped) */
   lowerBound: number;
@@ -56,7 +56,7 @@ export type ForecastResult =
 /*  Configuration (plan §3.2, §11.1, §39)                                     */
 /* -------------------------------------------------------------------------- */
 
-const FORECAST_HORIZON = 4;
+const FORECAST_HORIZON = 3;
 const CONFIDENCE_Z = 1.96; // 95% two-sided normal quantile
 /** Candidate grid is intentionally small for tiny series (plan §39.2). */
 const MODEL_GRID: ModelOrder[] = [
@@ -71,7 +71,7 @@ const MODEL_GRID: ModelOrder[] = [
 /**
  * The WASM port enforces a minimum series length that grows with (p+d+q).
  * Simple (0,0,0/1) models need ~6; richer models need ~11+, which most
- * quarterly school series will not have for years. Keep fallback simple.
+ * per-term school series will not have for years. Keep fallback simple.
  */
 const MIN_SERIES_FOR_GRID = 12;
 const SIMPLE_FALLBACK: ModelOrder = { p: 1, d: 0, q: 0 };
@@ -102,28 +102,28 @@ function inSampleMae(series: (number | null)[], order: ModelOrder): number | nul
   }
 }
 
-/** Label the next quarter(s) after the last observed one. */
-function nextQuarterLabels(
+/** Label the next term(s) after the last observed one. */
+function nextTermLabels(
   series: TimeSeriesPoint[],
   horizon: number,
 ): string[] {
   const labels: string[] = [];
   const last = series[series.length - 1];
   if (!last) {
-    for (let i = 1; i <= horizon; i++) labels.push(`Q${i}`);
+    for (let i = 1; i <= horizon; i++) labels.push(`TERM ${i}`);
     return labels;
   }
-  let quarter = last.quarter;
+  let term = last.term;
   let year = last.schoolYear;
   for (let i = 0; i < horizon; i++) {
-    if (quarter >= 4) {
-      quarter = 1;
+    if (term >= 3) {
+      term = 1;
       const start = Number(year.split("-")[0]);
       year = `${start + 1}-${start + 2}`;
     } else {
-      quarter += 1;
+      term += 1;
     }
-    labels.push(`${year}·Q${quarter}`);
+    labels.push(`${year}·TERM ${term}`);
   }
   return labels;
 }
@@ -158,21 +158,21 @@ function selectOrder(clean: number[]): ModelOrder {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Generate a forecast for a quarterly grade series. Never mutates any stored
+ * Generate a forecast for a per-term grade series. Never mutates any stored
  * grade — the input series is read-only aggregate data (plan §2.1, §53.2).
  */
 export function generateForecast(
   series: TimeSeriesPoint[],
   scope: ScopeLevel,
 ): ForecastResult {
-  const minQuarters = minQuartersFor(scope);
+  const minPeriods = minPeriodsFor(scope);
   const filled = fillGaps(series);
   const clean = filled.filter((v): v is number => v != null && Number.isFinite(v));
 
-  if (series.length < minQuarters || clean.length < FORECAST_SUFFICIENCY.MIN_OBSERVATIONS) {
+  if (series.length < minPeriods || clean.length < FORECAST_SUFFICIENCY.MIN_OBSERVATIONS) {
     return {
       status: "insufficient_data",
-      message: `A minimum of ${minQuarters} completed grading periods is required for a reliable forecast.`,
+      message: `A minimum of ${minPeriods} completed grading periods is required for a reliable forecast.`,
       dataPoints: clean.length,
     };
   }
@@ -193,7 +193,7 @@ export function generateForecast(
       return { status: "failed", message: "Model produced non-finite values." };
     }
 
-    const labels = nextQuarterLabels(series, horizon);
+    const labels = nextTermLabels(series, horizon);
     const residStd =
       clean.length > 1
         ? Math.sqrt(

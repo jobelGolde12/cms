@@ -12,6 +12,7 @@ const userWith = (role: SessionUser["role"]): SessionUser => ({
   lastName: "User",
   roleId: "role-x",
   role,
+  roles: [role],
 });
 
 describe("healthRecordSchema validation (Nurse domain)", () => {

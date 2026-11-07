@@ -29,7 +29,7 @@ export const metadata = { title: "SF10-JHS — Form 137" };
  *      previous elementary school, general average, distinctions).
  *   4. Scholastic record — one bordered table per school year with school
  *      name / school ID / division / region / SY / grade level / section /
- *      adviser header rows, learning areas sorted as stored, quarterly
+ *      adviser header rows, learning areas sorted as stored, per-term
  *      ratings, final rating, remarks, general average and the recorded
  *      year-end action.
  *   5. Remedial-classes block (ruled, blank — the schema does not store
@@ -96,15 +96,14 @@ function BlankField({
   );
 }
 
-/* Scholastic-record column widths (portrait): areas / Q1..Q4 / final / remarks */
+/* Scholastic-record column widths (portrait): areas / T1..T3 / final / remarks */
 const GRADE_COLS = [
-  "w-[28%]",
-  "w-[8.5%]",
-  "w-[8.5%]",
-  "w-[8.5%]",
-  "w-[8.5%]",
-  "w-[9.5%]",
-  "w-[28.5%]",
+  "w-[30%]",
+  "w-[10%]",
+  "w-[10%]",
+  "w-[10%]",
+  "w-[10%]",
+  "w-[30%]",
 ];
 
 function ScholasticRecordBlock({
@@ -166,16 +165,15 @@ function ScholasticRecordBlock({
           <tr>
             {[
               "Learning Areas",
-              "1st Quarter",
-              "2nd Quarter",
-              "3rd Quarter",
-              "4th Quarter",
+              "Term 1",
+              "Term 2",
+              "Term 3",
               "Final Rating",
               "Remarks",
             ].map((h, i) => (
               <th
                 key={h}
-                className={`border border-neutral-900 px-1 py-0.5 text-center font-bold ${i === 6 ? "" : "border-r-neutral-900"}`}
+                className={`border border-neutral-900 px-1 py-0.5 text-center font-bold ${i === 5 ? "" : "border-r-neutral-900"}`}
               >
                 {h}
               </th>
@@ -186,7 +184,7 @@ function ScholasticRecordBlock({
           {block.subjects.length === 0 ? (
             <tr>
               <td
-                colSpan={7}
+                colSpan={6}
                 className="border border-neutral-900 px-2 py-1.5 text-center text-neutral-600"
               >
                 No grades recorded for this school year yet.
@@ -199,7 +197,7 @@ function ScholasticRecordBlock({
                   <td className="border border-neutral-900 px-1.5 py-0.5 text-left">
                     {s.subjectName}
                   </td>
-                  {s.quarters.map((g, i) => (
+                  {s.terms.map((g, i) => (
                     <td
                       key={i}
                       className="border border-neutral-900 px-1 py-0.5 text-center"
@@ -222,7 +220,6 @@ function ScholasticRecordBlock({
                 <td className="border border-neutral-900" />
                 <td className="border border-neutral-900" />
                 <td className="border border-neutral-900" />
-                <td className="border border-neutral-900" />
                 <td className="border border-neutral-900 px-1 py-0.5 text-center">
                   {fmt(block.generalAverage)}
                 </td>
@@ -230,7 +227,7 @@ function ScholasticRecordBlock({
               </tr>
               <tr className="break-inside-avoid">
                 <td
-                  colSpan={5}
+                  colSpan={4}
                   className="border border-neutral-900 px-1.5 py-0.5 text-right font-semibold"
                 >
                   Year-End Action

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Bell, Search } from "lucide-react";
 import { unreadNotificationCount } from "@/lib/queries";
-import { hasPermission, type Permission } from "@/lib/permissions";
+import { hasUserPermission, type Permission } from "@/lib/permissions";
 import { canViewConfidentialBehavior, canViewStudentDevelopment } from "@/lib/scope";
-import { SCHOOL, ROLE_LABELS } from "@/lib/constants";
+import { SCHOOL, roleLabelsFor } from "@/lib/constants";
 import { Logo } from "./logo";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 import { SidebarNav } from "./sidebar-nav";
@@ -22,7 +22,8 @@ const navLinks: NavLink[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard", permission: "dashboard.view" },
   { label: "Students", href: "/students", icon: "students", permission: "students.view" },
   { label: "Sections", href: "/sections", icon: "sections", permission: "academics.config" },
-  { label: "Grade Encoding", href: "/grades", icon: "grades", permission: "grades.view" },
+  { label: "Teacher Assignments", href: "/assignments", icon: "sections", permission: "academics.config" },
+  { label: "Grade Encoding", href: "/grades", icon: "grades", permission: "grades.encode" },
   { label: "Employees", href: "/employees", icon: "employees", permission: "employees.view" },
   { label: "Service Credits", href: "/service-credits", icon: "service_credits", permission: "service_credits.view" },
   { label: "Performance", href: "/performance", icon: "performance", permission: "grades.view" },
@@ -41,7 +42,7 @@ const navLinks: NavLink[] = [
 ];
 
 const NAV_SECTIONS: { heading: string; items: string[] }[] = [
-  { heading: "Core Modules", items: ["/dashboard", "/students", "/sections", "/grades", "/performance", "/development", "/guidance", "/health", "/verification", "/duplicates", "/reports"] },
+  { heading: "Core Modules", items: ["/dashboard", "/students", "/sections", "/assignments", "/grades", "/performance", "/development", "/guidance", "/health", "/verification", "/duplicates", "/reports"] },
   { heading: "Employee Records", items: ["/employees", "/service-credits"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
   { heading: "System", items: ["/users", "/settings", "/privacy"] },
@@ -56,7 +57,7 @@ export default async function AppShell({
 }) {
   const visibleLinks = navLinks.filter(
     (link) =>
-      hasPermission(user.role, link.permission) &&
+      hasUserPermission(user.roles, link.permission) &&
       // Confidential Guidance Office module: only guidance + admin-tier roles
       // even see the link (teacher/adviser views never show incident data).
       (link.href !== "/guidance" || canViewConfidentialBehavior(user)) &&
@@ -97,7 +98,7 @@ export default async function AppShell({
           <div className="font-semibold text-white">
             {user.firstName} {user.lastName}
           </div>
-          <div className="mt-0.5 text-[#AFC4FF]">{ROLE_LABELS[user.role]}</div>
+          <div className="mt-0.5 text-[#AFC4FF]">{roleLabelsFor(user.roles)}</div>
         </div>
       </aside>
 
@@ -112,7 +113,7 @@ export default async function AppShell({
           </div>
 
           {/* Search (links into the registry search; hidden for roles without students.view) */}
-          {hasPermission(user.role, "students.view") ? (
+          {hasUserPermission(user.roles, "students.view") ? (
             <form action="/students" className="ml-2 hidden min-w-0 flex-1 max-w-xs lg:block" role="search">
             <label htmlFor="global-search" className="sr-only">
               Search students in the registry
@@ -177,7 +178,7 @@ export default async function AppShell({
                 <div className="max-w-[160px] truncate text-xs font-semibold text-brand-900">
                   {user.firstName} {user.lastName}
                 </div>
-                <div className="text-[11px] text-[#64748B]">{ROLE_LABELS[user.role]}</div>
+                <div className="text-[11px] text-[#64748B]">{roleLabelsFor(user.roles)}</div>
               </div>
               <div
                 aria-label={`User avatar for ${user.firstName} ${user.lastName}`}

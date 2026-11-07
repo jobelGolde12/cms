@@ -15,13 +15,13 @@ import {
 
 /** One aggregated observation (one grading period of one scope). */
 export type TimeSeriesPoint = {
-  /** Stable ordering key: `${schoolYear} P${orderIndex}` */
+  /** Stable ordering key: `${schoolYear}·TERM ${orderIndex}` */
   key: string;
   /** School year label, e.g. "2025-2026" */
   schoolYear: string;
-  /** Quarter ordering within the school year (1..4) */
-  quarter: number;
-  /** Mean grade for the scope in this quarter */
+  /** Term ordering within the school year (1..3) */
+  term: number;
+  /** Mean grade for the scope in this term */
   value: number;
   /** Number of individual grades aggregated */
   count: number;
@@ -36,22 +36,22 @@ export type ScopeLevel = "school" | "grade_level" | "subject";
 /* -------------------------------------------------------------------------- */
 
 export const FORECAST_SUFFICIENCY = {
-  MIN_QUARTERS_SCHOOL: 4,
-  MIN_QUARTERS_GRADE: 3,
-  MIN_QUARTERS_SUBJECT: 3,
-  MIN_OBSERVATIONS: 4,
+  MIN_PERIODS_SCHOOL: 3,
+  MIN_PERIODS_GRADE: 3,
+  MIN_PERIODS_SUBJECT: 3,
+  MIN_OBSERVATIONS: 3,
   /** Tolerated fraction of mid-series gaps (plan §9) */
   MAX_MISSING_RATE: 0.4,
 } as const;
 
-export function minQuartersFor(scope: ScopeLevel): number {
+export function minPeriodsFor(scope: ScopeLevel): number {
   switch (scope) {
     case "school":
-      return FORECAST_SUFFICIENCY.MIN_QUARTERS_SCHOOL;
+      return FORECAST_SUFFICIENCY.MIN_PERIODS_SCHOOL;
     case "grade_level":
-      return FORECAST_SUFFICIENCY.MIN_QUARTERS_GRADE;
+      return FORECAST_SUFFICIENCY.MIN_PERIODS_GRADE;
     case "subject":
-      return FORECAST_SUFFICIENCY.MIN_QUARTERS_SUBJECT;
+      return FORECAST_SUFFICIENCY.MIN_PERIODS_SUBJECT;
   }
 }
 
@@ -85,7 +85,7 @@ function verifiedGradeConditions(currentSchoolYearId: string | null) {
 
 type AggRow = {
   schoolYear: string;
-  quarter: number;
+  term: number;
   periodName: string;
   average: number | null;
   count: number;
@@ -96,9 +96,9 @@ function toPoint(row: AggRow): TimeSeriesPoint {
   const avg = row.average == null ? NaN : Number(row.average);
   const varr = row.variance == null ? 0 : Number(row.variance);
   return {
-    key: `${row.schoolYear}·Q${row.quarter}`,
+    key: `${row.schoolYear}·TERM ${row.term}`,
     schoolYear: row.schoolYear,
-    quarter: row.quarter,
+    term: row.term,
     value: avg,
     count: row.count,
     stdDev: Math.sqrt(Math.max(0, varr)),
@@ -107,7 +107,7 @@ function toPoint(row: AggRow): TimeSeriesPoint {
 
 const aggregationSelection = {
   schoolYear: schoolYears.year,
-  quarter: gradingPeriods.orderIndex,
+  term: gradingPeriods.orderIndex,
   periodName: gradingPeriods.name,
   average: sql<number>`avg(${studentGrades.grade})`,
   count: sql<number>`count(*)`,
@@ -116,7 +116,7 @@ const aggregationSelection = {
   variance: sql<number>`avg(${studentGrades.grade} * ${studentGrades.grade}) - avg(${studentGrades.grade}) * avg(${studentGrades.grade})`,
 };
 
-/** School-wide mean grade per quarter (plan §4.1). */
+/** School-wide mean grade per term (plan §4.1). */
 export async function schoolWideSeries(currentSchoolYearId: string | null): Promise<TimeSeriesPoint[]> {
   const rows = await db
     .select(aggregationSelection)
@@ -133,7 +133,7 @@ export async function schoolWideSeries(currentSchoolYearId: string | null): Prom
   return rows.map(toPoint);
 }
 
-/** Mean grade per quarter for one grade level (plan §4.2). */
+/** Mean grade per term for one grade level (plan §4.2). */
 export async function gradeLevelSeries(
   gradeLevelId: string,
   currentSchoolYearId: string | null,
@@ -158,7 +158,7 @@ export async function gradeLevelSeries(
   return rows.map(toPoint);
 }
 
-/** Mean grade per quarter for one subject (plan §4.4). */
+/** Mean grade per term for one subject (plan §4.4). */
 export async function subjectSeries(
   subjectId: string,
   currentSchoolYearId: string | null,
@@ -263,7 +263,7 @@ export function outlierFlags(series: TimeSeriesPoint[]): number[] {
 /*  Intelligence helpers for the dashboard                                    */
 /* -------------------------------------------------------------------------- */
 
-/** How many consecutive recent quarters (any year) are usable data points. */
-export function completedQuarters(series: TimeSeriesPoint[]): number {
+/** How many consecutive recent periods (any year) are usable data points. */
+export function completedPeriods(series: TimeSeriesPoint[]): number {
   return series.filter((p) => Number.isFinite(p.value)).length;
 }

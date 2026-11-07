@@ -21,6 +21,8 @@ import {
   ValidationQueueCard,
 } from "@/components/dashboard/primitives";
 import ForecastPanel from "@/components/forecast/forecast-panel";
+import { summarizeDashboard } from "@/actions/ai";
+import { AiAnalysisPanel } from "@/components/ai/ai-analysis-panel";
 
 export default async function AppDashboardPage() {
   const user = await getCurrentUser();
@@ -76,6 +78,18 @@ export default async function AppDashboardPage() {
 
       {/* ---------------------------- KPI grid ---------------------------- */}
       <KpiGrid kpis={data.kpis} />
+
+      {/* AI narrative summary of the same KPI/distribution dataset —
+          interpretation labelled as such, scoped to the viewer's data. */}
+      {hasPermission(user.role, "reports.view") ? (
+        <AiAnalysisPanel
+          feature="dashboardReport"
+          action={summarizeDashboard}
+          hidden={{}}
+          triggerLabel="Summarize this overview"
+          pendingLabel="Summarizing overview..."
+        />
+      ) : null}
 
       {/* ----------------------- Operational banner ----------------------- */}
       <OperationalBanner

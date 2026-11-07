@@ -65,6 +65,7 @@ Deliberate omissions (2026-11, least privilege):
 | Dashboard | ✓ | ✓ | ✓ | ✓ |
 | Students | ✓ | ✓ | view | view |
 | Sections | ✓ | ✓ | ✗ | ✗ |
+| Teacher Assignments | ✓ | ✓ | ✗ | ✗ |
 | Grade Encoding | ✓ | ✗ | ✗ | ✗ |
 | Employees | ✓ | ✗ | ✗ | ✗ |
 | Service Credits | ✓ | ✗ | ✗ | ✗ |
@@ -99,8 +100,11 @@ CREATE INDEX employees_assigned_section_idx ON employees(assigned_section_id);
 - `employees.position` semantics changed: the column now holds a key from the
   controlled vocabulary
   (`EMPLOYEE_POSITIONS` in `src/lib/constants.ts`):
-  `school_administrator | adviser | subject_teacher | teacher |
-  guidance_counselor | nurse | registrar | administrative_staff | other`.
+  `school_administrator | adviser | subject_teacher | adviser_subject_teacher |
+  teacher | guidance_counselor | nurse | registrar | administrative_staff |
+  other`. `adviser_subject_teacher` is the combined position: one personnel
+  record carries both the Section assignment and the Login account / Grade
+  Encoding Scope fields.
   Legacy pre-vocabulary strings remain readable — the form surfaces them via
   the `other` option until re-classified. Position (job title) stays separate
   from the system role (`users.roleId`).
@@ -142,6 +146,32 @@ Enforcement on writes (`src/actions/employees.ts`):
   fed by `activeSectionOptions()` (`<grade level> — <name> (<SY>)`).
 - Server validation in `src/actions/employees.ts` mirrors the client rules and
   is authoritative.
+- Position `adviser_subject_teacher` ("Adviser + Subject Teacher") shows both
+  the **Assigned section** field and the **Login account / Grade Encoding
+  Scope** fields on one personnel record. The linked account may hold Subject
+  Teacher as its primary or as an additional role.
+
+## 5a. Teacher Assignments + dual role (2026-11-07)
+
+- New Administrator page **`/assignments`** (`academics.config`): assign an
+  adviser to a section, assign a subject teacher to a (section, subject) load,
+  or both to the same account, with a per-school-year filter and a unified
+  assignment table with explicit remove actions.
+- Actions (`src/actions/assignments.ts`): `assignAdviser`, `clearAdviser`,
+  `assignSubjectTeacher`, `removeSubjectTeacher`. Every call re-checks the
+  permission, section/subject/account active state, and a teaching role on the
+  account; an existing adviser or load is never silently overwritten.
+- Assigning an adviser grants `role-teacher`; assigning a load grants
+  `role-subject-teacher` (`ensureUserRole`) — the assignment, permission gate
+  and `user_roles` union stay consistent.
+- Adviser and Subject Teacher are **not mutually exclusive**: one account, one
+  personnel record, two independent assignments. Grade encoding remains
+  assignment-based (`canWriteGradesInSection`) and applies to every role the
+  account holds via `hasUserPermission`.
+- The adviser assignment keeps `sections.adviser_id` and the linked employee's
+  `assigned_section_id` in step in the same action. Invariants are pure and
+  unit-tested in `src/lib/assignment-rules.ts` +
+  `src/lib/__tests__/assignments.test.ts`.
 
 ## 6. Official print gating (draft-safety)
 
@@ -183,8 +213,9 @@ Enforcement on writes (`src/actions/employees.ts`):
 - `scripts/tmp/*` and `.tmp-qa/` scratch probes carry pre-existing
   unused-import warnings (non-blocking). Candidate for deletion before
   production.
-- Adviser "one section" rule is enforced in the employee action; the reverse
-  direction (sections.adviser_id) is a normal reference — keep assigning the
-  same adviser from one place to avoid confusion.
+- Adviser "one section" rule is enforced in both the employee action and the
+  assignments action; `/assignments` keeps `sections.adviser_id` and the linked
+  employee's `assigned_section_id` in sync, so use that page as the single
+  place to change advisers.
 - Position vocabulary is code-managed (`constants.ts`). If the school wants
   self-service positions, move it to a table — the FK pattern already exists.

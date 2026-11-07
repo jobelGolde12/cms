@@ -19,6 +19,7 @@ const adminUser: SessionUser = {
   lastName: "Min",
   roleId: "role-admin",
   role: "admin",
+  roles: ["admin"],
 };
 
 const recordsUser: SessionUser = {

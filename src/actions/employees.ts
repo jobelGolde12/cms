@@ -8,6 +8,7 @@ import {
   employees,
   sections,
   serviceCreditTransactions,
+  userRoles,
   users,
   type NewEmployee,
 } from "@/db/schema";
@@ -78,8 +79,15 @@ function parseEmployeeForm(formData: FormData) {
   return employeeFormSchema.safeParse(Object.fromEntries(formData.entries()));
 }
 
+/** Position helpers: a teacher may be an adviser, a subject teacher, or both. */
+const isAdviserPosition = (position: string | null | undefined): boolean =>
+  position === "adviser" || position === "adviser_subject_teacher";
+const isSubjectTeacherPosition = (position: string | null | undefined): boolean =>
+  position === "subject_teacher" || position === "adviser_subject_teacher";
+
 /** Build the DB row values from validated form data (nulls for blanks). */
 function employeeValues(v: Awaited<ReturnType<typeof employeeFormSchema.parse>>) {
+  const position = resolvedPosition(v);
   return {
     firstName: v.firstName,
     middleName: scrub(v.middleName),
@@ -94,14 +102,15 @@ function employeeValues(v: Awaited<ReturnType<typeof employeeFormSchema.parse>>)
     emergencyContactName: scrub(v.emergencyContactName),
     emergencyContactRelation: scrub(v.emergencyContactRelation),
     emergencyContactNumber: scrub(v.emergencyContactNumber),
-    position: resolvedPosition(v),
-    /** Section assignment only ever attaches to the adviser position. */
-    assignedSectionId: resolvedPosition(v) === null || scrub(v.position) !== "adviser" ? null : scrub(v.assignedSectionId),
+    position,
+    /** Section assignment attaches to an adviser (including adviser + teacher). */
+    assignedSectionId: isAdviserPosition(position) ? scrub(v.assignedSectionId) : null,
     /**
-     * Login-account link only ever attaches to the subject-teacher position —
-     * it is the account that carries the grade-encoding teaching loads.
+     * Login-account link attaches to a subject-teaching position (including
+     * adviser + teacher) — it is the account that carries the grade-encoding
+     * teaching loads.
      */
-    userId: scrub(v.position) === "subject_teacher" ? scrub(v.userId) : null,
+    userId: isSubjectTeacherPosition(position) ? scrub(v.userId) : null,
     designation: scrub(v.designation),
     appointmentStatus: scrub(v.appointmentStatus),
     employmentType: scrub(v.employmentType),
@@ -144,8 +153,8 @@ async function validateAdviserAssignment(
   excludeEmployeeId?: string,
 ): Promise<{ ok: true; sectionName: string | null } | { ok: false; error: string }> {
   const sectionId = scrub(v.assignedSectionId);
-  if (scrub(v.position) !== "adviser") {
-    // Assignment silently cleared for non-adviser positions.
+  if (!isAdviserPosition(scrub(v.position))) {
+    // Assignment silently cleared for positions without advisory duties.
     return { ok: true, sectionName: null };
   }
   if (!sectionId) return { ok: true, sectionName: null };
@@ -209,8 +218,8 @@ async function validateSubjectTeacherScope(
   | { ok: true; accountId: string | null; loads: TeachingLoad[] }
   | { ok: false; error: string; fieldErrors?: Record<string, string> }
 > {
-  if (scrub(v.position) !== "subject_teacher") {
-    // Account link and teaching loads only apply to subject teachers.
+  if (!isSubjectTeacherPosition(scrub(v.position))) {
+    // Account link and teaching loads only apply to subject-teaching positions.
     return { ok: true, accountId: null, loads: [] };
   }
 
@@ -234,11 +243,16 @@ async function validateSubjectTeacherScope(
       id: users.id,
       roleId: users.roleId,
       isActive: users.isActive,
+      subjectTeacherRoleId: userRoles.roleId,
       linkedEmployeeId: employees.id,
       linkedEmployeeNumber: employees.employeeNumber,
     })
     .from(users)
     .leftJoin(employees, eq(employees.userId, users.id))
+    .leftJoin(
+      userRoles,
+      and(eq(userRoles.userId, users.id), eq(userRoles.roleId, SUBJECT_TEACHER_ROLE_ID)),
+    )
     .where(eq(users.id, accountId))
     .limit(1);
   const account = accountRows[0];
@@ -256,10 +270,11 @@ async function validateSubjectTeacherScope(
       fieldErrors: { userId: "Account is deactivated" },
     };
   }
-  if (account.roleId !== SUBJECT_TEACHER_ROLE_ID) {
+  if (account.roleId !== SUBJECT_TEACHER_ROLE_ID && account.subjectTeacherRoleId !== SUBJECT_TEACHER_ROLE_ID) {
     return {
       ok: false,
-      error: "The linked account must hold the Subject Teacher role to carry teaching loads.",
+      error:
+        "The linked account must hold the Subject Teacher role (primary or additional role) to carry teaching loads. Grant it on the Users page first.",
       fieldErrors: { userId: "Account must hold the Subject Teacher role" },
     };
   }

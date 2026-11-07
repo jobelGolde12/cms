@@ -111,9 +111,12 @@ export function EmployeeForm({
       ? employee.position
       : "";
   const [otherPosition, setOtherPosition] = useState<string>(legacyOtherPosition);
-  const isAdviser = positionKey === "adviser";
+  // A teacher may carry both responsibilities on one personnel record.
+  const isAdviser =
+    positionKey === "adviser" || positionKey === "adviser_subject_teacher";
   const isOther = positionKey === "other";
-  const isSubjectTeacher = positionKey === "subject_teacher";
+  const isSubjectTeacher =
+    positionKey === "subject_teacher" || positionKey === "adviser_subject_teacher";
 
   // Grade-encoding scope: the (section, subject) teaching loads of the
   // linked Subject Teacher account.
@@ -306,7 +309,7 @@ export function EmployeeForm({
               label="Login account"
               htmlFor="employee-userId"
               error={err("userId")}
-              hint="Links the personnel record to the Subject Teacher account that carries the grade-encoding loads."
+              hint="Links the personnel record to the account that carries the grade-encoding loads. The account may hold the Subject Teacher role as its primary or an additional role."
             >
               <Select
                 id="employee-userId"
@@ -363,7 +366,7 @@ export function EmployeeForm({
         </div>
       </div>
 
-      {/* Grade-encoding scope — only a Subject Teacher can hold teaching loads. */}
+      {/* Grade-encoding scope — a Subject Teacher (or Adviser + Subject Teacher) holds loads. */}
       {isSubjectTeacher ? (
         <div className="border-t border-brand-200 pt-4">
           <h3 className="text-sm font-semibold text-brand-900">Grade Encoding Scope</h3>

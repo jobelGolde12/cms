@@ -69,6 +69,7 @@ export default async function UsersPage() {
                   phone: r.phone,
                   roleId: r.roleId,
                   roleLabel: r.roleLabel,
+                  additionalRoleIds: r.additionalRoleIds,
                   isActive: r.isActive,
                 };
                 return (

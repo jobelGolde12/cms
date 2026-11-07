@@ -27,6 +27,7 @@ const userWith = (role: Role): SessionUser => ({
   lastName: "User",
   roleId: "role-x",
   role,
+  roles: [role],
 });
 
 describe("role catalog", () => {
