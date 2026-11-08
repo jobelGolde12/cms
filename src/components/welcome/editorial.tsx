@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 /**
  * Shared editorial primitives for the Welcome Page.
  *
- * These implement the design.md language once so every section stays
- * consistent: tiny uppercase eyebrows, quiet thin headings, restrained
+ * These implement the institutional editorial language once so every section
+ * stays consistent: tiny uppercase eyebrows, quiet thin headings, restrained
  * square-ish geometry, arrow text links, and generous rhythm.
- * (design.md §4, §9, §12, §30, §31, §36.)
+ * (design.md §4, §9, §12.)
  */
 
 /** Editorial container — restrained max width with visible white margins. */
@@ -20,7 +20,7 @@ export function EditorialContainer({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("mx-auto w-full max-w-6xl px-6 md:px-10 lg:px-16", className)}>
+    <div className={cn("mx-auto w-full max-w-5xl px-4 md:px-6 lg:px-10", className)}>
       {children}
     </div>
   );
@@ -47,7 +47,7 @@ export function SectionTitle({
   return (
     <Tag
       className={cn(
-        "text-[2rem] leading-[1.08] font-normal tracking-[-0.03em] text-brand-950 md:text-[2.5rem] lg:text-[3rem]",
+        "text-balance text-[clamp(1.75rem,3vw,2.75rem)] leading-[1.05] font-normal tracking-[-0.03em] text-brand-950 md:text-[2rem] lg:text-[2.25rem]",
         className,
       )}
     >
@@ -61,7 +61,7 @@ export function Lede({ children, className }: { children: React.ReactNode; class
   return (
     <p
       className={cn(
-        "text-[15px] leading-[1.55] text-[#64748B] md:text-base",
+        "text-[14px] leading-[1.6] text-[#64748B] md:text-base",
         className,
       )}
     >
