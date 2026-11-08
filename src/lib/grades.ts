@@ -266,16 +266,28 @@ export async function resolveGradeSliceContext(
   const section = sectionRows[0];
   if (!section) return { ok: false, error: "Section not found." };
 
-  // 2) Subject (active catalog entry only)
+  // 2) Subject (active catalog entry only).
+  //
+  // The default must be a subject this teacher actually teaches in this
+  // section. Resolving to the first catalog entry (Araling Panlipunan) used to
+  // open a read-only sheet while the subject dropdown displayed the assigned
+  // subject — the teacher then had no way to start encoding without editing
+  // the URL. A wrong-but-valid subject stays readable (never editable).
   const subjectList = await db
     .select({ id: subjects.id, name: subjects.name })
     .from(subjects)
     .where(eq(subjects.isActive, true))
     .orderBy(asc(subjects.code));
   if (subjectList.length === 0) return { ok: false, error: "No subjects configured." };
+
+  const assignments = canEncode ? await teacherSubjectAssignments(user.id) : [];
+  const assignedSubjectIds = assignments
+    .filter((a) => a.sectionId === section.id)
+    .map((a) => a.subjectId);
+
   const subjectId = subjectList.some((s) => s.id === params.subjectId)
     ? (params.subjectId as string)
-    : subjectList[0].id;
+    : (subjectList.find((s) => assignedSubjectIds.includes(s.id))?.id ?? subjectList[0].id);
 
   // 3) Grading period — must belong to the section's school year
   const periods = await db
@@ -320,8 +332,12 @@ export async function resolveGradeSliceContext(
   const period = periods.find((p) => p.id === gradingPeriodId)!;
 
   // Editability depends on the resolved subject too: an assigned subject
-  // teacher may encode only their (section, subject) pairs.
-  const editable = section.isActive && (await canWriteGradesInSection(user, section.id, subjectId));
+  // teacher may encode only their (section, subject) pairs. Reuse the
+  // assignments already fetched above (same rules as
+  // `canWriteGradesInSection`, without a second query).
+  const editable =
+    section.isActive &&
+    assignments.some((a) => a.sectionId === section.id && a.subjectId === subjectId);
 
   return {
     ok: true,

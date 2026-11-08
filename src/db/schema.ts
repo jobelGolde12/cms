@@ -370,10 +370,14 @@ export const subjects = sqliteTable(
 );
 
 /**
- * Departmental teaching loads — a subject-teacher assignment beyond the
- * advisory. The adviser (sections.adviser_id) can encode EVERY subject of
- * their section; a teacher listed here can encode only the assigned subject.
- * One assignment row per (section, subject); admin/seed-managed for now.
+ * Departmental teaching loads — the subject-teacher assignment that authorizes
+ * grade encoding for an exact (section, subject) pair.
+ *
+ * Grade encoding is ASSIGNMENT-BASED (2026-11 revision C): holding the
+ * Subject Teacher role is NOT enough — the account must also have a row here
+ * for the exact (section, subject) being encoded, and the role-union check
+ * must resolve `grades.write`. Being the section's adviser grants NO
+ * encoding rights by itself. One assignment row per (section, subject).
  */
 export const sectionSubjectTeachers = sqliteTable(
   "section_subject_teachers",

@@ -155,8 +155,8 @@ export function GradeSheetPanel({ context, rows }: { context: SheetContext; rows
       <CardBody className="p-0">
         {!editable && (
           <p className="border-b border-brand-100 bg-brand-50 px-4 py-2 text-xs text-brand-700">
-            Only the section adviser (Teacher) can encode or modify grades here. You are viewing the
-            submitted grades.
+            Only the teacher assigned to this subject in this section can encode or modify grades
+            here. You are viewing the submitted grades.
           </p>
         )}
         {editable && locked && (

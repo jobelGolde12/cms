@@ -158,7 +158,7 @@ export function AssignmentManager({
       <div className="grid gap-4 lg:grid-cols-2">
         <AssignmentForm
           title="Assign an adviser"
-          description="One adviser per section. The adviser can encode every subject in that section and sees its students in the advisory views."
+          description="One adviser per section. The adviser sees its students in the advisory views; grade encoding still requires a subject-teacher load for the exact subject."
           icon={<UserRound aria-hidden="true" className="h-4 w-4" />}
           action={assignAdviser}
         >

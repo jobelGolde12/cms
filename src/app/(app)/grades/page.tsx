@@ -229,6 +229,9 @@ export default async function GradesPage({
         </Card>
 
         <GradeSheetPanel
+          // Remount per academic context: local draft state must never leak
+          // from one term/subject/section into another sheet.
+          key={`${context.sectionId}:${context.subjectId}:${context.gradingPeriodId}`}
           context={{
             sectionId: context.sectionId,
             subjectId: context.subjectId,

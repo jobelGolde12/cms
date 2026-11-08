@@ -56,7 +56,8 @@ export type FilterSection = {
   schoolYearId: string;
   schoolYear: string;
   editable: boolean;
-  /** true → the user advises this section (may encode every subject) */
+  /** true → the user advises this section (label only — grade encoding still
+   * requires a subject-teaching load for the exact subject) */
   advisory?: boolean;
 };
 
