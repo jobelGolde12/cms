@@ -1,9 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, GraduationCap, MapPin, Award, CheckCircle2 } from "lucide-react";
+import { ArrowRight, GraduationCap } from "lucide-react";
 import { SCHOOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { EditorialContainer, Eyebrow } from "./editorial";
+
+// Hero illustration (public/hero-section-image.svg) as a static import:
+// TypeScript infers the intrinsic 960×845.748 dimensions and Next fingerprints
+// the asset. Rendered with `unoptimized` below because next/image does not
+// process SVGs through the optimizer (avoids prod-only rasterization issues).
+import heroImage from "../../../public/hero-section-image.svg";
 
 /**
  * Hero — the defining section of the editorial redesign (design.md §7–16).
