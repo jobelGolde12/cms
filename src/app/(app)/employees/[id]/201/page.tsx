@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { getEmployeeById, listEmployee201Records } from "@/lib/employees";
 import {
   EMPLOYEE_201_CATEGORIES,
@@ -22,14 +22,14 @@ export default async function Employee201Page({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "employee_201.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "employee_201.view")) redirect("/dashboard");
 
   const { id } = await params;
   const employee = await getEmployeeById(id);
   if (!employee) notFound();
 
   const records = await listEmployee201Records(id, { includeArchived: true });
-  const canManage = hasPermission(user.role, "employee_201.manage");
+  const canManage = hasUserPermission(user.roles, "employee_201.manage");
   const fullName = `${employee.firstName} ${employee.lastName}`.trim();
 
   return (

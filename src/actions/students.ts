@@ -441,7 +441,11 @@ export async function archiveStudent(_prev: ActionState, formData: FormData): Pr
 }
 
 // Re-export for form components needing the duplicate pair count for a student.
+// Authorization is re-checked here so the endpoint cannot be used to probe
+// duplicate counts for records outside the caller's scope.
 export async function pendingDuplicateCount(studentId: string): Promise<number> {
+  const user = await getAuthorizedUser("duplicates.view");
+  if (!user || !(await canAccessStudent(user, { studentId }))) return 0;
   const rows = await db
     .select({ id: duplicateCandidates.id })
     .from(duplicateCandidates)

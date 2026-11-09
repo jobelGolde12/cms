@@ -3,7 +3,7 @@ import { inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/db";
 import { systemSettings } from "@/db/schema";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { ROLE_LABELS } from "@/lib/constants";
 import { updateSystemSettingForm } from "@/actions/settings";
 import { buttonStyles } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export default async function SettingsPage() {
     .from(systemSettings)
     .where(inArray(systemSettings.key, EDITABLE_KEYS));
 
-  const canManage = hasPermission(user.role, "settings.manage");
+  const canManage = hasUserPermission(user.roles, "settings.manage");
 
   // Server-rendered system-configuration section, shown for `settings.manage`
   // roles only — the shell mounts it as the "System" nav entry.

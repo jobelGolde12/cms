@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { getForecastWithCache, parseScopeParam, VIEW_PERMISSION } from "@/lib/forecasting/service";
 import { logAudit } from "@/lib/audit";
 import { sessionMetadata } from "@/actions/helpers";
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!hasPermission(user.role, VIEW_PERMISSION)) {
+  if (!hasUserPermission(user.roles, VIEW_PERMISSION)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

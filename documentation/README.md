@@ -64,6 +64,11 @@ documentation/
 │   ├── qr-verification.md  verification.md
 │   └── rbac-2026-11-revision.md  ★ IMPLEMENTED guidance/nurse/sections/employees/print revision
 │   └── subject-teacher-grading-scope-2026-11.md  ★ IMPLEMENTED grade scope + production schema repair
+│   ├── teacher-assignment-model-2026-11.md   ★ IMPLEMENTED assignment-based encoding, multi-role, Registrar lockout
+│   ├── grading-periods-terms-2026-11.md      ★ IMPLEMENTED TERM 1 / TERM 2 / TERM 3
+│   └── literacy-coordinator-assessments-2026-11.md ★ IMPLEMENTED assessment add/edit UI
+├── demo-data-removal-2026-11-08.md  ★ IMPLEMENTED removal of every seeded/QA row + seed rewrite
+├── implementation-report-2026-11-09.md ★ IMPLEMENTED end-to-end report for the 2026-11 work
 ├── security/
 │   ├── authentication.md
 │   ├── authorization.md

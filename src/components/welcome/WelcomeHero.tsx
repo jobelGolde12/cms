@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, GraduationCap } from "lucide-react";
 import { SCHOOL } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import { EditorialContainer, Eyebrow } from "./editorial";
 
 // Hero illustration (public/hero-section-image.svg) as a static import:

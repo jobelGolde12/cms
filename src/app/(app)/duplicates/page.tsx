@@ -6,7 +6,7 @@ import { listDuplicates, verificationStats } from "@/lib/queries";
 import { reviewDuplicate } from "@/actions/duplicates";
 import { explainDuplicateEvidence } from "@/actions/ai";
 import { AiAnalysisPanel } from "@/components/ai/ai-analysis-panel";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import {
   DUPLICATE_STATUS_LABELS,
   type DuplicateStatus,
@@ -49,7 +49,7 @@ export default async function DuplicatesPage({
   if (!user) redirect("/login");
   // Duplicate candidates contain learner PII (names + birth dates) — only
   // duplicate-review roles may load this page at all.
-  if (!hasPermission(user.role, "duplicates.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "duplicates.view")) redirect("/dashboard");
 
   const params = await searchParams;
   const str = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : "");
@@ -62,7 +62,7 @@ export default async function DuplicatesPage({
     listDuplicates(status, { q, band: band as "high" | "moderate" | "review" | undefined }),
     verificationStats(user),
   ]);
-  const canReview = hasPermission(user.role, "duplicates.review");
+  const canReview = hasUserPermission(user.roles, "duplicates.review");
 
   const selected =
     items.find((item) => item.id === selectedId) ??
@@ -92,7 +92,12 @@ export default async function DuplicatesPage({
         {STATUS_TABS.map((tab) => (
           <Link
             key={tab}
-            href={`/duplicates?status=${tab}`}
+            href={queueQuery({
+              status: tab,
+              id: "",
+              // The confidence-band filter only applies to the pending queue.
+              band: tab === "pending" ? band : "",
+            })}
             className={cn(
               "inline-flex h-7 items-center rounded-full border px-3 text-xs font-medium transition-colors",
               status === tab

@@ -5,7 +5,7 @@ import { getAttendanceForStudent, getClinicalForStudent, getCurrentEnrollment, g
 import { db } from "@/db";
 import { duplicateCandidates, students } from "@/db/schema";
 import { getAuthorizedUser, type SessionUser } from "@/lib/auth";
-import { hasPermission, type Permission } from "@/lib/permissions";
+import { hasUserPermission, type Permission } from "@/lib/permissions";
 import { canAccessStudent, canViewConfidentialBehavior, canViewStudentDevelopment } from "@/lib/scope";
 import { logAudit } from "@/lib/audit";
 import { dashboardData } from "@/lib/dashboard-data";
@@ -134,12 +134,12 @@ async function fetchAuthorizedStudentDataset(user: SessionUser, studentId: strin
   const enrollment = await getCurrentEnrollment(studentId);
 
   const can = {
-    grades: hasPermission(user.role, "grades.view"),
-    attendance: hasPermission(user.role, "attendance.view"),
-    assessments: hasPermission(user.role, "assessments.view"),
-    behavior: hasPermission(user.role, "behavior.view"),
-    interventions: hasPermission(user.role, "interventions.view"),
-    health: hasPermission(user.role, "health.view"),
+    grades: hasUserPermission(user.roles, "grades.view"),
+    attendance: hasUserPermission(user.roles, "attendance.view"),
+    assessments: hasUserPermission(user.roles, "assessments.view"),
+    behavior: hasUserPermission(user.roles, "behavior.view"),
+    interventions: hasUserPermission(user.roles, "interventions.view"),
+    health: hasUserPermission(user.roles, "health.view"),
   };
 
   const [grades, attendance, assessments, behavior, interventions, health] = await Promise.all([
@@ -609,7 +609,7 @@ export async function summarizeDashboard(_prev: AiActionState, formData: FormDat
   void formData;
   const user = await getAuthorizedUser("dashboard.view");
   if (!user) return fail("You do not have permission to use this AI feature.");
-  if (!hasPermission(user.role, "reports.view")) return fail("You do not have permission to use this AI feature.");
+  if (!hasUserPermission(user.roles, "reports.view")) return fail("You do not have permission to use this AI feature.");
   if (user.role === "admin_officer") return fail("This feature is not available in the employee-records workspace.");
   const limited = rateLimited(user);
   if (limited) return limited;

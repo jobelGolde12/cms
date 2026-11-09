@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { TrendingUp, ClipboardList, CalendarDays, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import {
   performanceOverview,
   listSchoolYears,
@@ -33,7 +33,7 @@ export default async function PerformancePage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "grades.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "grades.view")) redirect("/dashboard");
 
   const params = await searchParams;
   const str = (key: string) =>

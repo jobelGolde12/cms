@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
 import { confidentialBehaviorFilter, canViewConfidentialBehavior } from "./scope";
 import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/db";
@@ -1748,7 +1748,36 @@ export async function listAssignableRoles() {
     .sort((a, b) => order.get(a.id)! - order.get(b.id)!);
 }
 
-export async function listAuditLogs(page = 1, limit = 50) {
+export type AuditLogFilters = {
+  /** free-text match against action, entity type or acting user name */
+  q?: string;
+  /** inclusive ISO date (YYYY-MM-DD) lower bound */
+  from?: string;
+  /** inclusive ISO date (YYYY-MM-DD) upper bound */
+  to?: string;
+};
+
+/** Shared predicate for the audit-log list/count so they never diverge. */
+function auditLogWhere(filters: AuditLogFilters): SQL | undefined {
+  const conditions: SQL[] = [];
+  if (filters.q) {
+    const needle = `%${filters.q}%`;
+    conditions.push(
+      sql`(${auditLogs.action} LIKE ${needle} OR ${auditLogs.entityType} LIKE ${needle} OR ${users.firstName} LIKE ${needle} OR ${users.lastName} LIKE ${needle})`,
+    );
+  }
+  if (filters.from) {
+    const from = new Date(`${filters.from}T00:00:00.000`);
+    if (!Number.isNaN(from.getTime())) conditions.push(gte(auditLogs.createdAt, from));
+  }
+  if (filters.to) {
+    const to = new Date(`${filters.to}T23:59:59.999`);
+    if (!Number.isNaN(to.getTime())) conditions.push(lte(auditLogs.createdAt, to));
+  }
+  return conditions.length ? and(...conditions) : undefined;
+}
+
+export async function listAuditLogs(page = 1, limit = 50, filters: AuditLogFilters = {}) {
   const offset = (page - 1) * limit;
   return db
     .select({
@@ -1762,13 +1791,18 @@ export async function listAuditLogs(page = 1, limit = 50) {
     })
     .from(auditLogs)
     .leftJoin(users, eq(users.id, auditLogs.userId))
+    .where(auditLogWhere(filters))
     .orderBy(desc(auditLogs.createdAt))
     .limit(limit)
     .offset(offset);
 }
 
-export async function auditLogCount(): Promise<number> {
-  const rows = await db.select({ n: count() }).from(auditLogs);
+export async function auditLogCount(filters: AuditLogFilters = {}): Promise<number> {
+  const rows = await db
+    .select({ n: count() })
+    .from(auditLogs)
+    .leftJoin(users, eq(users.id, auditLogs.userId))
+    .where(auditLogWhere(filters));
   return rows[0]?.n ?? 0;
 }
 

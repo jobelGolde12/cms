@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { getForecastWithCache } from "@/lib/forecasting/service";
 import { Card, CardHeader, CardBody } from "@/components/ui/card";
 import type { ChartDatum } from "./forecast-chart";
@@ -23,7 +23,7 @@ const ForecastChart = dynamic(() => import("./forecast-chart"), {
  */
 export default async function ForecastPanel() {
   const user = await getCurrentUser();
-  if (!user || !hasPermission(user.role, "grades.view")) return null;
+  if (!user || !hasUserPermission(user.roles, "grades.view")) return null;
 
   const result = await getForecastWithCache(
     { type: "school", scopeLevel: "school" },

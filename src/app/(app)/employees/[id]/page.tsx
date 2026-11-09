@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Archive, RotateCcw } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { getEmployeeById, activeSectionOptions } from "@/lib/employees";
 import {
   activeSubjectOptions,
@@ -47,7 +47,7 @@ export default async function EmployeeProfilePage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "employees.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "employees.view")) redirect("/dashboard");
 
   const { id } = await params;
   const employee = await getEmployeeById(id);
@@ -56,8 +56,8 @@ export default async function EmployeeProfilePage({
     notFound();
   }
 
-  const canUpdate = hasPermission(user.role, "employees.update");
-  const canArchive = hasPermission(user.role, "employees.archive");
+  const canUpdate = hasUserPermission(user.roles, "employees.update");
+  const canArchive = hasUserPermission(user.roles, "employees.archive");
   const [sectionOptions, accountOptions, subjectOptions, teachingLoads] = await Promise.all([
     canUpdate ? activeSectionOptions() : Promise.resolve([]),
     canUpdate ? subjectTeacherAccountOptions(employee.id) : Promise.resolve([]),

@@ -4,7 +4,7 @@ import { Network } from "lucide-react";
 import { db } from "@/db";
 import { schoolYears } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import {
   assignmentSections,
   assignmentSubjectOptions,
@@ -13,8 +13,8 @@ import {
 } from "@/lib/assignments";
 import { PageHeader } from "@/components/ui/page-header";
 import {
+  AssignmentFilters,
   AssignmentManager,
-  SchoolYearFilter,
 } from "@/components/assignments/assignment-manager";
 
 export const metadata = { title: "Teacher Assignments · Records Management System" };
@@ -26,6 +26,10 @@ export const metadata = { title: "Teacher Assignments · Records Management Syst
  * Adviser, to a (section, subject) as Subject Teacher, or to both with the same
  * account. Assignment is authoritative for grade encoding; the route guard
  * mirrors the server actions, which re-check the permission and every rule.
+ *
+ * The screen is scoped by two GET filters — school year and grade level — so
+ * the whole page (forms and table) can be narrowed to one grade level without
+ * JavaScript, and so a view can be shared as a URL.
  */
 export default async function AssignmentsPage({
   searchParams,
@@ -34,10 +38,11 @@ export default async function AssignmentsPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "academics.config")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "academics.config")) redirect("/dashboard");
 
   const sp = await searchParams;
   const requestedYearId = typeof sp.sy === "string" ? sp.sy : "";
+  const requestedGradeLevelId = typeof sp.gl === "string" ? sp.gl : "";
 
   const [years, currentYearRows] = await Promise.all([
     db
@@ -54,15 +59,34 @@ export default async function AssignmentsPage({
   const defaultYearId = currentYearRows[0]?.id ?? years[0]?.id ?? "";
   const yearId = requestedYearId || defaultYearId;
 
-  const [sections, teachers, subjects] = await Promise.all([
+  const [allSections, teachers, subjects] = await Promise.all([
     assignmentSections(yearId),
     assignmentTeacherOptions(),
     assignmentSubjectOptions(),
   ]);
+
+  // Grade-level options are derived from the sections that actually exist for
+  // the selected year, so the filter can never offer an empty scope.
+  const gradeLevelOptions = Array.from(
+    new Map(
+      allSections.map((s) => [
+        s.gradeLevelId,
+        { id: s.gradeLevelId, name: s.gradeLevelName, order: s.gradeLevelOrder },
+      ]),
+    ).values(),
+  ).sort((a, b) => a.order - b.order);
+
+  const sections = requestedGradeLevelId
+    ? allSections.filter((s) => s.gradeLevelId === requestedGradeLevelId)
+    : allSections;
+
   const assignments = await subjectAssignmentsForSections(sections.map((s) => s.id));
 
   const adviserCount = sections.filter((s) => s.adviserId).length;
   const sectionCount = sections.length;
+  const scopeLabel = requestedGradeLevelId
+    ? (gradeLevelOptions.find((g) => g.id === requestedGradeLevelId)?.name ?? "the selected grade level")
+    : null;
 
   return (
     <div className="space-y-6">
@@ -70,12 +94,21 @@ export default async function AssignmentsPage({
         eyebrow="Academic Setup"
         title="Teacher Assignments"
         description="Attach teacher accounts to sections as Adviser, Subject Teacher, or both. Grade encoding follows these assignments — never the role alone."
-        actions={<SchoolYearFilter years={years} selectedYearId={yearId} />}
+        actions={
+          <AssignmentFilters
+            years={years}
+            selectedYearId={yearId}
+            gradeLevels={gradeLevelOptions}
+            selectedGradeLevelId={requestedGradeLevelId}
+          />
+        }
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-brand-200 bg-white px-4 py-3 shadow-xs">
-          <p className="text-xs font-medium text-[#64748B]">Active sections</p>
+          <p className="text-xs font-medium text-[#64748B]">
+            Active sections{scopeLabel ? ` · ${scopeLabel}` : ""}
+          </p>
           <p className="mt-1 text-2xl font-bold text-brand-900">{sectionCount}</p>
         </div>
         <div className="rounded-lg border border-brand-200 bg-white px-4 py-3 shadow-xs">
@@ -95,7 +128,10 @@ export default async function AssignmentsPage({
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <Network aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            No active sections exist for this school year. Create a section under{" "}
+            {scopeLabel
+              ? `No active sections exist for ${scopeLabel} in this school year. `
+              : "No active sections exist for this school year. "}
+            Create a section under{" "}
             <a className="font-medium underline" href="/sections">
               Sections
             </a>{" "}

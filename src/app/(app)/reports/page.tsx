@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FileText, Download, Eye } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { db } from "@/db";
 import { reports } from "@/db/schema";
 import { desc } from "drizzle-orm";
@@ -27,13 +27,13 @@ export default async function ReportsPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "reports.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "reports.view")) redirect("/dashboard");
 
   // Exporting files requires `reports.export` (enforced server-side by the
   // /api/reports route AND the proxy middleware — both return 403 otherwise;
   // see src/app/api/reports/[type]/route.ts and src/proxy.ts). Hide the
   // download buttons for roles that would only ever receive 403s.
-  const canExport = hasPermission(user.role, "reports.export");
+  const canExport = hasUserPermission(user.roles, "reports.export");
 
   const filterValues = await resolveReportFilterValues(await searchParams);
   const filterData = await resolveReportQuery(filterValues);
@@ -131,6 +131,13 @@ export default async function ReportsPage({
                     >
                       <Download aria-hidden="true" className="h-3.5 w-3.5" />
                       XLSX
+                    </a>
+                    <a
+                      href={linkWithFilters(`/api/reports/${t}?format=csv`)}
+                      className={buttonStyles("outline", "sm")}
+                    >
+                      <Download aria-hidden="true" className="h-3.5 w-3.5" />
+                      CSV
                     </a>
                   </>
                 ) : (

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { HeartHandshake, ShieldAlert } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import {
   listBehaviorCategories,
   listGuidanceIncidents,
@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
 import { ClientNavForm } from "@/components/ui/client-nav-form";
 import { buttonStyles } from "@/components/ui/button";
+import { RegistryPagination } from "@/components/registry/registry-ui";
 import { IncidentDeleteButton } from "@/components/guidance/incident-delete-button";
 
 export const metadata = { title: "Guidance Office · Records Management System" };
@@ -41,7 +42,7 @@ export default async function GuidancePage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "behavior.view") || !canViewConfidentialBehavior(user)) {
+  if (!hasUserPermission(user.roles, "behavior.view") || !canViewConfidentialBehavior(user)) {
     redirect("/dashboard");
   }
 
@@ -53,9 +54,13 @@ export default async function GuidancePage({
   const q = param("q");
   const categoryId = param("type");
   const status = param("status");
+  const page = Math.max(1, Number.parseInt(param("page") ?? "1", 10) || 1);
+  const pageSize = [5, 10, 25, 50, 100].includes(Number.parseInt(param("pageSize") ?? "", 10))
+    ? Number.parseInt(param("pageSize") as string, 10)
+    : 25;
 
-  const [{ rows, total, page, pageSize }, categories] = await Promise.all([
-    listGuidanceIncidents(user, { q, categoryId, status }),
+  const [{ rows, total, page: currentPage, pageSize: currentPageSize }, categories] = await Promise.all([
+    listGuidanceIncidents(user, { q, categoryId, status, page, pageSize }),
     listBehaviorCategories(),
   ]);
 
@@ -233,11 +238,15 @@ export default async function GuidancePage({
             )}
           </tbody>
         </TableWrap>
-        {rows.length > 0 && total > pageSize ? (
-          <p className="px-4 py-2 text-xs text-[#64748B]">
-            Showing {rows.length} of {total} records — page {page}. Narrow the filters to see
-            specific records.
-          </p>
+        {total > 0 ? (
+          <RegistryPagination
+            page={currentPage}
+            pageSize={currentPageSize}
+            total={total}
+            searchParams={sp}
+            basePath="/guidance"
+            itemLabel="incidents"
+          />
         ) : null}
       </Card>
     </div>

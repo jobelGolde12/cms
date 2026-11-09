@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Wallet } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { serviceCreditOverview } from "@/lib/employees";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { TableWrap, Th, Td, TableEmptyState } from "@/components/ui/table";
@@ -33,7 +33,7 @@ export default async function ServiceCreditsOverviewPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "service_credits.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "service_credits.view")) redirect("/dashboard");
 
   const sp = await searchParams;
   const str = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : "");

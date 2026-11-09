@@ -1,8 +1,11 @@
 ROLE AND PERMISSION GUIDE FOR THE SCHOOL SYSTEM
 
-Status: Implemented. Last audited November 3, 2026 (2026-11 revision: confined the Guidance Counselor to the Guidance Office domain, removed Reports from the Nurse, added the sections/employees configuration module and verified-records-only official printing — see features/rbac-2026-11-revision.md). Previous audit October 29, 2026 introduced the Subject Teacher role and moved grade encoding out of the Adviser role.
+Status: Implemented. Last audited November 9, 2026 (2026-11 revision C: grade encoding is now authorisation-based rather than role-based, a `grades.encode` module gate keeps the Registrar out of Grade Encoding entirely, and an account may hold several roles — see features/teacher-assignment-model-2026-11.md). Previous audit November 3, 2026 (2026-11 revision: confined the Guidance Counselor to the Guidance Office domain, removed Reports from the Nurse, added the sections/employees configuration module and verified-records-only official printing — see features/rbac-2026-11-revision.md). Previous audit October 29, 2026 introduced the Subject Teacher role and moved grade encoding out of the Adviser role.
 
 The ten roles described here are already live. They're defined in src/lib/permissions.ts and loaded through scripts/seed.mts and scripts/seed-remote-reference.mts. Every check is enforced on the server through requirePermission, getAuthorizedUser, and the row-level scope in src/lib/scope.ts. Checks in the user interface are only for appearance and don't protect anything on their own.
+
+AN ACCOUNT MAY HOLD SEVERAL ROLES
+The primary role lives in users.role_id; additional roles live in the user_roles table (migration 0012_user_roles_multi_role.sql). The effective permission set of an account is the UNION of the permissions of every role it holds — hasUserPermission(user.roles, ...) in src/lib/permissions.ts. This is what makes the Adviser + Subject Teacher combination work: one teacher, one account, one personnel record, two independent assignments. The same union is used for the row-level scope in src/lib/scope.ts, for every page guard, for every server action and for the optimistic middleware gate in src/proxy.ts, so the interface and the backend always resolve the same permissions.
 
 
 THE TEN ROLES
@@ -17,7 +20,7 @@ subject_teacher (Subject Teacher)
 Encodes student grades AND NOTHING ELSE: only for the exact (section, subject) teaching loads in the section_subject_teachers table. Cannot edit student personal information, record attendance or behavior, manage users, or touch administrative settings. Row-level scope follows the same teaching-load table.
 
 teacher (Adviser)
-Works with the students in their own assigned sections: attendance, assessments, and behavior notes. The Adviser does NOT encode grades (moved to subject_teacher in the 2026-10 revision) — grades are view-only for the Adviser.
+Works with the students in their own assigned sections: attendance, assessments, and behavior notes. The Adviser does NOT encode grades and does NOT open the Grade Encoding module on its own — those belong to the Subject Teacher role. An account that holds the Adviser role AND the Subject Teacher role is a different matter: see the note under TEACHER (ADVISER) below.
 
 records (Records Personnel)
 Handles student records, enrollment, profile verification, historical records, and documents.
@@ -29,7 +32,7 @@ nurse (Nurse)
 Works with health, nutrition, and clinical records only. A nurse cannot edit general student information and has no access to Reports (2026-11 revision).
 
 registrar (Registrar)
-Strictly read-only access, plus printing of official documents such as the student card and Form 137.
+Strictly read-only access, plus printing of official documents such as the student card and Form 137. The Registrar is deliberately locked out of Grade Encoding: it holds neither grades.encode (the module gate) nor grades.write, so the module is absent from the sidebar and the /grades route redirects server-side (2026-11 revision C).
 
 literacy_coordinator (Language and Literacy Coordinator)
 Handles reading, literacy, and numeracy assessments and their statistics.
@@ -49,6 +52,8 @@ Running the seed script never invents credentials. An account is created only wh
 
 If either one is missing, that role is skipped and reported on the console. There is no shared fallback password and no `*@local.dev` fallback address, so a seed run can never resurrect a demo login.
 
+An account that already exists is never modified by a seed run — no password reset, no role overwrite, no name overwrite. If the e-mail already exists, or the deterministic account id is already taken by a real person, the seed skips that role and says so on the console. The seed scripts also create NO demo data at all: no students, no sections, no employees, no teaching assignments (see documentation/demo-data-removal-2026-11-08.md).
+
 Environment variables per role (each role has an e-mail, a password hash, a first name, and a last name):
 
 admin: DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD_HASH, DEFAULT_ADMIN_FIRST_NAME, DEFAULT_ADMIN_LAST_NAME
@@ -66,7 +71,9 @@ Two things to keep in mind. First, the password hash variables hold a hash, not 
 
 RETIRED DEMO ACCOUNTS
 
-The demo/test accounts removed on November 5, 2026 are on a deny-list inside both seed scripts (RETIRED_DEMO_EMAILS in scripts/seed.mts and scripts/seed-remote-reference.mts), together with the whole `*@local.dev` domain. The seeds refuse to provision those addresses even if an environment variable still points at one, so they cannot come back through a seed run.
+The demo/test accounts removed on November 5, 2026 are on a deny-list inside the shared seed implementation (RETIRED_DEMO_EMAILS in src/lib/retired-demo.ts), together with the whole `*@local.dev` domain. The seeds refuse to provision those addresses even if an environment variable still points at one, so they cannot come back through a seed run.
+
+The deny-list also covers the demo identifiers removed on November 8, 2026 — the seeded section ids (sec-7-* … sec-10-*), the seeded employee numbers (EMP-2026-000001 … EMP-2026-000010) and the seeded account ids. assertNotRetiredDemoIdentifier() refuses such an insert outright, so a future script cannot silently resurrect them. Student numbers are deliberately not blocked: the application generates SM-<year>-###### itself for real enrolments.
 
 
 WHO CAN SEE WHICH STUDENTS
@@ -132,8 +139,8 @@ TEACHER (ADVISER)
 Everything below applies to the adviser's own assigned sections only.
 - View students, enrollment, and full profiles
 - View guardians of assigned students
-- View grades (read-only — the Adviser role alone never encodes grades; encoding is the Subject Teacher's role)
-- **Adviser + Subject Teacher:** one account may hold both roles. The adviser assignment (`sections.adviser_id`) and the (section, subject) teaching load are independent, so the same teacher keeps the advisory scope below AND can encode grades for their assigned subjects. The effective permission set is the union of both roles (`hasUserPermission`); no duplicate account is needed.
+- View grades (read-only — the Adviser role alone never encodes grades and never opens the Grade Encoding module)
+- **Adviser + Subject Teacher:** one account may hold both roles. The adviser assignment (`sections.adviser_id`) and the (section, subject) teaching load are independent, so the same teacher keeps the advisory scope below AND can encode grades for their assigned subjects. The effective permission set is the union of both roles (`hasUserPermission`); no duplicate account is needed. The additional role is recorded in the `user_roles` table.
 - Record and view attendance
 - Record behavior notes and view behavior records
 - Record and view assessments
@@ -173,6 +180,7 @@ REGISTRAR
 - Reports: view, generate, and export
 - Official document printing (student card, Form 137)
 - No write access to any student data
+- **No Grade Encoding:** the module is hidden from the sidebar and the /grades route redirects server-side — the Registrar holds neither grades.encode nor grades.write (2026-11 revision C)
 
 LITERACY COORDINATOR
 - View the student registry, enrollment, and guardians
@@ -196,8 +204,15 @@ Every permission key listed here is an entry in PERMISSIONS inside src/lib/permi
 
 If any rule changes in the future, this file and the code map need to be updated together.
 
-GRADE ENCODING (2026-10 REVISION B)
-grades.write is held ONLY by the subject_teacher role. Admin, school_admin, and every other role are deliberately excluded (see TEACHER_ONLY_WRITE in src/lib/permissions.ts). On top of the role check, every grade action re-establishes the assignment check server-side: the caller must hold a section_subject_teachers row for the exact (section, subject) pair being written. Attempting to tamper with section/subject/period ids in a request payload fails the row-level check even when the role passes.
+GRADE ENCODING (2026-10 REVISION B → 2026-11 REVISION C)
+
+Grade encoding is now decided in three layers, all enforced server-side:
+
+1. MODULE GATE — grades.encode decides whether the /grades grade-sheet screen may be opened at all. It is held by admin, school_admin, records and subject_teacher. The Registrar deliberately does NOT hold it, so the module is absent from the sidebar and the route redirects server-side. grades.view is a different thing: it only allows reading a student's grades on the profile, performance and report-card screens.
+2. WRITE PERMISSION — grades.write is held ONLY by the subject_teacher role. Admin, school_admin, and every other role are deliberately excluded (see TEACHER_ONLY_WRITE in src/lib/permissions.ts). Because an account may hold the Subject Teacher role IN ADDITION TO the Adviser role, the check resolves over the union of the account's roles (hasUserPermission).
+3. ROW SCOPE — the caller must hold a section_subject_teachers row for the exact (section, subject) pair being written (canWriteGradesInSection). Being the section's adviser is not sufficient, and holding the role without a matching load is not sufficient either. Attempting to tamper with section/subject/period ids in a request payload fails the row-level check even when the permission passes.
+
+The administration of those assignments lives in one place: Teacher Assignments (/assignments, permission academics.config). See features/teacher-assignment-model-2026-11.md.
 
 The "Requires Attention" indicators follow the neutral terminology rule. They're visible to the same people who can see the underlying data.
 

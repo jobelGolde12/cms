@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
 import { isOfficialPrintEligible } from "@/lib/workflow";
 import { OfficialDocumentBlocked } from "@/components/students/print-blocked";
@@ -325,7 +325,7 @@ export default async function Form137Page({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "documents.print")) redirect("/students");
+  if (!hasUserPermission(user.roles, "documents.print")) redirect("/students");
 
   const { id } = await params;
   if (!(await canAccessStudent(user, { studentId: id }))) redirect("/students");

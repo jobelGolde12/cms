@@ -7,9 +7,14 @@
  *
  *   npx tsx scripts/rbac-qa-setup.mts            # create QA fixtures
  *   npx tsx scripts/rbac-qa-setup.mts --cleanup  # remove QA fixtures
+ *
+ * SAFETY: running this against a REMOTE database requires an explicit
+ * `ALLOW_QA_FIXTURES=1` opt-in — the live `cms` database was purged of demo
+ * and QA rows on 2026-11-08 and must stay clean.
  */
 
 import "dotenv/config";
+import { requireExplicitOptInForRemote } from "./lib/remote-guard";
 import { and, eq, or, like } from "drizzle-orm";
 import { db } from "../src/db";
 import {
@@ -143,6 +148,7 @@ if (process.argv.includes("--cleanup")) {
       process.exit(1);
     });
 } else {
+  requireExplicitOptInForRemote("ALLOW_QA_FIXTURES", "the RBAC QA fixture setup");
   setup()
     .then(() => process.exit(0))
     .catch((e) => {

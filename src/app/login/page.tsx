@@ -114,12 +114,14 @@ export default function LoginPage() {
                 >
                   Password
                 </label>
-                <a
-                  href="#"
-                  className="rounded text-xs font-medium text-[#315EF7] hover:text-[#203B7A] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#315EF7] focus-visible:ring-offset-2"
+                {/* No self-service reset flow exists — accounts are provisioned
+                    internally — so this is guidance, not a dead link. */}
+                <span
+                  title="Contact the school administrator to reset your password."
+                  className="rounded text-xs font-medium text-[#64748B]"
                 >
                   Forgot Password?
-                </a>
+                </span>
               </div>
               <div className="relative">
                 <input

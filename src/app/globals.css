@@ -72,6 +72,16 @@
   --color-danger-bg: #FEE2E2;
   --color-info-bg: #E0EAFF;
 
+  /* Status surfaces used by error/verify/form feedback components.
+     These power the `bg-status-*-bg` / `text-status-*` utilities; without the
+     tokens Tailwind v4 emits nothing and the surfaces render transparent. */
+  --color-status-error: #B91C1C;
+  --color-status-error-bg: #FEE2E2;
+  --color-status-pending: #92400E;
+  --color-status-pending-bg: #FEF3C7;
+  --color-status-verified: #047857;
+  --color-status-verified-bg: #D1FAE5;
+
   /* Gold / yellow accent (restrained institutional highlight) */
   --color-gold-50: #fffbeb;
   --color-gold-100: #fef3c7;

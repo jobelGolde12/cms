@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Search, UserPlus } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import {
   getCurrentEnrollment,
   getStudentProfile,
@@ -31,7 +31,7 @@ export default async function NewIncidentPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "behavior.write") || !canViewConfidentialBehavior(user)) {
+  if (!hasUserPermission(user.roles, "behavior.write") || !canViewConfidentialBehavior(user)) {
     redirect("/dashboard");
   }
 

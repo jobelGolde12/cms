@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { listEmployees, employeeRegistryStats } from "@/lib/employees";
 import { activeSectionOptions } from "@/lib/employees";
 import { activeSubjectOptions, subjectTeacherAccountOptions } from "@/lib/teaching-loads";
@@ -21,7 +21,7 @@ export default async function EmployeesPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "employees.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "employees.view")) redirect("/dashboard");
 
   const params = await searchParams;
   const str = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : "");
@@ -41,7 +41,7 @@ export default async function EmployeesPage({
     activeSubjectOptions(),
   ]);
 
-  const canCreate = hasPermission(user.role, "employees.create");
+  const canCreate = hasUserPermission(user.roles, "employees.create");
   const hasFilters = Boolean(q || employmentType || appointmentStatus || status !== "active");
 
   return (

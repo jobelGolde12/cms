@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { healthStats, listHealthRecords } from "@/lib/queries";
 import { formatDate, fullName } from "@/lib/utils";
 import { NUTRITIONAL_STATUS_LABELS, NUTRITIONAL_STATUSES, type NutritionalStatus } from "@/lib/constants";
@@ -20,7 +20,7 @@ export const metadata = { title: "Health & Nutrition" };
 export default async function HealthPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "health.view")) redirect("/dashboard?denied=health.view");
+  if (!hasUserPermission(user.roles, "health.view")) redirect("/dashboard?denied=health.view");
 
   const [stats, records] = await Promise.all([healthStats(), listHealthRecords(50)]);
 

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { verificationQueue, verificationStats } from "@/lib/queries";
 import { reviewVerificationForm } from "@/actions/students";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { ageFromBirthDate, formatDate } from "@/lib/utils";
 import { buttonStyles } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/form-status";
@@ -23,13 +23,13 @@ export default async function VerificationPage({
   if (!user) redirect("/login");
   // The queue exposes learner PII outside the student registry — restrict it
   // to verification-capable roles (admin / school_admin / records).
-  if (!hasPermission(user.role, "verification.review")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "verification.review")) redirect("/dashboard");
 
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim().toLowerCase() : "";
 
   const [queue, stats] = await Promise.all([verificationQueue(user), verificationStats(user)]);
-  const canReview = hasPermission(user.role, "verification.review");
+  const canReview = hasUserPermission(user.roles, "verification.review");
 
   const filtered = q
     ? queue.filter(

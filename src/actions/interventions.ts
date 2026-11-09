@@ -35,6 +35,18 @@ export async function saveIntervention(
   const interventionId = String(formData.get("id") ?? "");
 
   if (interventionId) {
+    // The submitted student is in scope, but the target id is caller-supplied:
+    // confirm the intervention actually belongs to that student so an in-scope
+    // user cannot overwrite another student's intervention by forging the id.
+    const targetRows = await db
+      .select({ studentId: interventions.studentId })
+      .from(interventions)
+      .where(eq(interventions.id, interventionId))
+      .limit(1);
+    if (!targetRows[0] || targetRows[0].studentId !== studentId) {
+      return fail("Intervention not found.");
+    }
+
     await db
       .update(interventions)
       .set({

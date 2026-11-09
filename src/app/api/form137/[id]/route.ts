@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { canAccessStudent } from "@/lib/scope";
 import { getForm137Data } from "@/lib/form137";
 import { renderForm137Pdf } from "@/lib/reports/form137-pdf";
@@ -26,7 +26,7 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!hasPermission(user.role, "documents.print")) {
+  if (!hasUserPermission(user.roles, "documents.print")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

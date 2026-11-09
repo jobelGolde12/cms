@@ -55,12 +55,14 @@ function AssignmentForm({
   title,
   description,
   icon,
+  badge,
   action,
   children,
 }: {
   title: string;
   description: string;
   icon: ReactNode;
+  badge?: ReactNode;
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   children: ReactNode;
 }) {
@@ -77,7 +79,12 @@ function AssignmentForm({
 
   return (
     <Card>
-      <CardHeader title={title} description={description} icon={icon} />
+      <CardHeader
+        title={title}
+        description={description}
+        icon={icon}
+        actions={badge}
+      />
       <CardBody>
         <form ref={formRef} action={formAction} onReset={onReset} className="space-y-3">
           {children}
@@ -160,9 +167,15 @@ export function AssignmentManager({
           title="Assign an adviser"
           description="One adviser per section. The adviser sees its students in the advisory views; grade encoding still requires a subject-teacher load for the exact subject."
           icon={<UserRound aria-hidden="true" className="h-4 w-4" />}
+          badge={<Badge tone="verified" icon={false}>Assignment type · Adviser</Badge>}
           action={assignAdviser}
         >
-          <Field label="Section" htmlFor="adviser-section" required>
+          <Field
+            label="Section"
+            htmlFor="adviser-section"
+            required
+            hint="Sections of the selected school year and grade level."
+          >
             <Select id="adviser-section" name="sectionId" required defaultValue="">
               <option value="" disabled>
                 Select a section
@@ -198,9 +211,15 @@ export function AssignmentManager({
           title="Assign a subject teacher"
           description="One teacher per section and subject. This is the grade-encoding load: the teacher can encode only this subject in this section."
           icon={<BookOpen aria-hidden="true" className="h-4 w-4" />}
+          badge={<Badge tone="info" icon={false}>Assignment type · Subject Teacher</Badge>}
           action={assignSubjectTeacher}
         >
-          <Field label="Section" htmlFor="load-section" required>
+          <Field
+            label="Section"
+            htmlFor="load-section"
+            required
+            hint="Sections of the selected school year and grade level."
+          >
             <Select id="load-section" name="sectionId" required defaultValue="">
               <option value="" disabled>
                 Select a section
@@ -360,30 +379,63 @@ export function AssignmentManager({
   );
 }
 
-/** Year filter — a GET form keeps the page shareable and works without JS. */
-export function SchoolYearFilter({
+/**
+ * School year + grade level filters.
+ *
+ * Both are plain GET filters: the page stays shareable and usable without
+ * JavaScript, and the whole screen (forms and table) narrows to the selected
+ * grade level.
+ */
+export function AssignmentFilters({
   years,
   selectedYearId,
+  gradeLevels,
+  selectedGradeLevelId,
 }: {
   years: { id: string; year: string }[];
   selectedYearId: string;
+  gradeLevels: { id: string; name: string }[];
+  selectedGradeLevelId: string;
 }) {
   const router = useRouter();
+
+  const push = (next: { year?: string; gradeLevel?: string }) => {
+    const params = new URLSearchParams();
+    const year = next.year ?? selectedYearId;
+    const gradeLevel = next.gradeLevel ?? selectedGradeLevelId;
+    if (year) params.set("sy", year);
+    if (gradeLevel) params.set("gl", gradeLevel);
+    const query = params.toString();
+    router.push(query ? `/assignments?${query}` : "/assignments");
+  };
+
   return (
-    <div className="flex items-end gap-2">
+    <div className="flex flex-wrap items-end gap-2">
       <Field label="School year" htmlFor="assignment-sy">
         <Select
           id="assignment-sy"
-          defaultValue={selectedYearId}
-          onChange={(e) => {
-            const value = e.currentTarget.value;
-            router.push(value ? `/assignments?sy=${encodeURIComponent(value)}` : "/assignments");
-          }}
+          value={selectedYearId}
+          onChange={(e) => push({ year: e.currentTarget.value })}
           className="min-w-40"
         >
           {years.map((y) => (
             <option key={y.id} value={y.id}>
               SY {y.year}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field label="Grade level" htmlFor="assignment-gl">
+        <Select
+          id="assignment-gl"
+          value={selectedGradeLevelId}
+          onChange={(e) => push({ gradeLevel: e.currentTarget.value })}
+          className="min-w-36"
+        >
+          <option value="">All grade levels</option>
+          {gradeLevels.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
             </option>
           ))}
         </Select>
@@ -395,7 +447,7 @@ export function SchoolYearFilter({
         className="mb-0.5"
         onClick={() => router.push("/assignments")}
       >
-        Current year
+        Reset
       </Button>
     </div>
   );

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { getCurrentEnrollment, getGuidanceIncident, listBehaviorCategories } from "@/lib/queries";
 import { canViewConfidentialBehavior } from "@/lib/scope";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -19,7 +19,7 @@ export default async function EditIncidentPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "behavior.write") || !canViewConfidentialBehavior(user)) {
+  if (!hasUserPermission(user.roles, "behavior.write") || !canViewConfidentialBehavior(user)) {
     redirect("/dashboard");
   }
 

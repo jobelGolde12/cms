@@ -6,7 +6,8 @@ import { logAudit } from "@/lib/audit";
 import { buildReport } from "@/lib/reports/report-data";
 import { renderReportPdf } from "@/lib/reports/pdf";
 import { renderReportExcel } from "@/lib/reports/excel";
-import { hasPermission } from "@/lib/permissions";
+import { renderReportCsv } from "@/lib/reports/csv";
+import { hasUserPermission } from "@/lib/permissions";
 import { REPORT_TYPES, type ReportType } from "@/lib/constants";
 
 /**
@@ -24,7 +25,7 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!hasPermission(user.role, "reports.export")) {
+  if (!hasUserPermission(user.roles, "reports.export")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -111,6 +112,31 @@ export async function GET(
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="${baseName}.pdf"`,
+        },
+      });
+    }
+
+    if (format === "csv") {
+      const csv = renderReportCsv(built);
+      const fileReference = `exports/${baseName}.csv`;
+      await db.insert(reportExports).values({
+        id: crypto.randomUUID(),
+        reportId: reportRow.id,
+        format: "CSV",
+        fileReference,
+        generatedBy: user.id,
+      });
+      await logAudit({
+        userId: user.id,
+        action: "EXPORT_REPORT",
+        entityType: "report_export",
+        entityId: reportRow.id,
+        newValues: { format: "CSV" },
+      });
+      return new NextResponse(csv, {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${baseName}.csv"`,
         },
       });
     }

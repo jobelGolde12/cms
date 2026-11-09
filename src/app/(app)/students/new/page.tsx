@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { StudentForm } from "@/components/student-form";
 
 export default async function NewStudentPage() {
@@ -10,7 +10,7 @@ export default async function NewStudentPage() {
   if (!user) redirect("/login");
   // The create form itself must be permission-gated, not just its action —
   // direct URL entries by non-encoder roles must not render it.
-  if (!hasPermission(user.role, "students.create")) redirect("/students");
+  if (!hasUserPermission(user.roles, "students.create")) redirect("/students");
 
   return (
     <div className="space-y-6">

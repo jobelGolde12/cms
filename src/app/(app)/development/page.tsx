@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Activity, BookOpenCheck, HeartHandshake, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { canViewStudentDevelopment } from "@/lib/scope";
 import {
   listAssessments,
@@ -34,9 +34,9 @@ const INTERVENTION_TONE: Record<string, "verified" | "pending" | "info" | "neutr
 export default async function DevelopmentPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const canAssess = hasPermission(user.role, "assessments.view");
-  const canBehavior = hasPermission(user.role, "behavior.view");
-  const canInterventions = hasPermission(user.role, "interventions.view");
+  const canAssess = hasUserPermission(user.roles, "assessments.view");
+  const canBehavior = hasUserPermission(user.roles, "behavior.view");
+  const canInterventions = hasUserPermission(user.roles, "interventions.view");
 
   // Server-side module guard (not just a hidden sidebar link): the Student
   // Development module is policy-excluded from the Guidance Counselor role,

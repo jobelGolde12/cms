@@ -1,11 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/constants";
+import { SESSION_COOKIE_NAME, type Role } from "@/lib/constants";
 import { hashToken, roleNameFromId } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { db } from "@/db";
-import { sessions, users } from "@/db/schema";
+import { sessions, userRoles, users } from "@/db/schema";
 import { and, eq, gt } from "drizzle-orm";
 import { trackEvent } from "@/lib/analytics";
+
+/**
+ * Every role an account holds — the primary role first, then the additional
+ * roles from `user_roles`. Mirrors `getCurrentUser()` in src/lib/auth.ts so
+ * the optimistic gate and the handler-level checks agree.
+ */
+async function userRoleKeys(userId: string, primaryRoleId: string): Promise<Role[]> {
+  const roles: Role[] = [];
+  const primary = roleNameFromId(primaryRoleId);
+  if (primary) roles.push(primary);
+  const extra = await db
+    .select({ roleId: userRoles.roleId })
+    .from(userRoles)
+    .where(eq(userRoles.userId, userId));
+  for (const r of extra) {
+    const key = roleNameFromId(r.roleId);
+    if (key && !roles.includes(key)) roles.push(key);
+  }
+  return roles;
+}
 
 /**
  * Optimistic auth gate (cookie presence + DB session validation where needed).
@@ -46,8 +66,8 @@ export async function proxy(request: NextRequest) {
   }
 
   // API export routes: reject with JSON 401/403 instead of redirecting.
-  // Handler-level getCurrentUser() + hasPermission() checks remain in place
-  // as defense-in-depth (see src/app/api/reports/[type]/route.ts).
+  // Handler-level getCurrentUser() + hasUserPermission() checks remain in
+  // place as defense-in-depth (see src/app/api/reports/[type]/route.ts).
   if (pathname.startsWith("/api/reports")) {
     const raw = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!raw) {
@@ -56,7 +76,7 @@ export async function proxy(request: NextRequest) {
     try {
       const tokenHash = hashToken(raw);
       const rows = await db
-        .select({ roleId: users.roleId })
+        .select({ userId: users.id, roleId: users.roleId })
         .from(sessions)
         .innerJoin(users, eq(users.id, sessions.userId))
         .where(
@@ -71,10 +91,12 @@ export async function proxy(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       // Pre-check `reports.export` so unauthorized roles are rejected before
-      // the (potentially heavy) export handler runs. On DB failure, fall
-      // through and let the handler-level checks decide.
-      const role = roleNameFromId(row.roleId);
-      if (role && !hasPermission(role, "reports.export")) {
+      // the (potentially heavy) export handler runs. The check resolves over
+      // the UNION of every role the account holds (an account may be both an
+      // Adviser and a Subject Teacher). On DB failure, fall through and let
+      // the handler-level checks decide.
+      const roles = await userRoleKeys(row.userId, row.roleId);
+      if (roles.length > 0 && !hasUserPermission(roles, "reports.export")) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     } catch {

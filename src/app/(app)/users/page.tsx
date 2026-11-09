@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { listAssignableRoles, listUsersWithRoles } from "@/lib/queries";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -18,11 +18,11 @@ import {
 export default async function UsersPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "users.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "users.view")) redirect("/dashboard");
 
   const rows = await listUsersWithRoles();
   const roleOptions = await listAssignableRoles();
-  const canManage = hasPermission(user.role, "users.manage");
+  const canManage = hasUserPermission(user.roles, "users.manage");
 
   return (
     <div className="space-y-6">

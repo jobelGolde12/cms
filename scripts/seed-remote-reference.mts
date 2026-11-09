@@ -1,330 +1,37 @@
 /**
  * Reference-data-only seed for the remote Turso DB.
  *
- * Unlike scripts/seed.mts (dev seed that wipes demo data), this NEVER deletes
- * rows — it only upserts reference rows required by the app:
- *   school year, grade levels, sections, subjects, grading periods,
- *   behavior categories, system settings, roles/permissions.
+ * Unlike the old versions of these scripts, this NEVER deletes rows and never
+ * creates demo data — it only upserts the reference rows the application needs:
  *
- * Users: upserts default demo users ONLY if the DEFAULT_* env vars are set
- * (or, if not set, leaves existing users untouched) — never resets passwords
- * of users that already exist.
+ *   • roles, permissions and the role↔permission matrix (synced from code)
+ *   • the current school year, grade levels and the subject catalog
+ *   • the three grading periods (TERM 1, TERM 2, TERM 3)
+ *   • behaviour categories and the system settings keys
+ *
+ * Sections, students, employees and teacher assignments are NOT created — they
+ * are operational data owned by the school. The demo rows this script used to
+ * generate (twelve `sec-7-*` … `sec-10-*` sections and the demo teaching
+ * assignments) were purged on 2026-11-08 and must never come back; see
+ * `documentation/user-data-cleanup.md`.
+ *
+ * Accounts: created ONLY when the `DEFAULT_*` environment variables configure
+ * both an e-mail and a password hash, and ONLY when the e-mail does not exist
+ * yet. An existing account is never modified — no password reset, no role
+ * overwrite, no name overwrite.
  */
 import "dotenv/config";
-import { db } from "../src/db";
 import {
-  behaviorCategories,
-  gradeLevels,
-  gradingPeriods,
-  permissions,
-  rolePermissions,
-  roles,
-  schoolYears,
-  sections,
-  sectionSubjectTeachers,
-  subjects,
-  systemSettings,
-} from "../src/db/schema";
-import { PERMISSIONS, ROLE_PERMISSIONS } from "../src/lib/permissions";
-import {
-  BEHAVIOR_SEED_CATEGORIES,
-  DEFAULT_ASSESSMENT_LEVELS,
-  GRADING_PERIOD_NAMES,
-  type Role,
-} from "../src/lib/constants";
-import { users as usersSchema } from "../src/db/schema";
-import { eq, sql } from "drizzle-orm";
-
-const now = new Date();
-const CURRENT_YEAR = `${now.getFullYear()}-${now.getFullYear() + 1}`;
-
-/**
- * Accounts removed from the system on 2026-11-05 as demo/test data. A seed
- * run must never bring them back — whatever the environment variables say.
- */
-const RETIRED_DEMO_EMAILS = new Set([
-  "admin@gmail.com",
-  "school_admin@local.dev",
-  "teacher@local.dev",
-  "guidance@local.dev",
-  "nurse@local.dev",
-  "admin_officer@local.dev",
-  "qa-integration@qa.local.dev",
-]);
-
-/** True for the retired demo addresses and for the whole `*@local.dev` domain. */
-function isRetiredDemoEmail(email: string): boolean {
-  const normalized = email.trim().toLowerCase();
-  return RETIRED_DEMO_EMAILS.has(normalized) || normalized.endsWith("@local.dev");
-}
-
-async function seedRoles() {
-  const roleRows: { id: string; name: string; description: string }[] = [
-    { id: "role-admin", name: "System Administrator", description: "Full system access including users, settings, and audit logs." },
-    { id: "role-school-admin", name: "School Administrator", description: "School-wide records, academics, analytics, and reports." },
-    { id: "role-teacher", name: "Adviser", description: "Assigned sections: advisory, attendance, assessments and behavior — not grade encoding." },
-    { id: "role-records", name: "Records Personnel", description: "Student records, enrollment, verification, historical records." },
-    { id: "role-subject-teacher", name: "Subject Teacher", description: "Encodes grades for assigned subject, grade level and section(s) only." },
-    { id: "role-guidance", name: "Guidance Counselor", description: "Records and manages student incidents, interventions, and student support information." },
-    { id: "role-nurse", name: "Nurse", description: "Health and nutrition records only — cannot edit general student information." },
-    { id: "role-registrar", name: "Registrar", description: "Strictly read-only official records plus student card / Form 137 printing." },
-    { id: "role-literacy-coordinator", name: "Language & Literacy Coordinator", description: "Reading, literacy and numeracy assessments and statistics." },
-    { id: "role-admin-officer", name: "Admin Officer", description: "Employee records, PERA/201 files and service credits — no student data access." },
-  ];
-  for (const r of roleRows) {
-    await db
-      .insert(roles)
-      .values(r)
-      .onConflictDoUpdate({ target: roles.id, set: { name: r.name, description: r.description, updatedAt: new Date() } });
-  }
-
-  for (const p of PERMISSIONS) {
-    await db
-      .insert(permissions)
-      .values({
-        id: `perm-${p.replace(/\./g, "-")}`,
-        name: p,
-        description: `Permission ${p}`,
-        module: p.split(".")[0] ?? "system",
-        action: p.split(".")[1] ?? "access",
-      })
-      .onConflictDoUpdate({
-        target: permissions.id,
-        set: { name: p, module: p.split(".")[0] ?? "system" },
-      });
-  }
-
-  for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {
-    const roleId = `role-${role.replace(/_/g, "-")}`;
-    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-    for (const p of perms) {
-      await db
-        .insert(rolePermissions)
-        .values({ roleId, permissionId: `perm-${p.replace(/\./g, "-")}` })
-        .onConflictDoNothing();
-    }
-  }
-}
-
-async function seedUsers() {
-  const rolesToSeed: { role: Role; emailEnv: string; hashEnv: string; firstEnv: string; lastEnv: string; id: string; name: string }[] = [
-    { role: "admin", emailEnv: "DEFAULT_ADMIN_EMAIL", hashEnv: "DEFAULT_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_LAST_NAME", id: "user-admin", name: "Admin" },
-    { role: "school_admin", emailEnv: "DEFAULT_SCHOOL_ADMIN_EMAIL", hashEnv: "DEFAULT_SCHOOL_ADMIN_PASSWORD_HASH", firstEnv: "DEFAULT_SCHOOL_ADMIN_FIRST_NAME", lastEnv: "DEFAULT_SCHOOL_ADMIN_LAST_NAME", id: "user-school-admin", name: "SchoolAdmin" },
-    { role: "teacher", emailEnv: "DEFAULT_TEACHER_EMAIL", hashEnv: "DEFAULT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_TEACHER_LAST_NAME", id: "user-teacher", name: "Adviser" },
-    { role: "subject_teacher", emailEnv: "DEFAULT_SUBJECT_TEACHER_EMAIL", hashEnv: "DEFAULT_SUBJECT_TEACHER_PASSWORD_HASH", firstEnv: "DEFAULT_SUBJECT_TEACHER_FIRST_NAME", lastEnv: "DEFAULT_SUBJECT_TEACHER_LAST_NAME", id: "user-subject", name: "SubjectTeacher" },
-    { role: "records", emailEnv: "DEFAULT_RECORDS_EMAIL", hashEnv: "DEFAULT_RECORDS_PASSWORD_HASH", firstEnv: "DEFAULT_RECORDS_FIRST_NAME", lastEnv: "DEFAULT_RECORDS_LAST_NAME", id: "user-records", name: "Records" },
-    { role: "guidance", emailEnv: "DEFAULT_GUIDANCE_EMAIL", hashEnv: "DEFAULT_GUIDANCE_PASSWORD_HASH", firstEnv: "DEFAULT_GUIDANCE_FIRST_NAME", lastEnv: "DEFAULT_GUIDANCE_LAST_NAME", id: "user-guidance", name: "Counselor" },
-    { role: "nurse", emailEnv: "DEFAULT_NURSE_EMAIL", hashEnv: "DEFAULT_NURSE_PASSWORD_HASH", firstEnv: "DEFAULT_NURSE_FIRST_NAME", lastEnv: "DEFAULT_NURSE_LAST_NAME", id: "user-nurse", name: "Nurse" },
-    { role: "registrar", emailEnv: "DEFAULT_REGISTRAR_EMAIL", hashEnv: "DEFAULT_REGISTRAR_PASSWORD_HASH", firstEnv: "DEFAULT_REGISTRAR_FIRST_NAME", lastEnv: "DEFAULT_REGISTRAR_LAST_NAME", id: "user-registrar", name: "Registrar" },
-    { role: "literacy_coordinator", emailEnv: "DEFAULT_LITERACY_EMAIL", hashEnv: "DEFAULT_LITERACY_PASSWORD_HASH", firstEnv: "DEFAULT_LITERACY_FIRST_NAME", lastEnv: "DEFAULT_LITERACY_LAST_NAME", id: "user-literacy", name: "LiteracyCoord" },
-    { role: "admin_officer", emailEnv: "DEFAULT_ADMIN_OFFICER_EMAIL", hashEnv: "DEFAULT_ADMIN_OFFICER_PASSWORD_HASH", firstEnv: "DEFAULT_ADMIN_OFFICER_FIRST_NAME", lastEnv: "DEFAULT_ADMIN_OFFICER_LAST_NAME", id: "user-admin-officer", name: "AdminOfficer" },
-  ];
-
-  const skipped: string[] = [];
-  for (const d of rolesToSeed) {
-    const email = process.env[d.emailEnv]?.trim();
-    const hash = process.env[d.hashEnv]?.trim();
-    // Never invent credentials and never reset a password that already
-    // exists: an account is created only when BOTH the e-mail and the hash
-    // are configured, and an existing account keeps its password hash.
-    if (!email) {
-      skipped.push(d.role);
-      continue;
-    }
-    if (isRetiredDemoEmail(email)) {
-      console.warn(
-        `Refusing to provision ${email}: this is a retired demo account and must not be recreated.`,
-      );
-      skipped.push(d.role);
-      continue;
-    }
-
-    const roleId = `role-${d.role.replace(/_/g, "-")}`;
-    const first = process.env[d.firstEnv]?.trim() || d.name;
-    const last = process.env[d.lastEnv]?.trim() || "Staff";
-
-    const existing = await db
-      .select({ id: usersSchema.id })
-      .from(usersSchema)
-      .where(eq(usersSchema.email, email))
-      .limit(1);
-    const targetId = existing[0]?.id ?? d.id;
-
-    if (existing.length > 0) {
-      await db
-        .update(usersSchema)
-        .set({ roleId, firstName: first, lastName: last, email, isActive: true, updatedAt: new Date() })
-        .where(eq(usersSchema.id, targetId));
-      continue;
-    }
-
-    if (!hash) {
-      skipped.push(d.role);
-      continue;
-    }
-
-    await db.insert(usersSchema).values({
-      id: targetId,
-      roleId,
-      firstName: first,
-      lastName: last,
-      email,
-      passwordHash: hash,
-      isActive: true,
-    });
-  }
-
-  if (skipped.length > 0) {
-    console.log(
-      `Users skipped (no e-mail + hash configured): ${skipped.join(", ")}. ` +
-        "Set DEFAULT_<ROLE>_EMAIL and DEFAULT_<ROLE>_PASSWORD_HASH to provision them.",
-    );
-  }
-}
-
-async function seedAcademicStructure(teacherId: string | null) {
-  const yearId = `sy-${CURRENT_YEAR}`;
-  await db
-    .insert(schoolYears)
-    .values({ id: yearId, year: CURRENT_YEAR, isCurrent: true })
-    .onConflictDoUpdate({ target: schoolYears.id, set: { isCurrent: true, updatedAt: new Date() } });
-
-  // Demote any other "current" year flags.
-  await db.update(schoolYears).set({ isCurrent: false }).where(eq(schoolYears.year, "MISSING_YEAR"));
-
-  const gradeNames = ["Grade 7", "Grade 8", "Grade 9", "Grade 10"];
-  for (let i = 0; i < gradeNames.length; i++) {
-    await db
-      .insert(gradeLevels)
-      .values({ id: `gl-${i + 7}`, name: gradeNames[i], orderIndex: i + 1 })
-      .onConflictDoUpdate({ target: gradeLevels.id, set: { name: gradeNames[i], orderIndex: i + 1, updatedAt: new Date() } });
-  }
-
-  const sectionNames = ["Sampaguita", "Ilang-Ilang", "Molave"];
-  let sIdx = 0;
-  for (let g = 0; g < gradeNames.length; g++) {
-    for (const name of sectionNames) {
-      const id = `sec-${g + 7}-${sIdx++}`;
-      await db
-        .insert(sections)
-        .values({
-          id,
-          schoolYearId: yearId,
-          gradeLevelId: `gl-${g + 7}`,
-          name,
-          adviserId: teacherId,
-          isActive: true,
-        })
-        .onConflictDoNothing({ target: sections.id });
-    }
-  }
-
-  const subjectSeed = [
-    { code: "FIL", name: "Filipino" },
-    { code: "ENG", name: "English" },
-    { code: "MATH", name: "Mathematics" },
-    { code: "SCI", name: "Science" },
-    { code: "AP", name: "Araling Panlipunan" },
-    { code: "ESP", name: "Edukasyon sa Pagpapakatao" },
-    { code: "TLE", name: "Technology and Livelihood Education" },
-    { code: "MAPEH", name: "MAPEH" },
-  ];
-  for (const s of subjectSeed) {
-    await db
-      .insert(subjects)
-      .values({ id: `sub-${s.code}`, code: s.code, name: s.name, isActive: true })
-      .onConflictDoUpdate({ target: subjects.id, set: { name: s.name, isActive: true, updatedAt: new Date() } });
-  }
-
-  for (let i = 0; i < GRADING_PERIOD_NAMES.length; i++) {
-    await db
-      .insert(gradingPeriods)
-      .values({
-        id: `gp-${yearId}-${i + 1}`,
-        schoolYearId: yearId,
-        name: GRADING_PERIOD_NAMES[i],
-        orderIndex: i + 1,
-        isCurrent: i === 0,
-      })
-      .onConflictDoNothing({ target: gradingPeriods.id });
-  }
-}
-
-async function seedSubjectAssignments(subjectTeacherId: string) {
-  const teachingSubjects = ["sub-FIL", "sub-ENG", "sub-MATH", "sub-SCI", "sub-AP", "sub-ESP", "sub-TLE", "sub-MAPEH"];
-  for (let gradeLevelNum = 7; gradeLevelNum <= 10; gradeLevelNum++) {
-    for (let secIdx = 0; secIdx < 3; secIdx++) {
-      const sectionId = `sec-${gradeLevelNum}-${secIdx}`;
-      for (const subjectId of teachingSubjects) {
-        await db
-          .insert(sectionSubjectTeachers)
-          .values({
-            id: `${sectionId}__${subjectId}__${subjectTeacherId}`,
-            sectionId,
-            subjectId,
-            teacherId: subjectTeacherId,
-          })
-          .onConflictDoNothing();
-      }
-    }
-  }
-}
-
-async function seedCategoriesAndSettings() {
-  for (const cat of BEHAVIOR_SEED_CATEGORIES) {
-    await db
-      .insert(behaviorCategories)
-      .values({ id: `bc-${cat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, name: cat.name, kind: cat.kind })
-      .onConflictDoUpdate({ target: behaviorCategories.id, set: { name: cat.name, kind: cat.kind, updatedAt: new Date() } });
-  }
-
-  const settings: { key: string; value: string; description: string }[] = [
-    { key: "system_name", value: "Records Management System — Sta. Magdalena National High School", description: "Display name of the system." },
-    { key: "student_number_prefix", value: "SM", description: "Prefix for generated student numbers." },
-    { key: "default_school_year", value: CURRENT_YEAR, description: "Current school year." },
-    { key: "assessment_levels", value: JSON.stringify(DEFAULT_ASSESSMENT_LEVELS), description: "Configurable proficiency levels per assessment domain." },
-    { key: "monitoring_rules", value: JSON.stringify({ failingGrade: 75, absenceCount: 5, lateCount: 5, behaviorConcerns: 3 }), description: "Requires-attention indicator thresholds." },
-    { key: "maintenance_mode", value: "false", description: "Maintenance mode flag." },
-  ];
-  for (const s of settings) {
-    // Existing remote rows use a different id convention (set-system-name etc.),
-    // so the UNIQUE `key` may collide across ids → upsert by key via excluded.id.
-    await db
-      .insert(systemSettings)
-      .values({ id: `set-${s.key}`, key: s.key, value: s.value, description: s.description })
-      .onConflictDoUpdate({
-        target: systemSettings.key,
-        set: { id: sql`excluded.id`, value: s.value, description: s.description, updatedAt: new Date() },
-      });
-  }
-}
+  formatSeedSummary,
+  seedReferenceData,
+} from "./lib/reference-seed";
 
 async function main() {
-  await seedRoles();
-  console.log("roles + permissions ✓");
-
-  await seedUsers();
-  console.log("default users upserted (env-driven only) ✓");
-
-  // Teacher row may not exist remotely; use its id when present
-  const teacherRow = await db.select({ id: usersSchema.id }).from(usersSchema).where(eq(usersSchema.id, "user-teacher")).limit(1);
-  await seedAcademicStructure(teacherRow[0]?.id ?? null);
-  console.log("school year + grade levels + sections + subjects + grading periods ✓");
-
-  await seedCategoriesAndSettings();
-  console.log("behavior categories + system settings ✓");
-
-  // Section/subject teaching assignments for the demo Subject Teacher
-  // (advisers no longer encode grades).
-  const subjectTeacherRow = await db
-    .select({ id: usersSchema.id })
-    .from(usersSchema)
-    .where(eq(usersSchema.id, "user-subject"))
-    .limit(1);
-  if (subjectTeacherRow.length) {
-    await seedSubjectAssignments(subjectTeacherRow[0]!.id);
-    console.log("section/subject teacher assignments ✓");
+  const summary = await seedReferenceData({ provisionAccounts: true });
+  for (const line of formatSeedSummary(summary)) {
+    console.log(line);
   }
+  console.log("reference data synced ✓");
 }
 
 main()

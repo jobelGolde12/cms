@@ -436,8 +436,14 @@ export async function saveAssessment(_prev: ActionState, formData: FormData): Pr
   return ok("Assessment saved.");
 }
 
-/** Sanity helper used by tests: verify a student exists and is not archived. */
+/**
+ * Sanity helper used by tests: verify a student exists and is not archived.
+ * Guarded so the endpoint cannot reveal student existence outside the caller's
+ * scope.
+ */
 export async function studentIsActive(studentId: string): Promise<boolean> {
+  const user = await getAuthorizedUser("students.view");
+  if (!user || !(await canAccessStudent(user, { studentId }))) return false;
   const rows = await db
     .select({ status: students.status })
     .from(students)

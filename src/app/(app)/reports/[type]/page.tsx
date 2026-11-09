@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, FileText } from "lucide-react";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { buildReport } from "@/lib/reports/report-data";
 import { REPORT_TYPES, REPORT_TYPE_LABELS, type ReportType } from "@/lib/constants";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -23,7 +23,7 @@ export default async function ReportDetailPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "reports.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "reports.view")) redirect("/dashboard");
 
   const { type } = await params;
   if (!REPORT_TYPES.includes(type as ReportType)) {
@@ -45,7 +45,7 @@ export default async function ReportDetailPage({
   }
 
   const reportType = type as ReportType;
-  const canExport = hasPermission(user.role, "reports.export");
+  const canExport = hasUserPermission(user.roles, "reports.export");
   const filterValues = await resolveReportFilterValues(await searchParams);
   const filterData = await resolveReportQuery(filterValues);
 
@@ -106,6 +106,9 @@ export default async function ReportDetailPage({
               </a>
               <a href={qsFor(`/api/reports/${reportType}?format=xlsx`)} className={buttonStyles("outline", "sm")}>
                 <FileText aria-hidden="true" className="h-3.5 w-3.5" /> XLSX
+              </a>
+              <a href={qsFor(`/api/reports/${reportType}?format=csv`)} className={buttonStyles("outline", "sm")}>
+                <FileText aria-hidden="true" className="h-3.5 w-3.5" /> CSV
               </a>
             </>
           ) : (

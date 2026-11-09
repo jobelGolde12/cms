@@ -66,7 +66,7 @@ Deliberate omissions (2026-11, least privilege):
 | Students | ✓ | ✓ | view | view |
 | Sections | ✓ | ✓ | ✗ | ✗ |
 | Teacher Assignments | ✓ | ✓ | ✗ | ✗ |
-| Grade Encoding | ✓ | ✗ | ✗ | ✗ |
+| Grade Encoding | ✓ | ✓ (read-only) | ✗ | ✗ |
 | Employees | ✓ | ✗ | ✗ | ✗ |
 | Service Credits | ✓ | ✗ | ✗ | ✗ |
 | Performance | ✓ | ✓ | ✗ | ✗ |
@@ -83,6 +83,13 @@ Route + action enforcement mirrors this: `/segments` guarded by
 (`src/proxy.ts`) matcher covers `students, employees, sections, grades,
 guidance, health, reports, development, performance, service-credits, …` so
 unauthenticated visitors never reach a dashboard page.
+
+> **Updated by revision C (2026-11-09):** Grade Encoding is now gated by the
+> new `grades.encode` permission. School Admin may OPEN the module (to
+> supervise the academic workflow) but never writes a grade — `grades.write`
+> stays exclusive to the Subject Teacher role. The Registrar holds neither and
+> is redirected away from `/grades` server-side. See
+> `features/teacher-assignment-model-2026-11.md`.
 
 ---
 
@@ -173,8 +180,36 @@ Enforcement on writes (`src/actions/employees.ts`):
   unit-tested in `src/lib/assignment-rules.ts` +
   `src/lib/__tests__/assignments.test.ts`.
 
-## 6. Official print gating (draft-safety)
+## 5b. Revision C — assignment-based grade encoding, multi-role accounts, Registrar lockout (2026-11-09)
 
+Recorded in full in **`features/teacher-assignment-model-2026-11.md`**. Summary:
+
+- **New permission `grades.encode`** — the module gate for `/grades`. Granted to
+  admin, school_admin, records and subject_teacher. The **Registrar holds
+  neither `grades.encode` nor `grades.write`**: the sidebar entry is gone and a
+  manually typed `/grades` URL is redirected server-side.
+- **Grade writing is authorisation-based, not role-based** —
+  `getGradeWriter()` checks `grades.write` (Subject Teacher role only), and
+  every action additionally requires a matching `section_subject_teachers` row
+  for the exact (section, subject) pair. An adviser is not sufficient; the role
+  without a load is not sufficient.
+- **Multi-role accounts** — `users.role_id` stays the primary role; the new
+  `user_roles` table (migration `0012_user_roles_multi_role.sql`) carries the
+  additional roles. The effective permission set is the union over the roles
+  (`hasUserPermission`), so one teacher can be Adviser **and** Subject Teacher
+  on a single account, with a single personnel record.
+- **Every page guard was made union-aware** — all 59
+  `hasPermission(user.role, …)` call sites now use
+  `hasUserPermission(user.roles, …)`, and `src/proxy.ts` loads the additional
+  roles before its optimistic check, so the UI and the backend always agree.
+- **Grade periods are now TERM 1 / TERM 2 / TERM 3** — see
+  `features/grading-periods-terms-2026-11.md`.
+- **The demo data is gone and cannot come back** — see
+  `../demo-data-removal-2026-11-08.md`.
+- **The Literacy Coordinator can finally add and edit assessments** — see
+  `features/literacy-coordinator-assessments-2026-11.md`.
+
+## 6. Official print gating (draft-safety)
 - `src/lib/workflow.ts` → `OFFICIAL_PRINT_RECORD_STATUSES` — only fully
   verified records may be printed as official documents.
 - Three print server components and both PDF API routes

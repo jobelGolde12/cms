@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { canViewStudentDevelopment } from "@/lib/scope";
 import { recentNotifications, unreadNotificationCount } from "@/lib/queries";
 import { SCHOOL } from "@/lib/constants";
@@ -41,7 +41,7 @@ export default async function AppDashboardPage() {
     unreadNotificationCount(user.id),
   ]);
 
-  const canReview = hasPermission(user.role, "verification.review");
+  const canReview = hasUserPermission(user.roles, "verification.review");
   const canDevelopment = canViewStudentDevelopment(user);
 
   const openConcernsTotal = data.openConcerns.reduce((sum, row) => sum + row.value, 0);
@@ -81,7 +81,7 @@ export default async function AppDashboardPage() {
 
       {/* AI narrative summary of the same KPI/distribution dataset —
           interpretation labelled as such, scoped to the viewer's data. */}
-      {hasPermission(user.role, "reports.view") ? (
+      {hasUserPermission(user.roles, "reports.view") ? (
         <AiAnalysisPanel
           feature="dashboardReport"
           action={summarizeDashboard}

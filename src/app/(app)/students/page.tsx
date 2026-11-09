@@ -12,7 +12,7 @@ import {
   gradeLevelCounts,
 } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { RECORD_STATUS_LABELS, type RecordStatus } from "@/lib/constants";
 import { Card, CardHeader } from "@/components/ui/card";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
@@ -35,7 +35,7 @@ export default async function StudentsPage({
   if (!user) redirect("/login");
   // Invariant gate (all current roles hold students.view) — keeps the
   // registry access model explicit rather than accidental.
-  if (!hasPermission(user.role, "students.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "students.view")) redirect("/dashboard");
 
   const params = await searchParams;
   const str = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : "");
@@ -73,8 +73,8 @@ export default async function StudentsPage({
     user.role === "guidance" ? listStudentIncidents(user) : Promise.resolve([]),
   ]);
 
-  const canEdit = hasPermission(user.role, "students.update");
-  const canCreate = hasPermission(user.role, "students.create");
+  const canEdit = hasUserPermission(user.roles, "students.update");
+  const canCreate = hasUserPermission(user.roles, "students.create");
 
   const hasFilters = Boolean(
     q || status || sex || gradeLevel || sectionId || lifecycle !== "active",

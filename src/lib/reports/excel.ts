@@ -6,30 +6,34 @@ import { formatDateTime } from "../utils";
 /** Build an .xlsx workbook buffer from a built report. */
 export async function renderReportExcel(report: BuiltReport): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Municipal Child Mapping System";
+  workbook.creator = "Sta. Magdalena National High School Records Management System";
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet("Report");
 
-  sheet.mergeCells("A1", "F1");
-  sheet.getCell("A1").value = SCHOOL_HEADER.name;
-  sheet.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF0F172A" } };
+  // The header block spans the report's full width. Derive it from the actual
+  // column count instead of hardcoding column F (breaks on 4-column reports
+  // just as much as on 26+ column ones).
+  const colCount = Math.max(1, report.columns.length);
+  const mergeTitleRow = (row: number, value: string, font: Partial<ExcelJS.Font>) => {
+    if (colCount > 1) sheet.mergeCells(row, 1, row, colCount);
+    const cell = sheet.getCell(row, 1);
+    cell.value = value;
+    cell.font = font;
+  };
 
-  sheet.mergeCells("A2", "F2");
-  sheet.getCell("A2").value = `${SCHOOL_HEADER.address} · ${SCHOOL_HEADER.region}`;
-  sheet.getCell("A2").font = { size: 9, color: { argb: "FF334155" } };
-
-  sheet.mergeCells("A3", "F3");
-  sheet.getCell("A3").value = report.title;
-  sheet.getCell("A3").font = { bold: true, size: 12, color: { argb: "FF0369A1" } };
-
-  sheet.mergeCells("A4", "F4");
-  sheet.getCell("A4").value = `Generated: ${formatDateTime(report.generatedAt)} · By: ${report.generatedBy}`;
-  sheet.getCell("A4").font = { size: 8, color: { argb: "FF475569" } };
-
-  sheet.mergeCells("A5", "F5");
-  sheet.getCell("A5").value = `Filters: ${report.filters}`;
-  sheet.getCell("A5").font = { size: 8, color: { argb: "FF475569" } };
+  mergeTitleRow(1, SCHOOL_HEADER.name, { bold: true, size: 14, color: { argb: "FF0F172A" } });
+  mergeTitleRow(2, `${SCHOOL_HEADER.address} · ${SCHOOL_HEADER.region}`, {
+    size: 9,
+    color: { argb: "FF334155" },
+  });
+  mergeTitleRow(3, report.title, { bold: true, size: 12, color: { argb: "FF0369A1" } });
+  mergeTitleRow(
+    4,
+    `Generated: ${formatDateTime(report.generatedAt)} · By: ${report.generatedBy}`,
+    { size: 8, color: { argb: "FF475569" } },
+  );
+  mergeTitleRow(5, `Filters: ${report.filters}`, { size: 8, color: { argb: "FF475569" } });
 
   const headerRowNumber = 7;
   const headerRow = sheet.getRow(headerRowNumber);
@@ -51,9 +55,9 @@ export async function renderReportExcel(report: BuiltReport): Promise<Buffer> {
     });
   });
 
+  // Numeric column index avoids the A–Z ceiling of String.fromCharCode.
   report.columns.forEach((col, i) => {
-    const letter = String.fromCharCode(65 + i);
-    sheet.getColumn(letter).width = Math.max(10, Math.min(28, col.length + 6));
+    sheet.getColumn(i + 1).width = Math.max(10, Math.min(28, col.length + 6));
   });
 
   sheet.autoFilter = {

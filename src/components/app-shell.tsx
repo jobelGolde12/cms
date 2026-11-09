@@ -5,6 +5,7 @@ import { hasUserPermission, type Permission } from "@/lib/permissions";
 import { canViewConfidentialBehavior, canViewStudentDevelopment } from "@/lib/scope";
 import { SCHOOL, roleLabelsFor } from "@/lib/constants";
 import { Logo } from "./logo";
+import { HeaderSectionTitle } from "./header-section-title";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 import { SidebarNav } from "./sidebar-nav";
 import { LogoutButton } from "./logout-button";
@@ -109,7 +110,7 @@ export default async function AppShell({
 
           <div className="flex min-w-0 items-center gap-2">
             <Logo size="md" className="lg:hidden" asLink priority />
-            <h1 className="truncate text-sm font-semibold text-brand-900 sm:text-base md:text-lg">Dashboard</h1>
+            <HeaderSectionTitle links={visibleLinks.map((l) => ({ label: l.label, href: l.href }))} />
           </div>
 
           {/* Search (links into the registry search; hidden for roles without students.view) */}

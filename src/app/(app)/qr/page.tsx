@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { QrCode, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { db } from "@/db";
 import { students, qrVerifications } from "@/db/schema";
 import { desc, eq, and } from "drizzle-orm";
@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 export default async function QrPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "qr.verify")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "qr.verify")) redirect("/dashboard");
 
   // Recent generate events with student numbers (numbers only — tokens are opaque).
   const recent = await db

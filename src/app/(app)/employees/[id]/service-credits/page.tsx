@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Archive, ChevronLeft, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import {
   getEmployeeById,
   listServiceCreditTransactions,
@@ -34,7 +34,7 @@ export default async function ServiceCreditsPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "service_credits.view")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "service_credits.view")) redirect("/dashboard");
 
   const { id } = await params;
   const sp = await searchParams;
@@ -58,7 +58,7 @@ export default async function ServiceCreditsPage({
   const isArchived = employee.status === "archived";
   // Archived records are read-only by policy — no new transactions, no corrections.
   const canManage =
-    hasPermission(user.role, "service_credits.manage") && !isArchived;
+    hasUserPermission(user.roles, "service_credits.manage") && !isArchived;
   const fullName = `${employee.firstName} ${employee.lastName}`.trim();
   const hasTxFilters = Boolean(typeFilter || from || to);
   const totalPages = Math.max(1, Math.ceil(txPage.total / txPage.pageSize));
@@ -97,7 +97,7 @@ export default async function ServiceCreditsPage({
         ) : null}
       </div>
 
-      {isArchived && hasPermission(user.role, "service_credits.manage") ? (
+      {isArchived && hasUserPermission(user.roles, "service_credits.manage") ? (
         <div
           role="status"
           className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"

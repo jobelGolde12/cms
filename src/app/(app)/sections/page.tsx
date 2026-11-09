@@ -11,7 +11,7 @@ import {
   users,
 } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import { setSectionActiveForm } from "@/actions/sections";
 import { AddSectionButton, SectionEditButton } from "@/components/sections/section-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +39,7 @@ export default async function SectionsPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!hasPermission(user.role, "academics.config")) redirect("/dashboard");
+  if (!hasUserPermission(user.roles, "academics.config")) redirect("/dashboard");
 
   const sp = await searchParams;
   const param = (key: string): string => {
@@ -257,7 +257,7 @@ export default async function SectionsPage({
               <Th>Adviser</Th>
               <Th align="right">Enrolled</Th>
               <Th>Status</Th>
-              {hasPermission(user.role, "academics.config") ? (
+              {hasUserPermission(user.roles, "academics.config") ? (
                 <Th align="right">Actions</Th>
               ) : null}
             </tr>

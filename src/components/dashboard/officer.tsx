@@ -11,7 +11,7 @@ import {
 import { type OfficerDashboardData } from "@/lib/employees";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { TableWrap, Th, Td, TableEmptyState } from "@/components/ui/table";
-import { hasPermission } from "@/lib/permissions";
+import { hasUserPermission } from "@/lib/permissions";
 import type { SessionUser } from "@/lib/auth";
 
 function fmtDate(d: Date): string {
@@ -29,7 +29,7 @@ export function OfficerDashboard({
   data: OfficerDashboardData;
   user: SessionUser;
 }) {
-  const canUpdateEmployees = hasPermission(user.role, "employees.update");
+  const canUpdateEmployees = hasUserPermission(user.roles, "employees.update");
   const today = new Date().toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",

@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/ui/form-status";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
 import { PageHeader } from "@/components/ui/page-header";
+import { MarkNotificationReadButton } from "@/components/notifications/mark-read-button";
 import { cn } from "@/lib/utils";
 
 export default async function NotificationsPage() {
@@ -89,8 +90,11 @@ export default async function NotificationsPage() {
                     )}
                   </span>
                   {!n.isRead && (
-                    <span className="shrink-0 rounded-full bg-action-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-action-800">
-                      New
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="rounded-full bg-action-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-action-800">
+                        New
+                      </span>
+                      <MarkNotificationReadButton id={n.id} />
                     </span>
                   )}
                 </div>

@@ -7,10 +7,15 @@
  *   npx tsx scripts/qa-feature-fixtures.mts
  *   npx tsx scripts/qa-feature-fixtures.mts --cleanup
  *
- * The script targets the database configured by TURSO_DATABASE_URL (the live
- * `cms` database). It never prints or reads credentials.
+ * The script targets the database configured by TURSO_DATABASE_URL. It never
+ * prints or reads credentials.
+ *
+ * SAFETY: the live `cms` database was purged of demo and QA rows on
+ * 2026-11-08. Running this script against a REMOTE database therefore
+ * requires an explicit `ALLOW_QA_FIXTURES=1` opt-in.
  */
 import "dotenv/config";
+import { requireExplicitOptInForRemote } from "./lib/remote-guard";
 import { and, eq, inArray, like, or } from "drizzle-orm";
 import { db } from "../src/db";
 import {
@@ -214,6 +219,7 @@ if (process.argv.includes("--cleanup")) {
       process.exit(1);
     });
 } else {
+  requireExplicitOptInForRemote("ALLOW_QA_FIXTURES", "the QA fixture setup");
   setup()
     .then(() => process.exit(0))
     .catch((e) => {
