@@ -1,6 +1,8 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  customType,
   index,
+  type AnySQLiteColumn,
   integer,
   primaryKey,
   real,
@@ -8,6 +10,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { decryptString, encryptString } from "../lib/security/encryption";
 
 /* -------------------------------------------------------------------------- */
 /*  Shared helpers                                                            */
@@ -17,6 +20,28 @@ const timestamp = (name: string) => integer(name, { mode: "timestamp" });
 
 /** Simple boolean column (SQLite stores 0/1). */
 const bool = (name: string) => integer(name, { mode: "boolean" });
+
+/**
+ * Transparently encrypted text column (AES-256-GCM, authenticated).
+ *
+ * Every read/write through Drizzle encrypts on the way in and decrypts on the
+ * way out, so sensitive fields never scatter crypto logic through actions or
+ * React components. The column stays a plain SQLite TEXT column; existing
+ * plaintext rows read through unchanged until the backfill encrypts them.
+ *
+ * Server-only: the encryption key comes from ENCRYPTION_KEY.
+ */
+const encryptedText = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return "text";
+  },
+  toDriver(value: string) {
+    return encryptString(value);
+  },
+  fromDriver(value: string) {
+    return decryptString(value);
+  },
+});
 
 /* -------------------------------------------------------------------------- */
 /*  User management                                                           */
@@ -113,7 +138,40 @@ export const users = sqliteTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     phone: text("phone"),
+    /**
+     * Account lifecycle: pending (self-registered, awaiting review), approved,
+     * rejected, suspended, disabled. Only `approved` + isActive may sign in.
+     */
+    status: text("status").notNull().default("approved"),
+    /** Position the applicant requested at registration (informational only). */
+    requestedPosition: text("requested_position"),
+    /** Note supplied by the applicant (never contains sensitive documents). */
+    registrationNote: text("registration_note"),
+    /**
+     * Administrator who approved/rejected the registration. Typed as
+     * AnySQLiteColumn to break the table's circular self-reference — the same
+     * pattern Drizzle requires for self-referencing foreign keys.
+     */
+    reviewedBy: text("reviewed_by").references((): AnySQLiteColumn => users.id, {
+      onDelete: "set null",
+    }),
+    reviewedAt: timestamp("reviewed_at"),
+    /** TOTP multi-factor authentication. Secret is encrypted at rest. */
+    mfaEnabled: bool("mfa_enabled").notNull().default(false),
+    mfaSecret: encryptedText("mfa_secret"),
+    mfaEnrolledAt: timestamp("mfa_enrolled_at"),
     isActive: bool("is_active").notNull().default(true),
+    /**
+     * Dummy / test login marker. `false` for every real account; the ten
+     * role-scoped test accounts created by `scripts/seed-dummy-accounts.mts`
+     * are the only rows ever set to `true`.
+     *
+     * This flag is AUTHORITATIVE: application-facing queries exclude dummy
+     * accounts through it (see `src/lib/dummy-accounts.ts` `realUsersOnly()`),
+     * never through an e-mail pattern — the e-mail is only a convenience for
+     * locating the account during login (the one intentional exception).
+     */
+    isDummy: bool("is_dummy").notNull().default(false),
     lastLoginAt: timestamp("last_login_at"),
     createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
     updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
@@ -123,6 +181,76 @@ export const users = sqliteTable(
     index("users_email_idx").on(t.email),
     index("users_role_idx").on(t.roleId),
     index("users_active_idx").on(t.isActive),
+    index("users_dummy_idx").on(t.isDummy),
+  ],
+);
+
+/**
+ * Password-reset tokens. Only the SHA-256 hash of the token is stored, so a
+ * database leak cannot be replayed; tokens are single-use and time-limited.
+ */
+export const passwordResetTokens = sqliteTable(
+  "password_reset_tokens",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    usedAt: timestamp("used_at"),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("password_reset_token_uq").on(t.tokenHash),
+    index("password_reset_user_idx").on(t.userId),
+    index("password_reset_expires_idx").on(t.expiresAt),
+  ],
+);
+
+/**
+ * Single-use MFA recovery codes. Codes are shown once at generation time and
+ * stored only as SHA-256 hashes; a used code is marked (never deleted) so it
+ * can never be replayed.
+ */
+export const mfaRecoveryCodes = sqliteTable(
+  "mfa_recovery_codes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    codeHash: text("code_hash").notNull(),
+    usedAt: timestamp("used_at"),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("mfa_recovery_code_uq").on(t.userId, t.codeHash),
+    index("mfa_recovery_user_idx").on(t.userId),
+  ],
+);
+
+/**
+ * Pending MFA login challenges. A challenge exists only between a successful
+ * password check and a successful second factor; the opaque token lives in an
+ * httpOnly cookie and only its hash is stored. Challenges expire quickly and
+ * are deleted on success, so a completed challenge cannot be replayed.
+ */
+export const mfaChallenges = sqliteTable(
+  "mfa_challenges",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("mfa_challenge_token_uq").on(t.tokenHash),
+    index("mfa_challenge_user_idx").on(t.userId),
   ],
 );
 
@@ -413,6 +541,8 @@ export const gradingPeriods = sqliteTable(
     orderIndex: integer("order_index").notNull(),
     startDate: text("start_date"),
     endDate: text("end_date"),
+    /** Deadline for submitting grades for this period (ISO date YYYY-MM-DD). */
+    submissionDeadline: text("submission_deadline"),
     isCurrent: bool("is_current").notNull().default(false),
     createdAt: timestamp("created_at").notNull().default(sql`(unixepoch())`),
     updatedAt: timestamp("updated_at").notNull().default(sql`(unixepoch())`),
@@ -588,10 +718,12 @@ export const behaviorRecords = sqliteTable(
       .notNull()
       .references(() => behaviorCategories.id),
     date: text("date").notNull(),
-    description: text("description").notNull(),
+    /** Confidential incident narrative — encrypted at rest. */
+    description: encryptedText("description").notNull(),
     /** low | medium | high (concerns; optional) */
     severity: text("severity"),
-    followUp: text("follow_up"),
+    /** Guidance follow-up notes — encrypted at rest. */
+    followUp: encryptedText("follow_up"),
     /** open | monitored | resolved */
     status: text("status").notNull().default("open"),
     /**
@@ -638,7 +770,8 @@ export const healthRecords = sqliteTable(
     nutritionalStatus: text("nutritional_status"),
     /** normal | stunted | severely_stunted | tall */
     heightForAge: text("height_for_age"),
-    remarks: text("remarks"),
+    /** Clinical remarks — encrypted at rest. */
+    remarks: encryptedText("remarks"),
     recordedBy: text("recorded_by")
       .notNull()
       .references(() => users.id),
@@ -664,10 +797,11 @@ export const clinicalRecords = sqliteTable(
     date: text("date").notNull(), // ISO date
     /** Health Assessment | First Aid | Referral | Health Education | … */
     category: text("category").notNull(),
-    description: text("description").notNull(),
-    assessment: text("assessment"),
-    actionTaken: text("action_taken"),
-    remarks: text("remarks"),
+    /** Clinical narrative + findings — encrypted at rest. */
+    description: encryptedText("description").notNull(),
+    assessment: encryptedText("assessment"),
+    actionTaken: encryptedText("action_taken"),
+    remarks: encryptedText("remarks"),
     recordedBy: text("recorded_by")
       .notNull()
       .references(() => users.id),
@@ -1023,12 +1157,12 @@ export const employees = sqliteTable(
     sex: text("sex").notNull(),
     /** single | married | widowed | separated | annulled */
     civilStatus: text("civil_status"),
-    address: text("address"),
-    contactNumber: text("contact_number"),
+    address: encryptedText("address"),
+    contactNumber: encryptedText("contact_number"),
     email: text("email"),
-    emergencyContactName: text("emergency_contact_name"),
-    emergencyContactRelation: text("emergency_contact_relation"),
-    emergencyContactNumber: text("emergency_contact_number"),
+    emergencyContactName: encryptedText("emergency_contact_name"),
+    emergencyContactRelation: encryptedText("emergency_contact_relation"),
+    emergencyContactNumber: encryptedText("emergency_contact_number"),
 
     /* Employment information */
     /**
@@ -1070,12 +1204,12 @@ export const employees = sqliteTable(
     step: text("step"),
 
     /* Government / personnel identifiers */
-    gsisNumber: text("gsis_number"),
-    philhealthNumber: text("philhealth_number"),
-    pagibigNumber: text("pagibig_number"),
-    tinNumber: text("tin_number"),
-    prcLicenseNumber: text("prc_license_number"),
-    eligibility: text("eligibility"),
+    gsisNumber: encryptedText("gsis_number"),
+    philhealthNumber: encryptedText("philhealth_number"),
+    pagibigNumber: encryptedText("pagibig_number"),
+    tinNumber: encryptedText("tin_number"),
+    prcLicenseNumber: encryptedText("prc_license_number"),
+    eligibility: encryptedText("eligibility"),
 
     /** active | inactive | archived */
     status: text("status").notNull().default("active"),
@@ -1115,11 +1249,11 @@ export const employee201Records = sqliteTable(
     /** personal_information | appointment | eligibility | training | performance | leave | government | certificate | memorandum | other */
     category: text("category").notNull(),
     title: text("title").notNull(),
-    description: text("description"),
+    description: encryptedText("description"),
     /** ISO date YYYY-MM-DD */
     recordDate: text("record_date").notNull(),
     /** Storage reference for uploaded documents (path/key, not the file itself). */
-    fileReference: text("file_reference"),
+    fileReference: encryptedText("file_reference"),
     isArchived: bool("is_archived").notNull().default(false),
 
     createdBy: text("created_by")
@@ -1461,6 +1595,9 @@ export type UserRoleRow = typeof userRoles.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type MfaRecoveryCode = typeof mfaRecoveryCodes.$inferSelect;
+export type MfaChallenge = typeof mfaChallenges.$inferSelect;
 export type SchoolYear = typeof schoolYears.$inferSelect;
 export type GradeLevel = typeof gradeLevels.$inferSelect;
 export type Section = typeof sections.$inferSelect;

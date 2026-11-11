@@ -1,8 +1,13 @@
 import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { listAssignableRoles, listUsersWithRoles } from "@/lib/queries";
+import {
+  listAssignableRoles,
+  listPendingRegistrations,
+  listUsersWithRoles,
+} from "@/lib/queries";
 import { hasUserPermission } from "@/lib/permissions";
+import { ACCOUNT_STATUS_LABELS, type AccountStatus } from "@/lib/constants";
 import { formatDateTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -14,6 +19,11 @@ import {
   UserEditButton,
   type UserRowData,
 } from "@/components/users/user-management";
+import {
+  ApproveRegistrationButton,
+  RejectRegistrationButton,
+  type PendingRegistration,
+} from "@/components/users/registration-review";
 
 export default async function UsersPage() {
   const user = await getCurrentUser();
@@ -23,14 +33,77 @@ export default async function UsersPage() {
   const rows = await listUsersWithRoles();
   const roleOptions = await listAssignableRoles();
   const canManage = hasUserPermission(user.roles, "users.manage");
+  const pending = canManage ? await listPendingRegistrations() : [];
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Access Control"
         title="User Management"
-        description="School personnel accounts — System Administrator, School Administrator, Adviser, Subject Teacher, Records, Guidance Counselor, Nurse, Registrar, Language & Literacy Coordinator and Admin Officer. New accounts are provisioned by a System Administrator."
+        description="School personnel accounts — System Administrator, School Administrator, Adviser, Subject Teacher, Records, Guidance Counselor, Nurse, Registrar, Language & Literacy Coordinator and Admin Officer. Accounts are either provisioned by a System Administrator or requested through self-registration and approved here."
       />
+
+      {canManage ? (
+        <Card>
+          <CardHeader
+            title="Pending registrations"
+            description={
+              pending.length === 0
+                ? "No registration is awaiting review."
+                : `${pending.length} registration${pending.length === 1 ? "" : "s"} awaiting review. Approve and assign the role that matches the person's duties.`
+            }
+            icon={<Users aria-hidden="true" className="h-4 w-4" />}
+          />
+          {pending.length === 0 ? (
+            <p className="px-6 py-6 text-sm text-[#64748B]">
+              Self-registered accounts appear here. They cannot sign in until approved.
+            </p>
+          ) : (
+            <TableWrap minWidth={760}>
+              <thead>
+                <tr>
+                  <Th>Applicant</Th>
+                  <Th>Email</Th>
+                  <Th>Requested position</Th>
+                  <Th>Submitted</Th>
+                  <Th align="right">Review</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-100">
+                {pending.map((p) => {
+                  const registration: PendingRegistration = {
+                    id: p.id,
+                    firstName: p.firstName,
+                    middleName: p.middleName,
+                    lastName: p.lastName,
+                    email: p.email,
+                    phone: p.phone,
+                    requestedPosition: p.requestedPosition,
+                    registrationNote: p.registrationNote,
+                    createdAt: p.createdAt,
+                  };
+                  return (
+                    <tr key={p.id} className="transition-colors hover:bg-brand-50/70">
+                      <Td className="font-medium text-brand-900">
+                        {p.firstName} {p.lastName}
+                      </Td>
+                      <Td className="text-brand-600">{p.email}</Td>
+                      <Td className="text-xs text-brand-700">{p.requestedPosition ?? "—"}</Td>
+                      <Td className="text-xs text-[#64748B]">{formatDateTime(p.createdAt)}</Td>
+                      <Td align="right">
+                        <div className="flex items-center justify-end gap-2">
+                          <ApproveRegistrationButton registration={registration} roleOptions={roleOptions} />
+                          <RejectRegistrationButton registration={registration} />
+                        </div>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </TableWrap>
+          )}
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader
@@ -71,6 +144,8 @@ export default async function UsersPage() {
                   roleLabel: r.roleLabel,
                   additionalRoleIds: r.additionalRoleIds,
                   isActive: r.isActive,
+                  status: r.status,
+                  mfaEnabled: r.mfaEnabled,
                 };
                 return (
                   <tr key={r.id} className="transition-colors hover:bg-brand-50/70">
@@ -80,9 +155,20 @@ export default async function UsersPage() {
                     <Td className="text-brand-600">{r.email}</Td>
                     <Td className="text-xs text-brand-700">{r.roleLabel}</Td>
                     <Td>
-                      <Badge tone={r.isActive ? "verified" : "error"}>
-                        {r.isActive ? "Active" : "Disabled"}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge
+                          tone={
+                            !r.isActive || r.status === "disabled" || r.status === "suspended"
+                              ? "error"
+                              : r.status === "pending"
+                                ? "pending"
+                                : "verified"
+                          }
+                        >
+                          {ACCOUNT_STATUS_LABELS[r.status as AccountStatus] ?? (r.isActive ? "Active" : "Disabled")}
+                        </Badge>
+                        {r.mfaEnabled ? <Badge tone="info">MFA</Badge> : null}
+                      </div>
                     </Td>
                     <Td className="text-xs text-[#64748B]">
                       {r.lastLoginAt ? formatDateTime(r.lastLoginAt) : "—"}

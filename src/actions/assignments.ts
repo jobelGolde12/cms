@@ -79,7 +79,8 @@ async function loadTeacher(
         eq(userRoles.roleId, SUBJECT_TEACHER_ROLE_ID),
       ),
     )
-    .where(eq(users.id, teacherId))
+    // Dummy/test accounts are never assignable — treated as "not found".
+    .where(and(eq(users.id, teacherId), eq(users.isDummy, false)))
     .limit(1);
   const row = rows[0];
   if (!row) return { error: "That teacher account was not found." };

@@ -147,6 +147,8 @@ export async function assignmentTeacherOptions(): Promise<AssignmentTeacherOptio
     .where(
       and(
         eq(users.isActive, true),
+        // Dummy/test accounts are login-only and are never assignable.
+        eq(users.isDummy, false),
         or(
           inArray(users.roleId, TEACHING_ROLE_IDS),
           inArray(users.id, extraRoleHolders),

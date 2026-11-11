@@ -16,6 +16,7 @@ import {
 import { logAudit } from "@/lib/audit";
 import { loginSchema, changePasswordSchema, profileSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
+import { createMfaChallenge } from "@/lib/mfa";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 import { findDefaultCredential } from "@/lib/default-credentials";
 import { trackEvent } from "@/lib/analytics";
@@ -25,7 +26,9 @@ const REMEMBER_ME_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const ERROR_GENERIC = "Invalid email or password.";
 const ERROR_UNEXPECTED = "Something went wrong while signing in. Please try again.";
 
-type LoginOutcome = { kind: "error"; state: ActionState } | { kind: "redirect" };
+type LoginOutcome =
+  | { kind: "error"; state: ActionState }
+  | { kind: "redirect"; to: string };
 
 /**
  * Core login logic. Never calls redirect() — the caller does, outside the
@@ -81,7 +84,7 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
         ipAddress: ip,
         userAgent,
       });
-      return { kind: "redirect" };
+      return { kind: "redirect", to: "/dashboard" };
     }
 
     await logAudit({
@@ -113,6 +116,46 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
     };
   }
 
+  // Account lifecycle gate: a self-registered account cannot sign in until an
+  // administrator has approved it and assigned a role. The role placeholder
+  // itself is unknown to the permission map, so this is defence in depth.
+  if (user.status !== "approved") {
+    const reason =
+      user.status === "pending"
+        ? "Registration is awaiting administrator approval."
+        : user.status === "rejected"
+          ? "This registration was rejected. Contact the school administrator."
+          : user.status === "suspended"
+            ? "This account is suspended. Contact the school administrator."
+            : "This account is disabled. Contact the school administrator.";
+    await logAudit({
+      userId: user.id,
+      action: "LOGIN",
+      entityType: "session",
+      newValues: { reason: `account-${user.status}` },
+      ipAddress: ip,
+      userAgent,
+    });
+    await trackEvent("login_failed", { result: `account-${user.status}` });
+    return { kind: "error", state: fail(reason) };
+  }
+
+  // Second factor: password verified, but NO session is created yet. The
+  // short-lived challenge cookie only proves the password step; a complete
+  // session can only be issued after the TOTP/recovery code is verified.
+  if (user.mfaEnabled && user.mfaSecret) {
+    await createMfaChallenge(user.id);
+    await logAudit({
+      userId: user.id,
+      action: "LOGIN_MFA_CHALLENGE",
+      entityType: "session",
+      newValues: { reason: "mfa-required" },
+      ipAddress: ip,
+      userAgent,
+    });
+    return { kind: "redirect", to: "/login/mfa" };
+  }
+
   await createSession(user.id, {
     ip,
     userAgent,
@@ -128,7 +171,7 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
   });
   await trackEvent("login_completed", { user_role: user.roleId ?? "unknown" });
 
-  return { kind: "redirect" };
+  return { kind: "redirect", to: "/dashboard" };
 }
 
 /** Login with server-side rate limiting and a full audit trail. */
@@ -144,7 +187,7 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
   }
 
   if (outcome.kind === "redirect") {
-    redirect("/dashboard");
+    redirect(outcome.to);
   }
   return outcome.state;
 }

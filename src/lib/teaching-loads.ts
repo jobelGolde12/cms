@@ -120,6 +120,9 @@ export async function subjectTeacherAccountOptions(
     .where(
       and(
         eq(users.isActive, true),
+        // Dummy/test accounts are login-only and can never be linked to a
+        // personnel record or carry a teaching load.
+        eq(users.isDummy, false),
         or(
           eq(users.roleId, SUBJECT_TEACHER_ROLE_ID),
           inArray(users.id, extraRoleHolders),

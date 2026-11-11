@@ -285,6 +285,8 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       })
       .from(auditLogs)
       .leftJoin(users, eq(users.id, auditLogs.userId))
+      // Dummy/test-account activity never surfaces on the dashboard.
+      .where(sql`(${users.id} IS NULL OR ${users.isDummy} = 0)`)
       .orderBy(desc(auditLogs.createdAt))
       .limit(8),
 

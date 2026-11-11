@@ -253,7 +253,8 @@ async function validateSubjectTeacherScope(
       userRoles,
       and(eq(userRoles.userId, users.id), eq(userRoles.roleId, SUBJECT_TEACHER_ROLE_ID)),
     )
-    .where(eq(users.id, accountId))
+    // Dummy/test accounts can never be linked to a personnel record.
+    .where(and(eq(users.id, accountId), eq(users.isDummy, false)))
     .limit(1);
   const account = accountRows[0];
   if (!account) {

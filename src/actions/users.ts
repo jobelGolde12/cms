@@ -4,9 +4,15 @@ import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { countOtherActiveAdmins, getAuthorizedUser, hashPassword } from "@/lib/auth";
+import {
+  countOtherActiveAdmins,
+  getAuthorizedUser,
+  hashPassword,
+  revokeUserSessions,
+} from "@/lib/auth";
 import { logAudit, notify } from "@/lib/audit";
 import { userFormSchema } from "@/lib/schemas";
+import { isDummyAccountEmail } from "@/lib/dummy-accounts";
 import { isAdditionalRoleId, syncAdditionalRoles } from "@/lib/user-roles";
 import { ROLE_IDS } from "./helpers";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
@@ -45,6 +51,12 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
     return fail("Cannot create an administrator.");
   }
 
+  // The reserved dummy/test domain is managed exclusively by
+  // `scripts/seed-dummy-accounts.mts`; a real account must never claim it.
+  if (isDummyAccountEmail(data.email)) {
+    return fail("This email domain is reserved for hidden system test accounts.");
+  }
+
   const existing = await db
     .select({ id: users.id })
     .from(users)
@@ -64,6 +76,7 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
     lastName: data.lastName,
     roleId: data.roleId,
     phone: scrub(data.phone),
+    status: "approved",
     isActive: data.isActive ?? true,
   });
 
@@ -104,11 +117,17 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
   const userId = String(formData.get("userId") ?? "");
   const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const target = rows[0];
-  if (!target) return fail("User not found.");
+  // Dummy/test accounts are invisible to User Management and must never be
+  // editable through it (a crafted request is treated as "not found").
+  if (!target || target.isDummy) return fail("User not found.");
 
   const parsed = userFormSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
   const data = parsed.data;
+
+  if (isDummyAccountEmail(data.email)) {
+    return fail("This email domain is reserved for hidden system test accounts.");
+  }
 
   // Prevent demoting/deactivating the last active admin.
   const demoting = data.roleId !== ROLE_IDS.admin && target.roleId === ROLE_IDS.admin;
@@ -136,6 +155,12 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
       roleId: data.roleId,
       phone: scrub(data.phone),
       isActive: data.isActive ?? true,
+      // Re-enabling a suspended/disabled account restores sign-in. Pending and
+      // rejected registrations still require the approval workflow.
+      status:
+        data.isActive && (target.status === "suspended" || target.status === "disabled")
+          ? "approved"
+          : target.status,
       updatedAt: new Date(),
     })
     .where(eq(users.id, target.id));
@@ -183,7 +208,8 @@ export async function deactivateUser(_prev: ActionState, formData: FormData): Pr
 
   const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const target = rows[0];
-  if (!target) return fail("User not found.");
+  // Dummy/test accounts are not manageable through the application.
+  if (!target || target.isDummy) return fail("User not found.");
 
   if (target.roleId === ROLE_IDS.admin && target.isActive) {
     const others = await countOtherActiveAdmins(target.id);
@@ -192,8 +218,11 @@ export async function deactivateUser(_prev: ActionState, formData: FormData): Pr
 
   await db
     .update(users)
-    .set({ isActive: false, updatedAt: new Date() })
+    .set({ isActive: false, status: "disabled", updatedAt: new Date() })
     .where(eq(users.id, target.id));
+
+  // Existing sessions must die immediately, not at cookie expiry.
+  await revokeUserSessions(target.id);
 
   await logAudit({
     userId: actor.id,

@@ -230,6 +230,9 @@ export async function getPrincipalName(): Promise<string | null> {
       and(
         sql`lower(${roles.name}) in ('system administrator', 'school administrator', 'admin', 'school admin')`,
         eq(users.isActive, true),
+        // A dummy admin must never be chosen as the "principal" signature on
+        // an official document.
+        eq(users.isDummy, false),
       ),
     )
     .orderBy(asc(users.createdAt))

@@ -40,6 +40,7 @@ import {
 } from "./constants";
 import { roleNameFromId, type SessionUser } from "./auth";
 import { ADDITIONAL_ROLE_IDS } from "./user-roles";
+import { realUsersOnly } from "./dummy-accounts";
 import { userSectionScope } from "./scope";
 import { currentQrToken } from "./qr";
 import { ageFromBirthDate } from "./utils";
@@ -1682,11 +1683,16 @@ export async function listUsersWithRoles(page = 1, pageSize = 25) {
       roleName: roles.name,
       roleId: users.roleId,
       isActive: users.isActive,
+      status: users.status,
+      mfaEnabled: users.mfaEnabled,
       lastLoginAt: users.lastLoginAt,
       createdAt: users.createdAt,
     })
     .from(users)
     .innerJoin(roles, eq(roles.id, users.roleId))
+    // Dummy/test accounts are login-only and must never appear in User
+    // Management (nor in its count) — see src/lib/dummy-accounts.ts.
+    .where(realUsersOnly())
     .orderBy(asc(users.createdAt))
     .limit(pageSize)
     .offset(offset);
@@ -1726,10 +1732,41 @@ export async function listUsersWithRoles(page = 1, pageSize = 25) {
         (ADDITIONAL_ROLE_IDS as readonly string[]).includes(id),
       ),
       isActive: r.isActive,
+      status: r.status,
+      mfaEnabled: r.mfaEnabled,
       lastLoginAt: r.lastLoginAt,
       createdAt: r.createdAt,
     };
   });
+}
+
+/**
+ * Self-registered accounts awaiting administrator review. Only real accounts
+ * (never dummy/test logins) and only the `pending` lifecycle state. Kept as a
+ * dedicated query so the users page does not have to filter a large list and
+ * the approval queue can never show rejected/disabled accounts.
+ */
+export async function listPendingRegistrations() {
+  const reviewer = alias(users, "reviewer");
+  return db
+    .select({
+      id: users.id,
+      firstName: users.firstName,
+      middleName: users.middleName,
+      lastName: users.lastName,
+      email: users.email,
+      phone: users.phone,
+      requestedPosition: users.requestedPosition,
+      registrationNote: users.registrationNote,
+      createdAt: users.createdAt,
+      reviewedAt: users.reviewedAt,
+      reviewerFirst: reviewer.firstName,
+      reviewerLast: reviewer.lastName,
+    })
+    .from(users)
+    .leftJoin(reviewer, eq(reviewer.id, users.reviewedBy))
+    .where(and(eq(users.status, "pending"), eq(users.isDummy, false)))
+    .orderBy(asc(users.createdAt));
 }
 
 /** Roles that can be assigned to an account, in the canonical role order. */
@@ -1760,6 +1797,11 @@ export type AuditLogFilters = {
 /** Shared predicate for the audit-log list/count so they never diverge. */
 function auditLogWhere(filters: AuditLogFilters): SQL | undefined {
   const conditions: SQL[] = [];
+  // Dummy/test-account activity (login/logout, failed attempts) must stay out
+  // of the audit UI. Rows with no actor (system events, pre-auth rate-limit
+  // entries) are preserved. The marker is resolved through the user relation,
+  // never by e-mail pattern.
+  conditions.push(sql`(${users.id} IS NULL OR ${users.isDummy} = 0)`);
   if (filters.q) {
     const needle = `%${filters.q}%`;
     conditions.push(

@@ -64,7 +64,8 @@ export default async function SectionsPage({
       })
       .from(users)
       .innerJoin(roles, eq(roles.id, users.roleId))
-      .where(eq(users.isActive, true))
+      // Dummy/test accounts never appear as an adviser option.
+      .where(and(eq(users.isActive, true), eq(users.isDummy, false)))
       .orderBy(asc(users.lastName)),
     db
       .select({ id: schoolYears.id, year: schoolYears.year })

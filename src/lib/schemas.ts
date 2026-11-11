@@ -14,6 +14,7 @@ import {
   INTERVENTION_STATUSES,
   NUTRITIONAL_STATUSES,
   HEIGHT_FOR_AGE_STATUSES,
+  REGISTRATION_POSITIONS,
   ROLES,
   SEXES,
   SERVICE_CREDIT_TYPES,
@@ -236,9 +237,67 @@ export const userFormSchema = z.object({
 
 export type UserFormValues = z.infer<typeof userFormSchema>;
 
+/**
+ * Password policy for every NEW password (registration, reset, change).
+ * At least 10 characters, with a letter and a number. Existing passwords are
+ * unaffected until their owner chooses a new one.
+ */
+export const newPasswordSchema = z
+  .string()
+  .min(10, "Password must be at least 10 characters")
+  .max(128, "Password is too long")
+  .regex(/[A-Za-z]/, "Password must include a letter")
+  .regex(/\d/, "Password must include a number");
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required").max(128),
-  newPassword: z.string().min(8, "New password must be at least 8 characters").max(128),
+  newPassword: newPasswordSchema,
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Self-registration & password recovery                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Public registration. Intentionally accepts NO role field — role assignment
+ * is an administrator decision. `requestedPosition` is informational only.
+ */
+export const registrationSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "First name is required").max(60),
+    middleName: optionalText(60),
+    lastName: z.string().trim().min(1, "Last name is required").max(60),
+    email: z.email("Enter a valid email address").max(120),
+    phone: phPhone("Contact number"),
+    requestedPosition: z.enum(REGISTRATION_POSITIONS, {
+      message: "Select the position you are requesting",
+    }),
+    registrationNote: optionalText(300),
+    password: newPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirm your password").max(128),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export const forgotPasswordSchema = z.object({
+  email: z.email("Enter a valid email address").max(120),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(20).max(128),
+    password: newPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirm your password").max(128),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export const mfaCodeSchema = z.object({
+  code: z.string().trim().min(6, "Enter your 6-digit code").max(20),
 });
 
 /* -------------------------------------------------------------------------- */

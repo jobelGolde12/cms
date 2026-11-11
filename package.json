@@ -13,6 +13,7 @@
     "db:drift": "tsx scripts/check-remote-drift.mts",
     "seed": "tsx scripts/seed.mts",
     "seed:reference": "tsx scripts/seed-remote-reference.mts",
+    "seed:dummy": "tsx scripts/seed-dummy-accounts.mts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^18.0.1",

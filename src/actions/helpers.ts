@@ -1,4 +1,4 @@
-import { eq, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { roles, users } from "@/db/schema";
@@ -78,10 +78,14 @@ export async function notifyVerifiers(
       .select({ id: users.id })
       .from(users)
       .where(
-        or(
-          eq(users.roleId, ROLE_IDS.admin),
-          eq(users.roleId, ROLE_IDS.school_admin),
-          eq(users.roleId, ROLE_IDS.records),
+        and(
+          or(
+            eq(users.roleId, ROLE_IDS.admin),
+            eq(users.roleId, ROLE_IDS.school_admin),
+            eq(users.roleId, ROLE_IDS.records),
+          ),
+          // Dummy/test accounts receive no notifications.
+          eq(users.isDummy, false),
         ),
       );
 

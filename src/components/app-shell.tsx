@@ -25,6 +25,7 @@ const navLinks: NavLink[] = [
   { label: "Sections", href: "/sections", icon: "sections", permission: "academics.config" },
   { label: "Teacher Assignments", href: "/assignments", icon: "sections", permission: "academics.config" },
   { label: "Grade Encoding", href: "/grades", icon: "grades", permission: "grades.encode" },
+  { label: "Submission Monitoring", href: "/grades/monitoring", icon: "reports", permission: "grades.monitor" },
   { label: "Employees", href: "/employees", icon: "employees", permission: "employees.view" },
   { label: "Service Credits", href: "/service-credits", icon: "service_credits", permission: "service_credits.view" },
   { label: "Performance", href: "/performance", icon: "performance", permission: "grades.view" },
@@ -38,15 +39,16 @@ const navLinks: NavLink[] = [
   { label: "Activity Logs", href: "/activity-logs", icon: "activity", permission: "audit_logs.view" },
   { label: "Notifications", href: "/notifications", icon: "notifications", permission: "dashboard.view" },
   { label: "Users", href: "/users", icon: "users", permission: "users.view" },
+  { label: "Two-Factor Auth", href: "/settings/mfa", icon: "verification", permission: "dashboard.view" },
   { label: "Privacy Policy", href: "/privacy", icon: "verification", permission: "dashboard.view" },
   { label: "Settings", href: "/settings", icon: "settings", permission: "dashboard.view" },
 ];
 
 const NAV_SECTIONS: { heading: string; items: string[] }[] = [
-  { heading: "Core Modules", items: ["/dashboard", "/students", "/sections", "/assignments", "/grades", "/performance", "/development", "/guidance", "/health", "/verification", "/duplicates", "/reports"] },
+  { heading: "Core Modules", items: ["/dashboard", "/students", "/sections", "/assignments", "/grades", "/grades/monitoring", "/performance", "/development", "/guidance", "/health", "/verification", "/duplicates", "/reports"] },
   { heading: "Employee Records", items: ["/employees", "/service-credits"] },
   { heading: "Operations & Tools", items: ["/qr", "/activity-logs", "/notifications"] },
-  { heading: "System", items: ["/users", "/settings", "/privacy"] },
+  { heading: "System", items: ["/users", "/settings", "/settings/mfa", "/privacy"] },
 ];
 
 export default async function AppShell({

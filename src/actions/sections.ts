@@ -71,11 +71,13 @@ async function validateSectionRefs(
 
   if (adviserId) {
     const adviserRows = await db
-      .select({ isActive: users.isActive })
+      .select({ isActive: users.isActive, isDummy: users.isDummy })
       .from(users)
       .where(eq(users.id, adviserId))
       .limit(1);
     if (!adviserRows[0]) return "Selected adviser not found.";
+    // Dummy/test accounts can never advise a real section.
+    if (adviserRows[0].isDummy) return "Selected adviser not found.";
     if (!adviserRows[0].isActive) return "The selected adviser account is inactive.";
   }
   return null;

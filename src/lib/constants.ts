@@ -31,6 +31,53 @@ export const ROLES = [
 ] as const;
 export type Role = (typeof ROLES)[number];
 
+/**
+ * Account lifecycle. Self-registered accounts start `pending` and cannot sign
+ * in until an administrator approves them and assigns a role. `suspended` and
+ * `disabled` revoke access without deleting the account or its history.
+ */
+export const ACCOUNT_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+  "suspended",
+  "disabled",
+] as const;
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
+
+export const ACCOUNT_STATUS_LABELS: Record<AccountStatus, string> = {
+  pending: "Pending approval",
+  approved: "Approved",
+  rejected: "Rejected",
+  suspended: "Suspended",
+  disabled: "Disabled",
+};
+
+/**
+ * Placeholder role for a self-registered account awaiting review. It holds no
+ * permissions and is intentionally unknown to `roleNameFromId`, so even a
+ * status-check bypass cannot grant access.
+ */
+export const PENDING_ROLE_ID = "role-pending";
+
+/** Positions an applicant may request (never an application role). */
+export const REGISTRATION_POSITIONS = [
+  "teacher",
+  "subject_teacher",
+  "adviser",
+  "administrative_staff",
+  "other",
+] as const;
+export type RegistrationPosition = (typeof REGISTRATION_POSITIONS)[number];
+
+export const REGISTRATION_POSITION_LABELS: Record<RegistrationPosition, string> = {
+  teacher: "Teacher",
+  subject_teacher: "Subject Teacher",
+  adviser: "Adviser",
+  administrative_staff: "Administrative Staff",
+  other: "Other school personnel",
+};
+
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "System Administrator",
   school_admin: "School Administrator",
@@ -525,6 +572,38 @@ export type Sex = (typeof SEXES)[number];
 
 export const SESSION_COOKIE_NAME = "sms_session";
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+/** Short-lived second-factor challenge cookie (MFA pending, not a session). */
+export const MFA_CHALLENGE_COOKIE_NAME = "sms_mfa";
+export const MFA_CHALLENGE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+/** Maximum wrong codes tolerated before the challenge is discarded. */
+export const MFA_MAX_ATTEMPTS = 5;
+
+/** Password reset token lifetime (30 minutes). */
+export const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
+
+/** Grade-submission health statuses (server-evaluated, Asia/Manila). */
+export const GRADE_SUBMISSION_STATUSES = [
+  "not_yet_due",
+  "submitted",
+  "submitted_on_time",
+  "submitted_late",
+  "overdue",
+  "missing",
+] as const;
+export type GradeSubmissionStatus = (typeof GRADE_SUBMISSION_STATUSES)[number];
+
+export const GRADE_SUBMISSION_STATUS_LABELS: Record<GradeSubmissionStatus, string> = {
+  not_yet_due: "Not Yet Due",
+  submitted: "Submitted",
+  submitted_on_time: "Submitted On Time",
+  submitted_late: "Submitted Late",
+  overdue: "Overdue",
+  missing: "Missing",
+};
+
+/** School timezone for authoritative deadline calculations. */
+export const SCHOOL_TIMEZONE = "Asia/Manila";
 
 /** Statuses eligible for QR generation (verified records only). */
 export const QR_ELIGIBLE_RECORD_STATUSES: RecordStatus[] = ["verified"];

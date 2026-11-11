@@ -37,6 +37,8 @@ export const PERMISSIONS = [
    * on the page and in every grade action.
    */
   "grades.encode",
+  /** Read-only grade-submission compliance monitoring (deadlines, lateness). */
+  "grades.monitor",
   // Attendance
   "attendance.view",
   "attendance.write",
@@ -116,6 +118,7 @@ const SCHOOL_ADMIN: Permission[] = [
   "academics.config",
   "grades.view",
   "grades.encode",
+  "grades.monitor",
   // grades.write: teachers/advisers ONLY (see TEACHER_ONLY_WRITE above)
   "attendance.view",
   "attendance.write",

@@ -25,6 +25,9 @@ export type UserRowData = {
   /** Additional teaching roles (Adviser / Subject Teacher) the account holds. */
   additionalRoleIds: string[];
   isActive: boolean;
+  /** Account lifecycle status (pending/approved/rejected/suspended/disabled). */
+  status?: string;
+  mfaEnabled?: boolean;
 };
 
 /**

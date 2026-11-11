@@ -108,6 +108,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
       lastName: users.lastName,
       roleId: users.roleId,
       isActive: users.isActive,
+      status: users.status,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
@@ -115,7 +116,10 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
     .limit(1);
 
   const row = rows[0];
-  if (!row || !row.isActive) return null;
+  // Only an active, APPROVED account gets a session identity. Pending,
+  // rejected, suspended and disabled accounts are locked out even if a stale
+  // session row still exists.
+  if (!row || !row.isActive || row.status !== "approved") return null;
 
   // Map the DB role id onto the application role key.
   const role = roleNameFromId(row.roleId);
@@ -200,6 +204,15 @@ export async function createSession(
   });
 }
 
+/**
+ * Revoke every session for an account (password reset, suspension). The raw
+ * cookie tokens are unrecoverable by design, so revoking the stored hashes is
+ * sufficient: the next request finds no matching session.
+ */
+export async function revokeUserSessions(userId: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, userId));
+}
+
 /** Deletes the current session and clears the cookie. */
 export async function destroySession(): Promise<void> {
   const store = await cookies();
@@ -220,7 +233,9 @@ export async function countOtherActiveAdmins(excludeUserId: string): Promise<num
   const rows = await db
     .select({ id: users.id, roleId: users.roleId })
     .from(users)
-    .where(and(eq(users.isActive, true)));
+    // Dummy/test admins are NOT real administrators — they must never satisfy
+    // the "last active administrator" guard.
+    .where(and(eq(users.isActive, true), eq(users.isDummy, false)));
   const primaryAdmins = rows.filter((r) => r.id !== excludeUserId && roleNameFromId(r.roleId) === "admin");
 
   const extraAdmins = await db

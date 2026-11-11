@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
+import Link from "next/link";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { login } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -114,14 +115,12 @@ export default function LoginPage() {
                 >
                   Password
                 </label>
-                {/* No self-service reset flow exists — accounts are provisioned
-                    internally — so this is guidance, not a dead link. */}
-                <span
-                  title="Contact the school administrator to reset your password."
-                  className="rounded text-xs font-medium text-[#64748B]"
+                <Link
+                  href="/forgot-password"
+                  className="rounded text-xs font-medium text-action-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-600"
                 >
                   Forgot Password?
-                </span>
+                </Link>
               </div>
               <div className="relative">
                 <input
@@ -180,10 +179,17 @@ export default function LoginPage() {
           </form>
 
           {/* Account notice */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 space-y-3 text-center">
             <p className="text-xs leading-relaxed text-[#64748B]">
-              Accounts are provided by the school administrator.
-              <br />
+              Need an account? Request one and an administrator will review it.
+            </p>
+            <Link
+              href="/register"
+              className="inline-flex h-10 w-full items-center justify-center rounded-[4px] border border-[#DCE4F0] bg-white text-sm font-semibold text-[#14295F] transition-colors hover:bg-[#F4F7FC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#315EF7] focus-visible:ring-offset-2"
+            >
+              Create an account
+            </Link>
+            <p className="text-xs leading-relaxed text-[#64748B]">
               Contact the school office if you need assistance.
             </p>
           </div>
