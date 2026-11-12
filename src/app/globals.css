@@ -250,6 +250,116 @@ body {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Welcome hero — photographic backdrop, cinematic parallax, digital energy
+--------------------------------------------------------------------------- */
+
+/* Scroll-linked backdrop drift.
+   Native scroll-driven animation: no scroll listener, no rAF loop, and the
+   transform stays on the compositor. The image wrapper is 120% of the hero
+   height, so the +7% travel can never reveal an edge. Browsers without
+   animation-timeline support simply keep a static photograph. */
+.hero-parallax {
+  animation: hero-parallax-drift linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 0 120vh;
+  will-change: transform;
+}
+
+@keyframes hero-parallax-drift {
+  from { transform: translate3d(0, -2%, 0); }
+  to { transform: translate3d(0, 5%, 0); }
+}
+
+/* Readability scrim — bottom-weighted on phones, left-weighted on desktop. */
+.hero-scrim {
+  background: linear-gradient(
+    to top,
+    rgba(7, 22, 62, 0.96) 0%,
+    rgba(7, 22, 62, 0.86) 30%,
+    rgba(7, 22, 62, 0.5) 62%,
+    rgba(7, 22, 62, 0.18) 100%
+  );
+}
+
+@media (min-width: 768px) {
+  .hero-scrim {
+    background:
+      linear-gradient(
+        to right,
+        rgba(7, 22, 62, 0.94) 0%,
+        rgba(7, 22, 62, 0.82) 30%,
+        rgba(7, 22, 62, 0.42) 58%,
+        rgba(7, 22, 62, 0.1) 82%,
+        rgba(7, 22, 62, 0.05) 100%
+      ),
+      linear-gradient(to top, rgba(7, 22, 62, 0.55) 0%, transparent 35%);
+  }
+}
+
+/* Electrical arcs: invisible most of the time, one brief flash per cycle. */
+.hero-arc {
+  opacity: 0;
+  animation: hero-arc-flash 12s ease-out infinite;
+}
+
+.hero-arc--slow {
+  animation-duration: 17s;
+}
+
+@keyframes hero-arc-flash {
+  0%, 82%, 100% { opacity: 0; }
+  83% { opacity: 0.55; }
+  84% { opacity: 0.08; }
+  85% { opacity: 0.4; }
+  87% { opacity: 0.12; }
+  89% { opacity: 0; }
+}
+
+/* Soft glow events — a faint pulse, never a strobe. */
+.hero-glow {
+  opacity: 0;
+  animation: hero-glow-pulse 13s ease-in-out infinite;
+}
+
+@keyframes hero-glow-pulse {
+  0%, 88%, 100% { opacity: 0; }
+  91% { opacity: 0.55; }
+  94% { opacity: 0.1; }
+  96% { opacity: 0.35; }
+}
+
+/* Sparse particles — opacity/scale only. */
+.hero-particle {
+  opacity: 0.15;
+  animation: hero-particle-twinkle 11s ease-in-out infinite;
+}
+
+@keyframes hero-particle-twinkle {
+  0%, 100% { opacity: 0.08; transform: scale(0.8); }
+  50% { opacity: 0.6; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-parallax {
+    animation: none;
+    transform: none;
+    will-change: auto;
+  }
+
+  .hero-arc,
+  .hero-glow {
+    animation: none;
+    opacity: 0;
+  }
+
+  .hero-particle {
+    animation: none;
+    opacity: 0.12;
+    transform: none;
+  }
+}
+
 /* --------------------------------------------------------------------------- */
 /*   Print — student card isolation                                          */
 /*   Only the printable document content should reach the print output.     */
