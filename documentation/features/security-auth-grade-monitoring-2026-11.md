@@ -263,13 +263,18 @@ Add to `.env.example` only (never commit real values):
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `ENCRYPTION_KEY` | Production | AES-256 key for sensitive columns. `openssl rand -base64 32`. |
-| `RESEND_API_KEY` | Optional | Password-reset email delivery. |
-| `EMAIL_FROM` | Optional | Verified sender for reset emails. |
+| `MAILGUN_API_KEY` | Production | Mailgun private API key for password-reset email delivery. |
+| `MAILGUN_DOMAIN` | Production | Verified Mailgun sending domain. |
+| `MAILGUN_FROM_EMAIL` | Production | Sender mailbox on the verified domain. |
+| `MAILGUN_FROM_NAME` | Optional | Display name shown in the recipient's inbox. |
+| `MAILGUN_REGION` | Optional | Set to `eu` for EU-region Mailgun accounts. |
+| `NEXT_PUBLIC_APP_URL` | Production | Public base URL used to build reset links. |
 
-Existing `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_COOKIE_SECURE`,
-`NEXT_PUBLIC_APP_URL` remain required. Without an email provider, production
-reset requests return the generic message but no mail is delivered — configure
-Resend before relying on self-service reset in production.
+Existing `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_COOKIE_SECURE` remain
+required. Without Mailgun configured, production reset requests return the
+generic message but no mail is delivered — see
+`documentation/features/password-reset-mailgun-2026-11.md` before relying on
+self-service reset in production.
 
 Key rotation note: ciphertext embeds no key id. Rotating `ENCRYPTION_KEY`
 requires decrypting and re-encrypting existing values with the new key in a

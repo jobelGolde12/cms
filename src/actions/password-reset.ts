@@ -14,6 +14,12 @@ import {
   sha256Hex,
 } from "@/lib/security/tokens";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
+import {
+  buildPasswordResetUrl,
+  PASSWORD_RESET_GENERIC_MESSAGE,
+  resetRateKey,
+  resolvePasswordResetBaseUrl,
+} from "@/lib/password-reset";
 
 /**
  * Password recovery.
@@ -23,10 +29,10 @@ import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./h
  * - The raw token exists only in the e-mail link; the DB stores a SHA-256 hash.
  * - Tokens are single-use, expire after 30 minutes, and every existing session
  *   is revoked when the password changes.
+ * - The reset link is delivered server-side by Mailgun (see `src/lib/email.ts`).
+ *   When Mailgun is not configured the flow fails safely and never fakes
+ *   delivery.
  */
-
-const GENERIC_REQUEST_MESSAGE =
-  "If an account exists for this email, password reset instructions have been sent.";
 
 export type ForgotPasswordState =
   | { ok: true; message: string; devResetUrl?: string }
@@ -37,7 +43,9 @@ export async function requestPasswordReset(
   formData: FormData,
 ): Promise<ForgotPasswordState> {
   const { ip, userAgent } = await sessionMetadata();
-  const limited = rateLimit(`forgot:${ip ?? "local"}`, 5, 15 * 60_000);
+  // 10 per 15 min per IP: enough for a shared school office behind one NAT,
+  // still small enough to stop scripted abuse.
+  const limited = rateLimit(resetRateKey("forgot", ip ?? "local"), 10, 15 * 60_000);
   if (!limited.ok) {
     return { ok: false, error: "Too many reset requests. Please try again later." };
   }
@@ -51,9 +59,27 @@ export async function requestPasswordReset(
   }
   const email = parsed.data.email.trim().toLowerCase();
 
+  // Second bucket keyed by the address itself: a single mailbox cannot be
+  // flooded with reset mail from rotating IPs. The key is a hash, and the
+  // limit applies whether or not the account exists — it leaks nothing.
+  const perEmail = rateLimit(resetRateKey("forgot-email", email), 3, 15 * 60_000);
+  if (!perEmail.ok) {
+    return {
+      ok: false,
+      error: "Too many reset requests for this email. Please try again later.",
+    };
+  }
+
   try {
     const rows = await db
-      .select({ id: users.id, isActive: users.isActive, status: users.status, isDummy: users.isDummy })
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        isActive: users.isActive,
+        status: users.status,
+        isDummy: users.isDummy,
+      })
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
@@ -71,14 +97,24 @@ export async function requestPasswordReset(
         expiresAt: issued.expiresAt,
       });
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-        process.env.APP_URL?.replace(/\/$/, "") ||
-        "http://localhost:3000";
-      const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(issued.token)}`;
+      const baseUrl = resolvePasswordResetBaseUrl();
+      const resetUrl = buildPasswordResetUrl(issued.token, baseUrl);
 
-      if (isEmailConfigured()) {
-        await sendMail({ to: email, ...passwordResetEmail(resetUrl) });
+      if (resetUrl && isEmailConfigured()) {
+        const result = await sendMail({
+          to: email,
+          ...passwordResetEmail(resetUrl, {
+            fullName: `${user.firstName} ${user.lastName}`.trim(),
+          }),
+        });
+        if (!result.delivered) {
+          // Provider misconfiguration / failure: the token is still stored so
+          // the user can retry, but we never fake delivery.
+          console.error("[requestPasswordReset] Mailgun delivery failed", {
+            reason: result.reason,
+            userId: user.id,
+          });
+        }
       }
 
       await logAudit({
@@ -92,8 +128,8 @@ export async function requestPasswordReset(
 
       // Development fallback: no mail provider configured, so surface the link
       // on the page instead of logging the token. Never in production.
-      if (process.env.NODE_ENV !== "production" && !isEmailConfigured()) {
-        return { ok: true, message: GENERIC_REQUEST_MESSAGE, devResetUrl: resetUrl };
+      if (process.env.NODE_ENV !== "production" && resetUrl && !isEmailConfigured()) {
+        return { ok: true, message: PASSWORD_RESET_GENERIC_MESSAGE, devResetUrl: resetUrl };
       }
     } else {
       // Keep timing roughly uniform for unknown addresses.
@@ -108,10 +144,10 @@ export async function requestPasswordReset(
   } catch (error) {
     console.error("[requestPasswordReset] failed", error);
     // Still generic: infrastructure errors must not distinguish addresses.
-    return { ok: true, message: GENERIC_REQUEST_MESSAGE };
+    return { ok: true, message: PASSWORD_RESET_GENERIC_MESSAGE };
   }
 
-  return { ok: true, message: GENERIC_REQUEST_MESSAGE };
+  return { ok: true, message: PASSWORD_RESET_GENERIC_MESSAGE };
 }
 
 /* --------------------------------- reset ---------------------------------- */
@@ -121,7 +157,7 @@ export async function resetPassword(
   formData: FormData,
 ): Promise<ActionState> {
   const { ip, userAgent } = await sessionMetadata();
-  const limited = rateLimit(`reset:${ip ?? "local"}`, 10, 15 * 60_000);
+  const limited = rateLimit(resetRateKey("reset", ip ?? "local"), 10, 15 * 60_000);
   if (!limited.ok) return fail("Too many attempts. Please try again later.");
 
   const parsed = resetPasswordSchema.safeParse(Object.fromEntries(formData.entries()));

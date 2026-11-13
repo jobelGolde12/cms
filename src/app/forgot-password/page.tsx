@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, MailCheck } from "lucide-react";
 import { requestPasswordReset } from "@/actions/password-reset";
@@ -8,7 +8,7 @@ import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/form-status";
 import { buttonStyles } from "@/components/ui/button";
 import { useFormResetGuard } from "@/components/ui/form-reset-guard";
-import { Logo } from "@/components/logo";
+import { AuthShell } from "@/components/auth/auth-shell";
 
 type ForgotState = Awaited<ReturnType<typeof requestPasswordReset>>;
 
@@ -18,39 +18,33 @@ export default function ForgotPasswordPage() {
   const [state, formAction] = useActionState(requestPasswordReset, INITIAL);
   const { formRef, onReset } = useFormResetGuard();
   const emailId = useId();
+  const [email, setEmail] = useState("");
 
   return (
-    <main className="flex min-h-screen flex-col bg-[#F4F7FC]">
-      <header className="border-b border-[#DCE4F0] bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-6 py-3 md:px-10 lg:px-16">
-          <Logo size="lg" asLink priority />
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-[11px] font-bold uppercase tracking-wide text-brand-900">
-              Republic of the Philippines
-            </p>
-            <p className="truncate text-[10px] font-medium text-[#64748B]">
-              STA. MAGDALENA NHS • DEPED SORSOGON DIVISION
-            </p>
-          </div>
-        </div>
-      </header>
+    <AuthShell>
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-brand-950">
+          Forgot password
+        </h1>
+        <p className="mt-2 text-sm text-[#64748B]">
+          Enter your school email and we will send reset instructions if an
+          account exists for it.
+        </p>
+      </div>
 
-      <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center px-5 py-10 sm:px-6">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-brand-950">
-            Forgot password
-          </h1>
-          <p className="mt-2 text-sm text-[#64748B]">
-            Enter your school email and we will send reset instructions if an
-            account exists for it.
-          </p>
-        </div>
-
-        <div className="rounded-[6px] border border-[#DCE4F0] bg-white px-6 py-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+      <div className="rounded-[6px] border border-[#DCE4F0] bg-white px-6 py-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           {state.ok ? (
             <div role="status" className="flex flex-col items-center gap-3 text-center">
               <MailCheck aria-hidden="true" className="h-9 w-9 text-brand-600" />
               <p className="text-sm font-medium text-brand-900">{state.message}</p>
+              <p className="text-xs text-[#64748B]">
+                Didn&rsquo;t receive the email?
+              </p>
+              <ul className="list-inside list-disc space-y-1 text-left text-xs text-[#64748B]">
+                <li>Check your spam or junk folder.</li>
+                <li>Make sure you entered the correct address.</li>
+                <li>Wait a few minutes before requesting another link.</li>
+              </ul>
               {state.devResetUrl ? (
                 <div className="w-full rounded-md border border-amber-200 bg-amber-50 p-3 text-left text-xs text-amber-900">
                   <p className="font-semibold">Development mode (no mail provider configured)</p>
@@ -62,7 +56,7 @@ export default function ForgotPasswordPage() {
                   </Link>
                 </div>
               ) : null}
-              <Link href="/login" className={buttonStyles("outline", "md")}>
+              <Link href="/login" className={buttonStyles("secondary", "md")}>
                 Back to sign in
               </Link>
             </div>
@@ -89,6 +83,8 @@ export default function ForgotPasswordPage() {
                   placeholder="j.delacruz@deped.gov.ph"
                   required
                   maxLength={120}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
 
@@ -107,8 +103,7 @@ export default function ForgotPasswordPage() {
               </p>
             </form>
           )}
-        </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

@@ -36,24 +36,17 @@ export function HeroEffects() {
     >
       {/* ── Right edge: branching light streaks ── */}
       <svg
-        className="hero-arc-layer absolute right-[5%] top-[3%] h-[56%] w-[42%] opacity-80 sm:w-[34%] md:w-[28%] lg:w-[26%]"
+        className="hero-arc-layer absolute right-[6%] top-[2%] h-[45%] w-[42%] opacity-80 sm:w-[34%] md:w-[30%] lg:w-[26%]"
         viewBox="0 0 320 620"
         fill="none"
-        preserveAspectRatio="xMaxYMin meet"
+        preserveAspectRatio="xMidYMid meet"
       >
-        <defs>
-          <linearGradient id="hero-arc-right" x1="1" y1="0" x2="0" y2="1">
-            <stop stopColor="#ffffff" stopOpacity="0.95" />
-            <stop offset="0.45" stopColor="#dbeafe" stopOpacity="0.75" />
-            <stop offset="1" stopColor="#93c5fd" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
         <g
           className="hero-arc"
           style={{ animationDelay: "1.6s" }}
-          stroke="url(#hero-arc-right)"
-          strokeWidth="1.4"
+          stroke="#dbeafe"
+          strokeOpacity="0.9"
+          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -67,8 +60,9 @@ export function HeroEffects() {
         <g
           className="hero-arc hero-arc--slow"
           style={{ animationDelay: "7.4s" }}
-          stroke="url(#hero-arc-right)"
-          strokeWidth="1"
+          stroke="#dbeafe"
+          strokeOpacity="0.65"
+          strokeWidth="1.2"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -81,8 +75,9 @@ export function HeroEffects() {
         <g
           className="hero-arc"
           style={{ animationDelay: "11.2s" }}
-          stroke="url(#hero-arc-right)"
-          strokeWidth="0.9"
+          stroke="#dbeafe"
+          strokeOpacity="0.5"
+          strokeWidth="1"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -98,19 +93,12 @@ export function HeroEffects() {
         fill="none"
         preserveAspectRatio="xMinYMin meet"
       >
-        <defs>
-          <linearGradient id="hero-arc-left" x1="0" y1="0" x2="1" y2="1">
-            <stop stopColor="#60a5fa" stopOpacity="0.1" />
-            <stop offset="0.5" stopColor="#dbeafe" stopOpacity="0.55" />
-            <stop offset="1" stopColor="#ffffff" stopOpacity="0.8" />
-          </linearGradient>
-        </defs>
-
         <g
           className="hero-arc hero-arc--slow"
           style={{ animationDelay: "4.8s" }}
-          stroke="url(#hero-arc-left)"
-          strokeWidth="1"
+          stroke="#dbeafe"
+          strokeOpacity="0.8"
+          strokeWidth="1.2"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
