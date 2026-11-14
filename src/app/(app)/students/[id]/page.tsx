@@ -18,6 +18,9 @@ import {
   getVerificationHistory,
   getQrEvents,
   getCurrentQrToken,
+  listGradeLevels,
+  listSchoolYears,
+  listEnrollableSections,
 } from "@/lib/queries";
 import { formatDate, formatDateTime, fullName, ageFromBirthDate, cn } from "@/lib/utils";
 import { Badge, RecordStatusBadge } from "@/components/ui/badge";
@@ -42,6 +45,7 @@ import { AssessmentsPanel } from "@/components/students/assessments-panel";
 import { getAssessmentLevels } from "@/lib/assessment-levels";
 import { analyzeStudentPerformance, summarizeStudent, suggestInterventions } from "@/actions/ai";
 import { canViewStudentDevelopment } from "@/lib/scope";
+import { EnrollmentForm } from "@/components/students/enrollment-form";
 import {
   NUTRITIONAL_STATUS_LABELS,
   QR_ELIGIBLE_RECORD_STATUSES,
@@ -102,6 +106,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   const canWriteHealth = hasUserPermission(user.roles, "health.write");
   const canPrint = hasUserPermission(user.roles, "documents.print");
   const canEncodeGrades = hasUserPermission(user.roles, "grades.write");
+  const canManageEnrollment = hasUserPermission(user.roles, "enrollment.manage");
   const isPending = student.recordStatus === "pending_validation";
 
   const [guardians, enrollments, grades, attendance, assessments, behavior, interventions, verifications, qrEvents, qrToken, health, clinical, assessmentLevels] =
@@ -122,6 +127,26 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
       // Configurable proficiency levels (system_settings.assessment_levels).
       getAssessmentLevels(),
     ]);
+
+  // Enrollment editor options — only for roles that may enroll, and already
+  // scoped server-side (an Adviser receives just their own sections).
+  let enrollmentOptions:
+    | {
+        schoolYears: { id: string; year: string; isCurrent: boolean }[];
+        gradeLevels: { id: string; name: string }[];
+        sections: Awaited<ReturnType<typeof listEnrollableSections>>;
+      }
+    | undefined;
+  if (canManageEnrollment) {
+    const [schoolYears, gradeLevels, sections] = await Promise.all([
+      listSchoolYears(),
+      listGradeLevels(),
+      listEnrollableSections(user),
+    ]);
+    enrollmentOptions = { schoolYears, gradeLevels, sections };
+  }
+
+  const activeEnrollment = enrollments.find((e) => e.status === "active") ?? enrollments[0] ?? null;
 
   return (
     <div className="space-y-5">
@@ -250,6 +275,42 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             </dl>
           </Section>
 
+          <Section title="Current Enrollment">
+            {activeEnrollment ? (
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-brand-400">School Year</dt>
+                  <dd className="numeric mt-0.5 font-medium text-brand-900">{activeEnrollment.schoolYear}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-brand-400">Grade Level</dt>
+                  <dd className="mt-0.5 font-medium text-brand-900">{activeEnrollment.gradeLevelName}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-brand-400">Section</dt>
+                  <dd className="mt-0.5 font-medium text-brand-900">{activeEnrollment.sectionName}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-brand-400">Adviser</dt>
+                  <dd className="mt-0.5 font-medium text-brand-900">{activeEnrollment.adviserName ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-brand-400">Status</dt>
+                  <dd className="mt-0.5 font-medium text-brand-900">
+                    {ENROLLMENT_STATUS_LABELS[activeEnrollment.status as EnrollmentStatus] ?? activeEnrollment.status}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <EmptyHint>
+                No active enrollment.{" "}
+                {canManageEnrollment && enrollmentOptions
+                  ? "Use the Enrollment panel to place this student in a section."
+                  : "Records personnel can enroll this student."}
+              </EmptyHint>
+            )}
+          </Section>
+
           <Section title="Guardians">
             {guardians.length === 0 ? (
               <EmptyHint>No guardian recorded.</EmptyHint>
@@ -276,6 +337,21 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             )}
           </Section>
 
+          {canManageEnrollment && enrollmentOptions ? (
+            <Section title="Enrollment">
+              <p className="mb-3 text-xs leading-relaxed text-[#64748B]">
+                Place this student in a school year, grade level and section. The
+                school year, grade level and section must match, and an adviser can
+                enroll only into a section they advise.
+              </p>
+              <EnrollmentForm
+                studentId={student.id}
+                options={enrollmentOptions}
+                enrollments={enrollments}
+              />
+            </Section>
+          ) : null}
+
           <Section title="Enrollment History">
             {enrollments.length === 0 ? (
               <EmptyHint>No enrollment records.</EmptyHint>
@@ -298,11 +374,10 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                       </span>
                       <span className="numeric shrink-0 text-xs text-[#64748B]">{e.schoolYear}</span>
                     </div>
-                    {e.enrollmentDate ? (
-                      <div className="mt-0.5 text-xs text-[#64748B]">
-                        Enrolled {formatDate(e.enrollmentDate)}
-                      </div>
-                    ) : null}
+                    <div className="mt-0.5 text-xs text-[#64748B]">
+                      {e.adviserName ? `Adviser: ${e.adviserName}` : "Adviser: none assigned"}
+                      {e.enrollmentDate ? ` · Enrolled ${formatDate(e.enrollmentDate)}` : ""}
+                    </div>
                     {e.remarks ? (
                       <div className="mt-0.5 text-xs text-[#64748B]">{e.remarks}</div>
                     ) : null}

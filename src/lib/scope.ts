@@ -121,6 +121,51 @@ export async function userSectionScope(user: SessionUser): Promise<SQL | undefin
   return studentScope(user);
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Section-level authorization for enrollment & student creation             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * True when the account's student access is NOT restricted to specific sections
+ * (admin / school_admin / records — the school-wide records roles). Advisers and
+ * subject teachers are always section-scoped, whatever other roles they hold.
+ */
+export function hasSchoolWideStudentScope(user: SessionUser): boolean {
+  if (isAdviser(user) || isSubjectTeacher(user)) return false;
+  return studentScope(user) === undefined;
+}
+
+/**
+ * The sections the account may ENROLL a student into:
+ *  - school-wide records roles → `null`, meaning "any active section";
+ *  - an Adviser → only the sections they advise;
+ *  - everyone else → `[]` (none).
+ *
+ * This is the single source of truth for section-level enrollment scope and is
+ * applied in `saveEnrollment`, `createStudent` and by the section dropdown, so
+ * a crafted request with another adviser's section id is rejected server-side.
+ */
+export async function enrollableSectionIds(user: SessionUser): Promise<string[] | null> {
+  if (hasSchoolWideStudentScope(user)) return null;
+  if (isAdviser(user)) return adviserSectionIds(user.id);
+  return [];
+}
+
+/**
+ * Server-side check: may this account place/move a student into `sectionId`?
+ * School-wide records roles may use any (active, validated) section; an adviser
+ * only the sections they advise; everyone else nothing.
+ */
+export async function canManageEnrollmentInSection(
+  user: SessionUser,
+  sectionId: string,
+): Promise<boolean> {
+  if (!sectionId) return false;
+  const allowed = await enrollableSectionIds(user);
+  if (allowed === null) return true;
+  return allowed.includes(sectionId);
+}
+
 export type StudentScopeRef = {
   studentId: string;
 };

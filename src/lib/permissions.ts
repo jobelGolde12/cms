@@ -140,19 +140,34 @@ const SCHOOL_ADMIN: Permission[] = [
 ];
 
 /**
- * Adviser — assigned sections: attendance, assessments, behavior, viewing of
- * the section's academic records.
+ * Adviser — assigned sections: create/edit students in those sections,
+ * enrollment, attendance, assessments, behavior, viewing of the section's
+ * academic records.
  *
  * An Adviser on its own does NOT open the Grade Encoding module and does NOT
  * encode grades. When the same account also holds the Subject Teacher role
  * (and carries a teaching load), the module and the write permission come
  * from the Subject Teacher role — see `hasUserPermission`.
+ *
+ * SECTION SCOPE (2026-11 revision D): `students.create` / `students.update` /
+ * `enrollment.manage` open the surfaces, but every write is narrowed server-side
+ * to the sections the adviser actually advises — see `enrollableSectionIds`,
+ * `canManageEnrollmentInSection` and `canEditStudent` in `src/lib/scope.ts`.
+ * Holding the permission is never sufficient to touch another adviser's section.
  */
 const TEACHER: Permission[] = [
   "dashboard.view",
   "students.view",
+  // An Adviser may add and maintain students INSIDE the sections they advise
+  // (2026-11 revision D). The permission opens the create/edit surfaces; the
+  // section it may write to is narrowed server-side to the adviser's own
+  // sections (`canManageEnrollmentInSection`, `canEditStudent` in scope.ts),
+  // so an adviser can never create or edit a student outside their section.
+  "students.create",
+  "students.update",
   "guardians.view",
   "enrollment.view",
+  "enrollment.manage",
   "grades.view",
   // Grade encoding moved to the subject_teacher role — see TEACHER_ONLY_WRITE.
   "attendance.view",

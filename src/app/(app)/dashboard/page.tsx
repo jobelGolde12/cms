@@ -1,8 +1,15 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasUserPermission } from "@/lib/permissions";
 import { canViewStudentDevelopment } from "@/lib/scope";
-import { recentNotifications, unreadNotificationCount } from "@/lib/queries";
+import {
+  recentNotifications,
+  unreadNotificationCount,
+  adviserSectionsOverview,
+} from "@/lib/queries";
+import { Card, CardHeader } from "@/components/ui/card";
 import { SCHOOL } from "@/lib/constants";
 import { dashboardData } from "@/lib/dashboard-data";
 import { officerDashboardData } from "@/lib/employees";
@@ -35,10 +42,11 @@ export default async function AppDashboardPage() {
     return <OfficerDashboard data={officerData} user={user} />;
   }
 
-  const [data, notifications, unread] = await Promise.all([
+  const [data, notifications, unread, adviserSections] = await Promise.all([
     dashboardData(user),
     recentNotifications(user.id, 4),
     unreadNotificationCount(user.id),
+    adviserSectionsOverview(user),
   ]);
 
   const canReview = hasUserPermission(user.roles, "verification.review");
@@ -102,6 +110,43 @@ export default async function AppDashboardPage() {
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
         {/* ------------------------- Main column ------------------------- */}
         <div className="space-y-5 xl:col-span-2">
+          {adviserSections.length > 0 ? (
+            <Card>
+              <CardHeader
+                title="My Sections"
+                description="Sections you advise and their active enrollment."
+                icon={<Users aria-hidden="true" className="h-4 w-4" />}
+              />
+              <ul className="divide-y divide-brand-100 px-4 pb-2 sm:px-5">
+                {adviserSections.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between gap-3 py-2.5 text-sm first:pt-3 last:pb-0"
+                  >
+                    <span className="min-w-0 font-medium text-brand-900">
+                      {s.gradeLevelName} — {s.name}
+                      <span className="ml-2 text-xs font-normal text-[#64748B]">
+                        SY {s.schoolYear}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2 text-xs text-[#64748B]">
+                      <span className="numeric font-semibold text-brand-900">
+                        {s.studentCount}
+                      </span>
+                      active
+                      <Link
+                        href={`/students?section=${s.id}`}
+                        className="font-medium text-action-700 hover:text-action-800"
+                      >
+                        View
+                      </Link>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+
           <BarangayDistribution rows={data.byGradeLevel} />
 
           {canDevelopment ? (

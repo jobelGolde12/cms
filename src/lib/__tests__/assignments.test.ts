@@ -76,10 +76,17 @@ describe("dual-role grade permission union", () => {
     // Subject Teacher contributes the grade permissions…
     expect(hasUserPermission(roles, "grades.write")).toBe(true);
     expect(hasUserPermission(roles, "grades.encode")).toBe(true);
-    // …while the Adviser role keeps its own scope.
+    // …while the Adviser role keeps its own scope. Since the 2026-11 revision D
+    // an Adviser may create/update students and manage enrollment, but ONLY
+    // inside the sections they advise (enforced by scope.ts, not by the role).
     expect(hasUserPermission(roles, "attendance.write")).toBe(true);
-    expect(hasUserPermission(roles, "students.update")).toBe(false);
+    expect(hasUserPermission(roles, "students.create")).toBe(true);
+    expect(hasUserPermission(roles, "students.update")).toBe(true);
+    expect(hasUserPermission(roles, "enrollment.manage")).toBe(true);
+    // …and neither role grants administrative powers.
     expect(hasUserPermission(roles, "users.manage")).toBe(false);
+    expect(hasUserPermission(roles, "settings.manage")).toBe(false);
+    expect(hasUserPermission(roles, "employees.view")).toBe(false);
   });
 
   it("an account with no roles holds nothing", () => {

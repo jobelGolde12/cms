@@ -267,6 +267,43 @@ describe("admin & school admin — configuration and drafting", () => {
   });
 });
 
+describe("adviser may add/maintain students inside advised sections (2026-11 revision D)", () => {
+  it("holds the create / update / enrollment permissions", () => {
+    expect(hasPermission("teacher", "students.create")).toBe(true);
+    expect(hasPermission("teacher", "students.update")).toBe(true);
+    expect(hasPermission("teacher", "enrollment.manage")).toBe(true);
+  });
+
+  it("still withholds archiving, user management, settings and academic config", () => {
+    expect(hasPermission("teacher", "students.archive")).toBe(false);
+    expect(hasPermission("teacher", "users.view")).toBe(false);
+    expect(hasPermission("teacher", "users.manage")).toBe(false);
+    expect(hasPermission("teacher", "settings.manage")).toBe(false);
+    expect(hasPermission("teacher", "academics.config")).toBe(false);
+    expect(hasPermission("teacher", "employees.view")).toBe(false);
+  });
+
+  it("does not leak student-write / enrollment permissions to other roles", () => {
+    for (const role of [
+      "subject_teacher",
+      "guidance",
+      "nurse",
+      "registrar",
+      "literacy_coordinator",
+      "admin_officer",
+    ] as const) {
+      expect(hasPermission(role, "students.create")).toBe(false);
+      expect(hasPermission(role, "students.update")).toBe(false);
+      expect(hasPermission(role, "enrollment.manage")).toBe(false);
+    }
+    // The records roles legitimately keep them.
+    for (const role of ["admin", "school_admin", "records"] as const) {
+      expect(hasPermission(role, "students.create")).toBe(true);
+      expect(hasPermission(role, "enrollment.manage")).toBe(true);
+    }
+  });
+});
+
 describe("matrix decisions from the 2026-10 audit", () => {
   it("health.view is held only by admin and nurse (school_admin denied per doc note)", () => {
     expect(hasPermission("admin", "health.view")).toBe(true);

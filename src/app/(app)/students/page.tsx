@@ -8,11 +8,15 @@ import {
   listGradeLevels,
   listSections,
   listStudentIncidents,
+  listSchoolYears,
+  listEnrollableSections,
   registryStats,
   gradeLevelCounts,
+  type SectionOption,
 } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 import { hasUserPermission } from "@/lib/permissions";
+import { hasSchoolWideStudentScope } from "@/lib/scope";
 import { RECORD_STATUS_LABELS, type RecordStatus } from "@/lib/constants";
 import { Card, CardHeader } from "@/components/ui/card";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
@@ -75,6 +79,22 @@ export default async function StudentsPage({
 
   const canEdit = hasUserPermission(user.roles, "students.update");
   const canCreate = hasUserPermission(user.roles, "students.create");
+  const canManageEnrollment = hasUserPermission(user.roles, "enrollment.manage");
+
+  // Sections the account may enroll into (an Adviser: only their own). Fetched
+  // only for roles that can enroll, so other roles never load section data.
+  let enrollmentSchoolYears: { id: string; year: string; isCurrent: boolean }[] = [];
+  let enrollmentSections: SectionOption[] = [];
+  if (canCreate && canManageEnrollment) {
+    [enrollmentSchoolYears, enrollmentSections] = await Promise.all([
+      listSchoolYears(),
+      listEnrollableSections(user),
+    ]);
+  }
+  const enrollmentOptions =
+    canCreate && canManageEnrollment
+      ? { schoolYears: enrollmentSchoolYears, gradeLevels, sections: enrollmentSections }
+      : undefined;
 
   const hasFilters = Boolean(
     q || status || sex || gradeLevel || sectionId || lifecycle !== "active",
@@ -171,7 +191,12 @@ export default async function StudentsPage({
           ]}
         />
         <div className="flex flex-wrap items-center gap-2">
-          {canCreate ? <AddStudentModal /> : null}
+          {canCreate ? (
+            <AddStudentModal
+              enrollmentOptions={enrollmentOptions}
+              enrollmentRequired={!hasSchoolWideStudentScope(user)}
+            />
+          ) : null}
         </div>
       </div>
 

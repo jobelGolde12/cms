@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasUserPermission } from "@/lib/permissions";
+import { hasSchoolWideStudentScope } from "@/lib/scope";
+import { listGradeLevels, listSchoolYears, listEnrollableSections } from "@/lib/queries";
 import { StudentForm } from "@/components/student-form";
 
 export default async function NewStudentPage() {
@@ -11,6 +13,11 @@ export default async function NewStudentPage() {
   // The create form itself must be permission-gated, not just its action —
   // direct URL entries by non-encoder roles must not render it.
   if (!hasUserPermission(user.roles, "students.create")) redirect("/students");
+
+  const canManageEnrollment = hasUserPermission(user.roles, "enrollment.manage");
+  const [schoolYears, gradeLevels, sections] = canManageEnrollment
+    ? await Promise.all([listSchoolYears(), listGradeLevels(), listEnrollableSections(user)])
+    : [[], [], []];
 
   return (
     <div className="space-y-6">
@@ -29,7 +36,13 @@ export default async function NewStudentPage() {
           student number is generated automatically.
         </p>
       </div>
-      <StudentForm mode="create" />
+      <StudentForm
+        mode="create"
+        enrollmentOptions={
+          canManageEnrollment ? { schoolYears, gradeLevels, sections } : undefined
+        }
+        enrollmentRequired={canManageEnrollment && !hasSchoolWideStudentScope(user)}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 ROLE AND PERMISSION GUIDE FOR THE SCHOOL SYSTEM
 
-Status: Implemented. Last audited November 9, 2026 (2026-11 revision C: grade encoding is now authorisation-based rather than role-based, a `grades.encode` module gate keeps the Registrar out of Grade Encoding entirely, and an account may hold several roles — see features/teacher-assignment-model-2026-11.md). Previous audit November 3, 2026 (2026-11 revision: confined the Guidance Counselor to the Guidance Office domain, removed Reports from the Nurse, added the sections/employees configuration module and verified-records-only official printing — see features/rbac-2026-11-revision.md). Previous audit October 29, 2026 introduced the Subject Teacher role and moved grade encoding out of the Adviser role.
+Status: Implemented. Last audited November 14, 2026 (2026-11 revision D: the Adviser may now ADD and MAINTAIN students and manage enrollment, strictly inside the sections they advise — student creation and enrollment are section-scoped server-side; see documentation/security/enrollment-and-section-access.md). Previous audit November 9, 2026 (2026-11 revision C: grade encoding is now authorisation-based rather than role-based, a `grades.encode` module gate keeps the Registrar out of Grade Encoding entirely, and an account may hold several roles — see features/teacher-assignment-model-2026-11.md). Previous audit November 3, 2026 (2026-11 revision: confined the Guidance Counselor to the Guidance Office domain, removed Reports from the Nurse, added the sections/employees configuration module and verified-records-only official printing — see features/rbac-2026-11-revision.md). Previous audit October 29, 2026 introduced the Subject Teacher role and moved grade encoding out of the Adviser role.
 
 The ten roles described here are already live. They're defined in src/lib/permissions.ts and loaded through scripts/seed.mts and scripts/seed-remote-reference.mts. Every check is enforced on the server through requirePermission, getAuthorizedUser, and the row-level scope in src/lib/scope.ts. Checks in the user interface are only for appearance and don't protect anything on their own.
 
@@ -20,7 +20,7 @@ subject_teacher (Subject Teacher)
 Encodes student grades AND NOTHING ELSE: only for the exact (section, subject) teaching loads in the section_subject_teachers table. Cannot edit student personal information, record attendance or behavior, manage users, or touch administrative settings. Row-level scope follows the same teaching-load table.
 
 teacher (Adviser)
-Works with the students in their own assigned sections: attendance, assessments, and behavior notes. The Adviser does NOT encode grades and does NOT open the Grade Encoding module on its own — those belong to the Subject Teacher role. An account that holds the Adviser role AND the Subject Teacher role is a different matter: see the note under TEACHER (ADVISER) below.
+Works with the students in their own assigned sections: adds and maintains student records, manages enrollment, attendance, assessments, and behavior notes. Everything the Adviser does is scoped to the sections they advise — the section of a student they create or enroll into must be one they advise (2026-11 revision D). The Adviser does NOT encode grades and does NOT open the Grade Encoding module on its own — those belong to the Subject Teacher role. An account that holds the Adviser role AND the Subject Teacher role is a different matter: see the note under TEACHER (ADVISER) below.
 
 records (Records Personnel)
 Handles student records, enrollment, profile verification, historical records, and documents.
@@ -80,7 +80,7 @@ WHO CAN SEE WHICH STUDENTS
 
 Most roles can reach every student record: admin, school_admin, records, guidance, nurse, registrar, and literacy_coordinator. What they can actually do with those records is controlled by permissions, not by limiting which rows they see.
 
-Advisers see only students with an active enrollment in a section where they are the adviser. This is checked through sections.adviser_id and student_enrollments.status = 'active'.
+Advisers see only students with an active enrollment in a section where they are the adviser. This is checked through sections.adviser_id and student_enrollments.status = 'active'. The same rule bounds what they may write: an Adviser may create a student and enroll them only into a section they advise (`enrollableSectionIds` / `canManageEnrollmentInSection` in src/lib/scope.ts, re-checked in `createStudent` and `saveEnrollment`). The permission `students.create` / `students.update` / `enrollment.manage` opens the surface; the section scope decides which rows — another adviser's section is never reachable, even by calling the action directly with a hand-edited id.
 
 Subject Teachers see only students with an active enrollment in a section that holds one of their section_subject_teachers teaching loads.
 
@@ -138,6 +138,9 @@ Granting a teaching load (a section_subject_teachers row: section + subject) is 
 TEACHER (ADVISER)
 Everything below applies to the adviser's own assigned sections only.
 - View students, enrollment, and full profiles
+- **Add a student** (students.create): the create form requires enrolling the new student into a section the adviser advises; a created record is immediately visible inside that section and nowhere else
+- **Edit a student in an advised section** (students.update): the row scope is the same active-enrollment-in-advised-section rule used for viewing, so a student in another section cannot be edited even via a direct request
+- **Manage enrollment** (enrollment.manage): create/update the Student → School Year → Grade Level → Section row, but only for a section the adviser advises and only in a (school year, grade level, section) combination that actually exists and is active
 - View guardians of assigned students
 - View grades (read-only — the Adviser role alone never encodes grades and never opens the Grade Encoding module)
 - **Adviser + Subject Teacher:** one account may hold both roles. The adviser assignment (`sections.adviser_id`) and the (section, subject) teaching load are independent, so the same teacher keeps the advisory scope below AND can encode grades for their assigned subjects. The effective permission set is the union of both roles (`hasUserPermission`); no duplicate account is needed. The additional role is recorded in the `user_roles` table.

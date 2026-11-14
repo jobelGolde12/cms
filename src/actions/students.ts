@@ -5,16 +5,26 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
   duplicateCandidates,
+  gradeLevels,
   guardians,
   recordVerifications,
+  schoolYears,
+  sections,
+  studentEnrollments,
   studentGuardians,
   students,
   type NewStudent,
 } from "@/db/schema";
-import { getAuthorizedUser } from "@/lib/auth";
+import { getAuthorizedUser, type SessionUser } from "@/lib/auth";
 import { logAudit, notify } from "@/lib/audit";
 import { nextStudentNumber } from "@/lib/student-number";
-import { canAccessStudent, canEditStudent } from "@/lib/scope";
+import {
+  canAccessStudent,
+  canEditStudent,
+  canManageEnrollmentInSection,
+  hasSchoolWideStudentScope,
+} from "@/lib/scope";
+import { checkSectionPlacement } from "@/lib/enrollment-rules";
 import { studentFormSchema, verificationReviewSchema } from "@/lib/schemas";
 import { refreshDuplicateCandidates } from "@/lib/duplicates";
 import { deactivateStudentTokens } from "@/lib/qr";
@@ -60,6 +70,105 @@ function guardianFromForm(v: {
   };
 }
 
+type EnrollmentIntent =
+  | {
+      ok: true;
+      value: {
+        schoolYearId: string;
+        gradeLevelId: string;
+        sectionId: string;
+        enrollmentDate: string | null;
+      } | null;
+    }
+  | { ok: false; error: string; fieldErrors?: Record<string, string> };
+
+/**
+ * Resolve the optional enrollment submitted alongside a NEW student.
+ *
+ * School-wide records roles may create a record with no enrollment (enrolled
+ * later) or enroll into any active, correctly-placed section. An Adviser must
+ * enroll into one of the sections they advise, and a section outside their
+ * scope, an inactive section, or a section that does not match the chosen
+ * school year / grade level is rejected here — never trusted from the browser.
+ */
+async function resolveEnrollmentIntent(
+  formData: FormData,
+  user: SessionUser,
+): Promise<EnrollmentIntent> {
+  const schoolYearId = String(formData.get("schoolYearId") ?? "").trim();
+  const gradeLevelId = String(formData.get("gradeLevelId") ?? "").trim();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  const enrollmentDate = String(formData.get("enrollmentDate") ?? "").trim();
+  const required = !hasSchoolWideStudentScope(user);
+  const anyProvided = Boolean(schoolYearId || gradeLevelId || sectionId);
+
+  if (!anyProvided) {
+    if (required) {
+      return {
+        ok: false,
+        error:
+          "Select the school year, grade level and section to enroll this student in a section you advise.",
+        fieldErrors: { schoolYearId: "Select a school year" },
+      };
+    }
+    return { ok: true, value: null };
+  }
+
+  if (!schoolYearId || !gradeLevelId || !sectionId) {
+    return {
+      ok: false,
+      error: "Select the school year, grade level and section to enroll the student.",
+      fieldErrors: {
+        ...(schoolYearId ? {} : { schoolYearId: "Select a school year" }),
+        ...(gradeLevelId ? {} : { gradeLevelId: "Select a grade level" }),
+        ...(sectionId ? {} : { sectionId: "Select a section" }),
+      },
+    };
+  }
+
+  const syRows = await db
+    .select({ id: schoolYears.id })
+    .from(schoolYears)
+    .where(eq(schoolYears.id, schoolYearId))
+    .limit(1);
+  if (!syRows[0]) {
+    return { ok: false, error: "Select a valid school year.", fieldErrors: { schoolYearId: "Select a valid school year" } };
+  }
+
+  const glRows = await db
+    .select({ id: gradeLevels.id })
+    .from(gradeLevels)
+    .where(eq(gradeLevels.id, gradeLevelId))
+    .limit(1);
+  if (!glRows[0]) {
+    return { ok: false, error: "Select a valid grade level.", fieldErrors: { gradeLevelId: "Select a valid grade level" } };
+  }
+
+  const sectionRows = await db
+    .select({
+      id: sections.id,
+      schoolYearId: sections.schoolYearId,
+      gradeLevelId: sections.gradeLevelId,
+      isActive: sections.isActive,
+    })
+    .from(sections)
+    .where(eq(sections.id, sectionId))
+    .limit(1);
+  const placement = checkSectionPlacement(sectionRows[0], schoolYearId, gradeLevelId);
+  if (!placement.ok) {
+    return { ok: false, error: placement.error, fieldErrors: { sectionId: placement.error } };
+  }
+  if (!(await canManageEnrollmentInSection(user, sectionId))) {
+    return {
+      ok: false,
+      error: "You can only enroll students into a section you are authorized to manage.",
+      fieldErrors: { sectionId: "Outside your authorized sections" },
+    };
+  }
+
+  return { ok: true, value: { schoolYearId, gradeLevelId, sectionId, enrollmentDate: enrollmentDate || null } };
+}
+
 /** Create a new student record. `intent=draft` saves; `intent=submit` queues for verification. */
 export async function createStudent(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getAuthorizedUser("students.create");
@@ -71,6 +180,10 @@ export async function createStudent(_prev: ActionState, formData: FormData): Pro
     return fail("Please fix the highlighted fields.", zodFieldErrors(form.parsed.error.issues));
   }
   const v = form.parsed.data;
+
+  // Section-scoped enrollment submitted with the new record.
+  const enrollment = await resolveEnrollmentIntent(formData, user);
+  if (!enrollment.ok) return fail(enrollment.error, enrollment.fieldErrors);
 
   const targetStatus: RecordStatus = form.intent === "submit" ? "pending_validation" : "draft";
   const studentId = crypto.randomUUID();
@@ -101,6 +214,27 @@ export async function createStudent(_prev: ActionState, formData: FormData): Pro
           updatedBy: user.id,
         };
         await tx.insert(students).values(values);
+
+        // Enrollment — the authoritative Student → SY → Grade Level → Section
+        // relationship. Created in the same transaction so a student is never
+        // left placed without a section (and an adviser's student is immediately
+        // visible inside the section they advise).
+        if (enrollment.value) {
+          await tx
+            .insert(studentEnrollments)
+            .values({
+              id: crypto.randomUUID(),
+              studentId,
+              schoolYearId: enrollment.value.schoolYearId,
+              gradeLevelId: enrollment.value.gradeLevelId,
+              sectionId: enrollment.value.sectionId,
+              status: "active",
+              enrollmentDate:
+                enrollment.value.enrollmentDate ?? new Date().toISOString().slice(0, 10),
+              recordedBy: user.id,
+            })
+            .onConflictDoNothing();
+        }
 
         // Current verification record (history table, not a boolean).
         if (form.intent === "submit") {
@@ -143,7 +277,11 @@ export async function createStudent(_prev: ActionState, formData: FormData): Pro
     action: form.intent === "submit" ? "SUBMIT_VERIFICATION" : "CREATE_STUDENT",
     entityType: "student",
     entityId: studentId,
-    newValues: { studentNumber: number, recordStatus: targetStatus },
+    newValues: {
+      studentNumber: number,
+      recordStatus: targetStatus,
+      ...(enrollment.value ? { sectionId: enrollment.value.sectionId } : {}),
+    },
     ipAddress: ip,
     userAgent,
   });
@@ -151,8 +289,9 @@ export async function createStudent(_prev: ActionState, formData: FormData): Pro
   revalidatePath("/students");
   revalidatePath("/verification");
   revalidatePath("/dashboard");
+  const base = form.intent === "submit" ? "Record submitted for verification." : "Draft saved.";
   return ok(
-    form.intent === "submit" ? "Record submitted for verification." : "Draft saved.",
+    enrollment.value ? `${base} Enrolled in the selected section.` : base,
     `/students/${studentId}`,
   );
 }

@@ -41,7 +41,7 @@ import {
 import { roleNameFromId, type SessionUser } from "./auth";
 import { ADDITIONAL_ROLE_IDS } from "./user-roles";
 import { realUsersOnly } from "./dummy-accounts";
-import { userSectionScope } from "./scope";
+import { userSectionScope, enrollableSectionIds, isAdviser } from "./scope";
 import { currentQrToken } from "./qr";
 import { ageFromBirthDate } from "./utils";
 
@@ -80,6 +80,120 @@ export async function listSections(schoolYearId?: string) {
     .leftJoin(users, eq(users.id, sections.adviserId))
     .where(and(eq(sections.schoolYearId, yearId), eq(sections.isActive, true)))
     .orderBy(asc(gradeLevels.orderIndex), asc(sections.name));
+}
+
+/**
+ * Every ACTIVE section across all school years, with its grade level, school
+ * year and adviser. `ids` limits the result to a specific set of sections
+ * (pass `null` for "any section", `[]` for "none").
+ */
+export type SectionOption = {
+  id: string;
+  name: string;
+  gradeLevelId: string;
+  gradeLevelName: string;
+  schoolYearId: string;
+  schoolYear: string;
+  adviserName: string | null;
+};
+
+export async function listActiveSections(
+  ids?: string[] | null,
+): Promise<SectionOption[]> {
+  if (ids !== null && ids !== undefined && ids.length === 0) return [];
+  const advisor = alias(users, "advisor");
+  const rows = await db
+    .select({
+      id: sections.id,
+      name: sections.name,
+      gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+      schoolYearId: sections.schoolYearId,
+      schoolYear: schoolYears.year,
+      adviserFirst: advisor.firstName,
+      adviserLast: advisor.lastName,
+    })
+    .from(sections)
+    .innerJoin(gradeLevels, eq(gradeLevels.id, sections.gradeLevelId))
+    .innerJoin(schoolYears, eq(schoolYears.id, sections.schoolYearId))
+    .leftJoin(advisor, eq(advisor.id, sections.adviserId))
+    .where(
+      and(
+        eq(sections.isActive, true),
+        ids && ids.length > 0 ? inArray(sections.id, ids) : undefined,
+      ),
+    )
+    .orderBy(desc(schoolYears.year), asc(gradeLevels.orderIndex), asc(sections.name));
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    gradeLevelId: r.gradeLevelId,
+    gradeLevelName: r.gradeLevelName,
+    schoolYearId: r.schoolYearId,
+    schoolYear: r.schoolYear,
+    adviserName:
+      r.adviserFirst || r.adviserLast
+        ? [r.adviserFirst, r.adviserLast].filter(Boolean).join(" ")
+        : null,
+  }));
+}
+
+/**
+ * Sections the given account may enroll into: every active section for the
+ * school-wide records roles, only the advised sections for an Adviser, none
+ * for anyone else. Used by both the enrollment form and the create-student form
+ * so the dropdown and server-side scope always agree.
+ */
+export async function listEnrollableSections(user: SessionUser): Promise<SectionOption[]> {
+  return listActiveSections(await enrollableSectionIds(user));
+}
+
+export type AdviserSectionRow = {
+  id: string;
+  name: string;
+  gradeLevelName: string;
+  schoolYear: string;
+  studentCount: number;
+};
+
+/**
+ * The sections this account ADVISES with their active-enrollment counts. Drives
+ * the adviser dashboard card. Returns nothing for accounts that are not
+ * advisers, so the query never runs for other roles.
+ */
+export async function adviserSectionsOverview(user: SessionUser): Promise<AdviserSectionRow[]> {
+  if (!isAdviser(user)) return [];
+  const rows = await db
+    .select({
+      id: sections.id,
+      name: sections.name,
+      gradeLevelName: gradeLevels.name,
+      schoolYear: schoolYears.year,
+      gradeLevelOrder: gradeLevels.orderIndex,
+      studentCount: count(studentEnrollments.id),
+    })
+    .from(sections)
+    .innerJoin(schoolYears, eq(schoolYears.id, sections.schoolYearId))
+    .innerJoin(gradeLevels, eq(gradeLevels.id, sections.gradeLevelId))
+    .leftJoin(
+      studentEnrollments,
+      and(
+        eq(studentEnrollments.sectionId, sections.id),
+        eq(studentEnrollments.status, "active"),
+      ),
+    )
+    .where(eq(sections.adviserId, user.id))
+    .groupBy(sections.id, sections.name, gradeLevels.name, schoolYears.year, gradeLevels.orderIndex)
+    .orderBy(desc(schoolYears.year), asc(gradeLevels.orderIndex), asc(sections.name));
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    gradeLevelName: r.gradeLevelName,
+    schoolYear: r.schoolYear,
+    studentCount: Number(r.studentCount),
+  }));
 }
 
 export async function listSubjects() {
@@ -375,22 +489,46 @@ export async function getGuardiansForStudent(studentId: string) {
 }
 
 export async function getEnrollmentHistory(studentId: string) {
-  return db
+  const advisor = alias(users, "advisor");
+  const rows = await db
     .select({
       id: studentEnrollments.id,
       status: studentEnrollments.status,
       enrollmentDate: studentEnrollments.enrollmentDate,
       remarks: studentEnrollments.remarks,
+      schoolYearId: studentEnrollments.schoolYearId,
       schoolYear: schoolYears.year,
+      gradeLevelId: studentEnrollments.gradeLevelId,
       gradeLevelName: gradeLevels.name,
+      sectionId: studentEnrollments.sectionId,
       sectionName: sections.name,
+      adviserFirst: advisor.firstName,
+      adviserLast: advisor.lastName,
     })
     .from(studentEnrollments)
     .innerJoin(schoolYears, eq(schoolYears.id, studentEnrollments.schoolYearId))
     .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
     .innerJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+    .leftJoin(advisor, eq(advisor.id, sections.adviserId))
     .where(eq(studentEnrollments.studentId, studentId))
     .orderBy(desc(schoolYears.year));
+
+  return rows.map((r) => ({
+    id: r.id,
+    status: r.status,
+    enrollmentDate: r.enrollmentDate,
+    remarks: r.remarks,
+    schoolYearId: r.schoolYearId,
+    schoolYear: r.schoolYear,
+    gradeLevelId: r.gradeLevelId,
+    gradeLevelName: r.gradeLevelName,
+    sectionId: r.sectionId,
+    sectionName: r.sectionName,
+    adviserName:
+      r.adviserFirst || r.adviserLast
+        ? [r.adviserFirst, r.adviserLast].filter(Boolean).join(" ")
+        : null,
+  }));
 }
 
 /** The active enrollment row for the student, if any (joined for display). */

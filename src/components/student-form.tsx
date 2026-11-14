@@ -6,6 +6,11 @@ import type { ActionState } from "@/actions/helpers";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { useFormResetGuard } from "@/components/ui/form-reset-guard";
+import {
+  SectionPickerFields,
+  useEnrollmentSelection,
+  type EnrollmentOptions,
+} from "@/components/students/section-picker";
 import { SEXES } from "@/lib/constants";
 import {
   birthDateError,
@@ -61,11 +66,19 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
 
 type SourceOfTruth = Record<string, string | undefined>;
 
+const EMPTY_ENROLLMENT_OPTIONS: EnrollmentOptions = {
+  schoolYears: [],
+  gradeLevels: [],
+  sections: [],
+};
+
 export function StudentForm({
   defaults = {},
   mode,
   onSuccess,
   compact = false,
+  enrollmentOptions,
+  enrollmentRequired = false,
 }: {
   defaults?: StudentFormDefaults;
   mode: "create" | "edit";
@@ -73,9 +86,21 @@ export function StudentForm({
   onSuccess?: (studentId: string, message: string | undefined) => void;
   /** Toggles the more spacious page-only section scaffolding off for dialog use. */
   compact?: boolean;
+  /**
+   * Sections the account may enroll a new student into. Supplied only on the
+   * CREATE form for roles holding `enrollment.manage`; an Adviser receives just
+   * their own sections. The placement is re-validated server-side.
+   */
+  enrollmentOptions?: EnrollmentOptions;
+  /** True for an Adviser: a new student must be enrolled into an advised section. */
+  enrollmentRequired?: boolean;
 }) {
   const action = mode === "create" ? createStudent : updateStudent;
   const initial: ActionState = { ok: false, error: "" };
+  const showEnrollment = mode === "create" && Boolean(enrollmentOptions);
+  const enrollmentController = useEnrollmentSelection(
+    enrollmentOptions ?? EMPTY_ENROLLMENT_OPTIONS,
+  );
 
   // ------------------------------------------------------------------ //
   //  Realtime validation state (touched-based to avoid shouting early)  //
@@ -380,6 +405,33 @@ export function StudentForm({
           />
         </Field>
       </div>
+
+      {/* Enrollment — shown on create for roles that may enroll a student. */}
+      {showEnrollment ? (
+        <>
+          {!isDialog ? <FormSectionDivider /> : null}
+          {isDialog ? null : (
+            <FormSectionHeader
+              title="Enrollment"
+              hint="Place the student in a school year, grade level and section."
+            />
+          )}
+          <div className="rounded-lg border border-brand-200 bg-brand-50/50 px-3 py-3 sm:px-4">
+            <SectionPickerFields
+              controller={enrollmentController}
+              idPrefix="create-enrollment"
+              required={enrollmentRequired}
+              errors={state.ok === false ? state.fieldErrors : undefined}
+            />
+            {enrollmentRequired ? (
+              <p className="mt-2 text-xs text-[#64748B]">
+                You can enroll the student only into a section you advise. A
+                subject-teacher load does not grant enrollment rights.
+              </p>
+            ) : null}
+          </div>
+        </>
+      ) : null}
 
       {/* Submit */}
       <div className="flex flex-wrap gap-3">

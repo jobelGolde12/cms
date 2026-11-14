@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { StudentForm } from "./student-form";
+import type { EnrollmentOptions } from "./students/section-picker";
 
 /**
  * "Add Student" modal (requested behavior: feature modal, not a page).
@@ -13,7 +14,13 @@ import { StudentForm } from "./student-form";
  * moves into the dialog on open and returns to the trigger on close.
  * Touch targets and form controls follow the existing design system.
  */
-export function AddStudentModal() {
+export function AddStudentModal({
+  enrollmentOptions,
+  enrollmentRequired = false,
+}: {
+  enrollmentOptions?: EnrollmentOptions;
+  enrollmentRequired?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -132,7 +139,13 @@ export function AddStudentModal() {
             </div>
 
             <div className="px-5 py-5 sm:px-6">
-              <StudentForm mode="create" compact onSuccess={closeAndRefresh} />
+              <StudentForm
+                mode="create"
+                compact
+                onSuccess={closeAndRefresh}
+                enrollmentOptions={enrollmentOptions}
+                enrollmentRequired={enrollmentRequired}
+              />
             </div>
           </div>
         </div>

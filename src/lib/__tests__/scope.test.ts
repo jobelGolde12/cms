@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { canAccessStudent, canEditStudent, studentScope, type StudentScopeRef } from "../scope";
+import {
+  canAccessStudent,
+  canEditStudent,
+  enrollableSectionIds,
+  hasSchoolWideStudentScope,
+  studentScope,
+  type StudentScopeRef,
+} from "../scope";
 import type { SessionUser } from "../auth";
 
 /* ---------------------------------------------------------------------------
@@ -50,6 +57,14 @@ const teacher: SessionUser = {
   roles: ["teacher"],
 };
 
+const subjectTeacher: SessionUser = {
+  ...admin,
+  id: "u-subject-teacher",
+  roleId: "role-subject-teacher",
+  role: "subject_teacher",
+  roles: ["subject_teacher"],
+};
+
 const ref: StudentScopeRef = { studentId: "s1" };
 
 describe("studentScope (SQL predicate builder)", () => {
@@ -93,5 +108,34 @@ describe("canEditStudent inherits canAccessStudent", () => {
   it("grants school-wide roles edit access", async () => {
     expect(await canEditStudent(admin, ref)).toBe(true);
     expect(await canEditStudent(recordsUser, ref)).toBe(true);
+  });
+});
+
+describe("hasSchoolWideStudentScope", () => {
+  it("is true for the school-wide records roles", () => {
+    for (const user of [admin, schoolAdmin, recordsUser, guidanceUser]) {
+      expect(hasSchoolWideStudentScope(user)).toBe(true);
+    }
+  });
+
+  it("is false for any account carrying a teaching role", () => {
+    // Even when combined with a school-wide role, a teaching responsibility
+    // always narrows student scope to the teacher's own sections.
+    expect(hasSchoolWideStudentScope(teacher)).toBe(false);
+    expect(hasSchoolWideStudentScope(subjectTeacher)).toBe(false);
+    const dual: SessionUser = { ...teacher, roles: ["teacher", "records"] };
+    expect(hasSchoolWideStudentScope(dual)).toBe(false);
+  });
+});
+
+describe("enrollableSectionIds (database-free paths)", () => {
+  it("returns null (any section) for school-wide records roles", async () => {
+    expect(await enrollableSectionIds(admin)).toBeNull();
+    expect(await enrollableSectionIds(schoolAdmin)).toBeNull();
+    expect(await enrollableSectionIds(recordsUser)).toBeNull();
+  });
+
+  it("returns [] (no sections) for a non-adviser teaching role", async () => {
+    expect(await enrollableSectionIds(subjectTeacher)).toEqual([]);
   });
 });

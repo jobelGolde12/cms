@@ -7,6 +7,9 @@ import {
   assessments,
   attendanceRecords,
   behaviorRecords,
+  gradeLevels,
+  schoolYears,
+  sections,
   studentEnrollments,
   studentGrades,
   students,
@@ -21,7 +24,12 @@ import {
   enrollmentFormSchema,
   gradeFormSchema,
 } from "@/lib/schemas";
-import { canAccessStudent, canViewConfidentialBehavior } from "@/lib/scope";
+import {
+  canAccessStudent,
+  canManageEnrollmentInSection,
+  canViewConfidentialBehavior,
+} from "@/lib/scope";
+import { checkSectionPlacement } from "@/lib/enrollment-rules";
 import type { Permission } from "@/lib/permissions";
 import { invalidateForecasts } from "@/lib/forecasting/storage";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
@@ -51,6 +59,18 @@ async function studentInScope(
 /*  Enrollment                                                                */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Create or update a student's enrollment for a school year.
+ *
+ * Security sequence (never trusts the browser):
+ *   1. authenticate + `enrollment.manage`;
+ *   2. row scope — the caller must already be able to access the student;
+ *   3. section scope — an adviser may only enroll into their own sections;
+ *   4. validate the referenced school year / grade level / section exist;
+ *   5. validate the section belongs to the chosen (school year, grade level)
+ *      and is active;
+ *   6. upsert (one enrollment per student per school year, unique-index backed).
+ */
 export async function saveEnrollment(
   _prev: ActionState,
   formData: FormData,
@@ -59,53 +79,105 @@ export async function saveEnrollment(
   if (!parsed.success) return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
   const { studentId, schoolYearId, gradeLevelId, sectionId, status, enrollmentDate } = parsed.data;
 
+  // 1 + 2: permission and student row scope.
   const guard = await studentInScope(studentId, "enrollment.manage");
   if (!guard.ok) return fail(guard.error);
-  const { ip, userAgent } = await sessionMetadata();
+  const user = (await getAuthorizedUser("enrollment.manage"))!;
 
-  // One enrollment per student per school year (unique index backed).
+  // 4: the referenced school year and grade level must exist.
+  const syRows = await db
+    .select({ id: schoolYears.id })
+    .from(schoolYears)
+    .where(eq(schoolYears.id, schoolYearId))
+    .limit(1);
+  if (!syRows[0]) return fail("Select a valid school year.", { schoolYearId: "Select a valid school year" });
+
+  const glRows = await db
+    .select({ id: gradeLevels.id })
+    .from(gradeLevels)
+    .where(eq(gradeLevels.id, gradeLevelId))
+    .limit(1);
+  if (!glRows[0]) return fail("Select a valid grade level.", { gradeLevelId: "Select a valid grade level" });
+
+  // 3 + 5: the section exists, is active, belongs to the SY + grade level, and
+  // is inside the caller's authorized sections (an adviser's own sections only).
+  const sectionRows = await db
+    .select({
+      id: sections.id,
+      schoolYearId: sections.schoolYearId,
+      gradeLevelId: sections.gradeLevelId,
+      isActive: sections.isActive,
+    })
+    .from(sections)
+    .where(eq(sections.id, sectionId))
+    .limit(1);
+  const placement = checkSectionPlacement(sectionRows[0], schoolYearId, gradeLevelId);
+  if (!placement.ok) return fail(placement.error, { sectionId: placement.error });
+  if (!(await canManageEnrollmentInSection(user, sectionId))) {
+    return fail(
+      "You can only enroll students into a section you are authorized to manage.",
+      { sectionId: "Outside your authorized sections" },
+    );
+  }
+
+  const { ip, userAgent } = await sessionMetadata();
+  const date = scrub(enrollmentDate);
+
+  // One enrollment per student per school year (unique index backed). The
+  // upsert makes a double-submit / retry idempotent instead of racing on the
+  // unique (student_id, school_year_id) constraint.
   const existing = await db
-    .select({ id: studentEnrollments.id })
+    .select({
+      id: studentEnrollments.id,
+      gradeLevelId: studentEnrollments.gradeLevelId,
+      sectionId: studentEnrollments.sectionId,
+      status: studentEnrollments.status,
+    })
     .from(studentEnrollments)
     .where(
       and(eq(studentEnrollments.studentId, studentId), eq(studentEnrollments.schoolYearId, schoolYearId)),
     )
     .limit(1);
 
+  const updateSet: {
+    gradeLevelId: string;
+    sectionId: string;
+    status: typeof status;
+    updatedAt: Date;
+    enrollmentDate?: string;
+  } = { gradeLevelId, sectionId, status, updatedAt: new Date() };
+  if (date) updateSet.enrollmentDate = date;
+
   try {
-    if (existing[0]) {
-      await db
-        .update(studentEnrollments)
-        .set({
-          gradeLevelId,
-          sectionId,
-          status,
-          enrollmentDate: scrub(enrollmentDate),
-          updatedAt: new Date(),
-        })
-        .where(eq(studentEnrollments.id, existing[0].id));
-    } else {
-      const user = (await getAuthorizedUser("enrollment.manage"))!;
-      await db.insert(studentEnrollments).values({
+    await db
+      .insert(studentEnrollments)
+      .values({
         id: crypto.randomUUID(),
         studentId,
         schoolYearId,
         gradeLevelId,
         sectionId,
         status,
-        enrollmentDate: scrub(enrollmentDate) ?? new Date().toISOString().slice(0, 10),
+        enrollmentDate: date ?? new Date().toISOString().slice(0, 10),
         recordedBy: user.id,
+      })
+      .onConflictDoUpdate({
+        target: [studentEnrollments.studentId, studentEnrollments.schoolYearId],
+        set: updateSet,
       });
-    }
   } catch (error) {
     console.error("[saveEnrollment] failed", error);
     return fail("Could not save the enrollment. Please try again.");
   }
 
   await logAudit({
+    userId: user.id,
     action: "SAVE_ENROLLMENT",
     entityType: "student_enrollment",
     entityId: existing[0]?.id ?? studentId,
+    oldValues: existing[0]
+      ? { gradeLevelId: existing[0].gradeLevelId, sectionId: existing[0].sectionId, status: existing[0].status }
+      : null,
     newValues: { studentId, schoolYearId, gradeLevelId, sectionId, status },
     ipAddress: ip,
     userAgent,
@@ -113,7 +185,8 @@ export async function saveEnrollment(
 
   revalidatePath(`/students/${studentId}`);
   revalidatePath("/students");
-  return ok("Enrollment saved.");
+  revalidatePath("/dashboard");
+  return ok(existing[0] ? "Enrollment updated." : "Enrollment saved.");
 }
 
 /* -------------------------------------------------------------------------- */
