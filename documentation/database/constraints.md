@@ -14,9 +14,12 @@
 | students | `status IN ('active','inactive','archived')` | CHECK |
 | school_years | `year` UNIQUE; `year GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]'` | UNIQUE + CHECK |
 | grade_levels | `name` UNIQUE | UNIQUE |
+| grade_levels | id/name pair is one of Grade 7–10 (`gl-7` … `gl-10`) | CHECK |
 | sections | `(school_year_id, grade_level_id, name)` UNIQUE | correctness |
+| sections | `grade_level_id IN ('gl-7','gl-8','gl-9','gl-10')` | CHECK |
 | student_enrollments | `(student_id, school_year_id)` UNIQUE | **history integrity** — one placement per year |
 | student_enrollments | `status IN ('active','completed','transferred','withdrawn')` | CHECK |
+| student_enrollments | `grade_level_id IN ('gl-7','gl-8','gl-9','gl-10')` | CHECK |
 | student_grades | `(enrollment_id, subject_id, grading_period_id)` UNIQUE | one grade per subject+period |
 | student_grades | `grade >= 0` (scale bounds from settings, app-enforced) | CHECK |
 | attendance_records | `(enrollment_id, date)` UNIQUE; `status IN ('present','absent_excused','absent_unexcused','late')` | UNIQUE + CHECK |

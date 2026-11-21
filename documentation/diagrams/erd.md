@@ -68,7 +68,7 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │  GRADE LEVELS (PK: id)                                                                               │
 │  • id (text, PK)                                                                                      │
-│  • name (text, UNIQUE) — "Grade 7" to "Grade 12"                                                      │
+│  • name (text, UNIQUE) — "Grade 7" to "Grade 10"                                                      │
 │  • order_index (integer)                                                                              │
 │  • created_at, updated_at                                                                              │
 │  Indexes: name_uq, order_idx                                                                           │

@@ -26,16 +26,16 @@ FKs: none. Cascade: n/a.
 
 ## grade_levels
 
-**Purpose:** Ordered grade-level definitions (Grade 7…10 default; 11–12 optional). Why: replaces elementary K–6 list; drives enrollment and analytics ordering.
+**Purpose:** Fixed Junior High School grade-level definitions (Grade 7–10 only). Why: replaces the elementary K–6 list, drives enrollment and analytics ordering, and prevents unsupported Grade 11/12 operational records.
 
 | Column | Type | Null | Notes |
 |---|---|---|---|
-| id | TEXT | no | PK |
-| name | TEXT | no | e.g. "Grade 7" |
+| id | TEXT | no | PK; one of `gl-7`, `gl-8`, `gl-9`, `gl-10` |
+| name | TEXT | no | matching Grade 7–10 name |
 | order_index | INTEGER | no | sort order |
 | created_at / updated_at | INTEGER ts | no | |
 
-Uniques: `grade_levels_name_uq (name)`. Indexes: `order_index`.
+Uniques: `grade_levels_name_uq (name)`. Checks: the id/name pair must be one of the four canonical Grade 7–10 definitions. Indexes: `order_index`.
 
 ## sections
 

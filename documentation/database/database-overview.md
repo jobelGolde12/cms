@@ -19,7 +19,7 @@
 | Table | Purpose | Key relations |
 |---|---|---|
 | `school_years` | Academic years `YYYY-YYYY`, one `is_current` | 1→N sections, grading_periods, enrollments |
-| `grade_levels` | Grade 7…10 (+11/12 if configured), ordered | 1→N sections, enrollments |
+| `grade_levels` | Fixed Grade 7–10 reference levels, ordered; Grade 10 is final | 1→N sections, enrollments |
 | `sections` | Class group per school year & grade level; optional adviser | N→1 school_year, grade_level; 1→N enrollments |
 | `subjects` | Subject catalog (code, name) | 1→N student_grades |
 | `grading_periods` | Periods within a school year (default Q1–Q4) | N→1 school_year; 1→N student_grades |

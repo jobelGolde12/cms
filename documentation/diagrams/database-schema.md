@@ -92,7 +92,7 @@ INDEX: school_years_current_idx (is_current)
 TABLE: grade_levels
 ──────────────────────────────────────────────────────────────────────────────
 id              TEXT    PK    NOT NULL
-name            TEXT    NOT NULL  UNIQUE  (e.g. "Grade 7", ... "Grade 12")
+name            TEXT    NOT NULL  UNIQUE  (e.g. "Grade 7", ... "Grade 10")
 order_index     INTEGER  NOT NULL
 created_at      INTEGER  NOT NULL  DEFAULT (unixepoch())
 updated_at      INTEGER  NOT NULL  DEFAULT (unixepoch())

@@ -25,7 +25,7 @@ never rewrites of prior years.
 
 - CRUD for `sections` per school year + grade level; optional adviser
   (`sections.adviser_id`) which drives teacher scoping.
-- Grade levels seeded (Grade 7–10; 11–12 optional) — ordered, admin-editable names.
+- Grade levels are fixed reference data: Grade 7, Grade 8, Grade 9, and Grade 10 only. Grade 10 is the final supported year; Grade 11/12 placements are rejected by the UI, server actions, APIs, imports, and database constraints.
 
 ## Analytics (server-side, `src/lib/queries.ts`)
 

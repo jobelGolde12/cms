@@ -10,7 +10,7 @@
 | **Student Number** | Application-generated stable public identifier, e.g. `SM-2026-000001` (pattern from the old `child_code`, prefix configurable in system settings). |
 | **Guardian** | Parent or legal guardian recorded against a student. Sensitive data — access-controlled. |
 | **School Year** | Academic year, stored as `YYYY-YYYY` (e.g. `2026-2027`). Replaces the loose `school_year` text field. |
-| **Grade Level** | Secondary-level level (Grade 7 … Grade 10 for JHS; 11–12 for SHS if configured). Replaces the old elementary K–6 list. |
+| **Grade Level** | Junior High School level (Grade 7–10 only; Grade 10 is the final supported year). Replaces the old elementary K–6 list. |
 | **Section** | A class grouping within a grade level for a school year (e.g. "Grade 7 — Sampaguita"). Replaces barangay as the operational grouping. |
 | **Enrollment** | A student's placement: student → school year → grade level → section. Historical rows are never overwritten. |
 | **Subject** | A defined course (e.g. Mathematics, Filipino) used for grade records. |
