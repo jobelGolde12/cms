@@ -221,12 +221,16 @@ export async function saveGrade(_prev: ActionState, formData: FormData): Promise
     .select({
       studentId: studentEnrollments.studentId,
       sectionId: studentEnrollments.sectionId,
+      gradeLevelId: studentEnrollments.gradeLevelId,
     })
     .from(studentEnrollments)
     .where(eq(studentEnrollments.id, enrollmentId))
     .limit(1);
   const enrollment = enrollmentRows[0];
   if (!enrollment) return fail("Enrollment not found.");
+  if (!isSupportedGradeLevelId(enrollment.gradeLevelId)) {
+    return fail(UNSUPPORTED_GRADE_LEVEL_MESSAGE);
+  }
   if (!(await canAccessStudent(user, { studentId: enrollment.studentId }))) {
     return fail("This record is outside your scope.");
   }
@@ -312,12 +316,18 @@ export async function saveAttendance(_prev: ActionState, formData: FormData): Pr
   if (!user) return fail("You do not have permission to record attendance.");
 
   const enrollmentRows = await db
-    .select({ studentId: studentEnrollments.studentId })
+    .select({
+      studentId: studentEnrollments.studentId,
+      gradeLevelId: studentEnrollments.gradeLevelId,
+    })
     .from(studentEnrollments)
     .where(eq(studentEnrollments.id, enrollmentId))
     .limit(1);
   const enrollment = enrollmentRows[0];
   if (!enrollment) return fail("Enrollment not found.");
+  if (!isSupportedGradeLevelId(enrollment.gradeLevelId)) {
+    return fail(UNSUPPORTED_GRADE_LEVEL_MESSAGE);
+  }
   if (!(await canAccessStudent(user, { studentId: enrollment.studentId }))) {
     return fail("This record is outside your scope.");
   }

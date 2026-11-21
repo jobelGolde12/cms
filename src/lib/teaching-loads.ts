@@ -8,6 +8,10 @@ import {
   userRoles,
   users,
 } from "@/db/schema";
+import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "@/lib/grade-levels";
 
 /**
  * Teaching loads — the row-level scope that lets a Subject Teacher encode
@@ -199,7 +203,11 @@ export async function validateTeachingLoads(pairs: TeachingLoad[]): Promise<Load
 
   const [sectionRows, subjectRows] = await Promise.all([
     db
-      .select({ id: sections.id, isActive: sections.isActive })
+      .select({
+        id: sections.id,
+        gradeLevelId: sections.gradeLevelId,
+        isActive: sections.isActive,
+      })
       .from(sections)
       .where(inArray(sections.id, sectionIds)),
     db
@@ -207,6 +215,10 @@ export async function validateTeachingLoads(pairs: TeachingLoad[]): Promise<Load
       .from(subjects)
       .where(inArray(subjects.id, subjectIds)),
   ]);
+
+  if (sectionRows.some((section) => !isSupportedGradeLevelId(section.gradeLevelId))) {
+    return { ok: false, error: UNSUPPORTED_GRADE_LEVEL_MESSAGE };
+  }
 
   const activeSections = new Set(sectionRows.filter((s) => s.isActive).map((s) => s.id));
   const activeSubjects = new Set(subjectRows.filter((s) => s.isActive).map((s) => s.id));

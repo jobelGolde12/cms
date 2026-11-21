@@ -52,13 +52,25 @@ const {
   studentGuardians,
   recordVerifications,
   notifications,
+  gradeLevels,
+  schoolYears,
   sections,
+  subjects,
+  employees,
+  attendanceRecords,
+  gradingPeriods,
+  sectionSubjectTeachers,
+  studentGrades,
   studentEnrollments,
 } = (await import("@/db/schema")) as typeof import("@/db/schema");
 const { hashToken } = await import("@/lib/auth");
 const { createStudent, updateStudent, reviewVerification } = await import("@/actions/students");
 const { createSection } = await import("@/actions/sections");
-const { saveEnrollment } = await import("@/actions/records");
+const { saveAttendance, saveEnrollment, saveGrade } = await import("@/actions/records");
+const { assignAdviser } = await import("@/actions/assignments");
+const { saveSectionGradeDraft } = await import("@/actions/grades");
+const { createEmployee } = await import("@/actions/employees");
+const { validateTeachingLoads } = await import("@/lib/teaching-loads");
 
 type ActionState = Awaited<ReturnType<typeof createStudent>>;
 
@@ -66,6 +78,18 @@ const TOKENS = {
   admin: "test-token-admin",
   nurse: "test-token-nurse",
   records: "test-token-records",
+  subjectTeacher: "test-token-subject-teacher",
+};
+
+const LEGACY_GRADE_FIXTURE = {
+  gradeLevelId: "gl-12",
+  schoolYearId: "school-year-grade-scope",
+  sectionId: "section-grade-12",
+  subjectId: "subject-grade-scope",
+  teacherId: "teacher-grade-scope",
+  gradingPeriodId: "grading-period-grade-scope",
+  studentId: "student-grade-12",
+  enrollmentId: "enrollment-grade-12",
 };
 
 function seedUser(id: string, roleId: string, firstName: string, lastName: string) {
@@ -114,10 +138,71 @@ beforeAll(async () => {
     { id: "role-admin", name: "Admin" },
     { id: "role-nurse", name: "Nurse" },
     { id: "role-records", name: "Records" },
+    { id: "role-teacher", name: "Teacher" },
+    { id: "role-subject-teacher", name: "Subject Teacher" },
   ]);
   await seedUserWithSession(randomUUID(), "role-admin", "Ada", "Admin", TOKENS.admin);
   await seedUserWithSession(randomUUID(), "role-nurse", "Nur", "Nurse", TOKENS.nurse);
   await seedUserWithSession(randomUUID(), "role-records", "Rita", "Records", TOKENS.records);
+  await seedUserWithSession(
+    LEGACY_GRADE_FIXTURE.teacherId,
+    "role-subject-teacher",
+    "Teacher",
+    "GradeScope",
+    TOKENS.subjectTeacher,
+  );
+
+  // A legacy Grade 12 section lets action tests prove that pre-migration data
+  // is rejected rather than silently treated as a supported grade.
+  await db.insert(schoolYears).values({
+    id: LEGACY_GRADE_FIXTURE.schoolYearId,
+    year: "2026-2027",
+  });
+  await db.insert(gradeLevels).values({
+    id: LEGACY_GRADE_FIXTURE.gradeLevelId,
+    name: "Grade 12",
+    orderIndex: 5,
+  });
+  await db.insert(subjects).values({
+    id: LEGACY_GRADE_FIXTURE.subjectId,
+    code: "SUBJ-GS",
+    name: "Grade Scope Subject",
+  });
+  await db.insert(gradingPeriods).values({
+    id: LEGACY_GRADE_FIXTURE.gradingPeriodId,
+    schoolYearId: LEGACY_GRADE_FIXTURE.schoolYearId,
+    name: "Term 1",
+    orderIndex: 1,
+  });
+  await db.insert(sections).values({
+    id: LEGACY_GRADE_FIXTURE.sectionId,
+    schoolYearId: LEGACY_GRADE_FIXTURE.schoolYearId,
+    gradeLevelId: LEGACY_GRADE_FIXTURE.gradeLevelId,
+    name: "Legacy Grade 12",
+  });
+  await db.insert(sectionSubjectTeachers).values({
+    id: "assignment-grade-12",
+    sectionId: LEGACY_GRADE_FIXTURE.sectionId,
+    subjectId: LEGACY_GRADE_FIXTURE.subjectId,
+    teacherId: LEGACY_GRADE_FIXTURE.teacherId,
+  });
+  await db.insert(students).values({
+    id: LEGACY_GRADE_FIXTURE.studentId,
+    studentNumber: "SM-2026-990012",
+    firstName: "Legacy",
+    lastName: "Student",
+    sex: "female",
+    createdBy: LEGACY_GRADE_FIXTURE.teacherId,
+  });
+  await db.insert(studentEnrollments).values({
+    id: LEGACY_GRADE_FIXTURE.enrollmentId,
+    studentId: LEGACY_GRADE_FIXTURE.studentId,
+    schoolYearId: LEGACY_GRADE_FIXTURE.schoolYearId,
+    gradeLevelId: LEGACY_GRADE_FIXTURE.gradeLevelId,
+    sectionId: LEGACY_GRADE_FIXTURE.sectionId,
+    status: "active",
+    recordedBy: LEGACY_GRADE_FIXTURE.teacherId,
+  });
 });
 
 afterAll(async () => {
@@ -224,6 +309,100 @@ describe("saveEnrollment", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
     expect((await db.select().from(studentEnrollments)).length).toBe(before);
+  });
+});
+
+describe("operational grade scope", () => {
+  it("rejects adviser assignment to a legacy Grade 12 section", async () => {
+    mocks.cookie = TOKENS.admin;
+    const form = new FormData();
+    form.set("sectionId", LEGACY_GRADE_FIXTURE.sectionId);
+    form.set("teacherId", LEGACY_GRADE_FIXTURE.teacherId);
+
+    const result = await assignAdviser({ ok: false, error: "" }, form);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    const [section] = await db
+      .select({ adviserId: sections.adviserId })
+      .from(sections)
+      .where(eq(sections.id, LEGACY_GRADE_FIXTURE.sectionId));
+    expect(section?.adviserId).toBeNull();
+  });
+
+  it("rejects a teaching load in a legacy Grade 12 section", async () => {
+    const result = await validateTeachingLoads([
+      {
+        sectionId: LEGACY_GRADE_FIXTURE.sectionId,
+        subjectId: LEGACY_GRADE_FIXTURE.subjectId,
+      },
+    ]);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+  });
+
+  it("rejects an employee adviser assignment to a legacy Grade 12 section", async () => {
+    mocks.cookie = TOKENS.admin;
+    const form = new FormData();
+    form.set("firstName", "Unsupported");
+    form.set("lastName", "Placement");
+    form.set("sex", "female");
+    form.set("position", "adviser");
+    form.set("assignedSectionId", LEGACY_GRADE_FIXTURE.sectionId);
+
+    const before = (await db.select().from(employees)).length;
+    const result = await createEmployee({ ok: false, error: "" }, form);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    expect((await db.select().from(employees)).length).toBe(before);
+  });
+
+  it("rejects attendance for a legacy Grade 12 enrollment", async () => {
+    mocks.cookie = TOKENS.admin;
+    const form = new FormData();
+    form.set("enrollmentId", LEGACY_GRADE_FIXTURE.enrollmentId);
+    form.set("date", "2026-11-22");
+    form.set("status", "present");
+
+    const before = (await db.select().from(attendanceRecords)).length;
+    const result = await saveAttendance({ ok: false, error: "" }, form);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    expect((await db.select().from(attendanceRecords)).length).toBe(before);
+  });
+
+  it("rejects a grade write for a legacy Grade 12 enrollment", async () => {
+    mocks.cookie = TOKENS.subjectTeacher;
+    const form = new FormData();
+    form.set("enrollmentId", LEGACY_GRADE_FIXTURE.enrollmentId);
+    form.set("subjectId", LEGACY_GRADE_FIXTURE.subjectId);
+    form.set("gradingPeriodId", LEGACY_GRADE_FIXTURE.gradingPeriodId);
+    form.set("grade", "90");
+
+    const before = (await db.select().from(studentGrades)).length;
+    const result = await saveGrade({ ok: false, error: "" }, form);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    expect((await db.select().from(studentGrades)).length).toBe(before);
+  });
+
+  it("rejects a section grade sheet for a legacy Grade 12 section", async () => {
+    mocks.cookie = TOKENS.subjectTeacher;
+    const before = (await db.select().from(studentGrades)).length;
+    const result = await saveSectionGradeDraft({
+      sectionId: LEGACY_GRADE_FIXTURE.sectionId,
+      subjectId: LEGACY_GRADE_FIXTURE.subjectId,
+      gradingPeriodId: LEGACY_GRADE_FIXTURE.gradingPeriodId,
+      entries: [{ studentId: LEGACY_GRADE_FIXTURE.studentId, grade: 90 }],
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    expect((await db.select().from(studentGrades)).length).toBe(before);
   });
 });
 

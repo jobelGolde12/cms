@@ -21,6 +21,10 @@ import {
   MIN_GRADE,
 } from "@/lib/grades";
 import { invalidateForecasts } from "@/lib/forecasting/storage";
+import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "@/lib/grade-levels";
 import { fail, sessionMetadata, zodFieldErrors, ok, type ActionState } from "./helpers";
 
 /**
@@ -75,13 +79,20 @@ async function verifyContext(
   gradingPeriodId: string,
 ): Promise<{ schoolYearId: string } | { error: string }> {
   const sectionRows = await db
-    .select({ schoolYearId: sections.schoolYearId, isActive: sections.isActive })
+    .select({
+      schoolYearId: sections.schoolYearId,
+      gradeLevelId: sections.gradeLevelId,
+      isActive: sections.isActive,
+    })
     .from(sections)
     .where(eq(sections.id, sectionId))
     .limit(1);
   const section = sectionRows[0];
   if (!section) return { error: "Section not found." };
   if (!section.isActive) return { error: "This section is no longer active." };
+  if (!isSupportedGradeLevelId(section.gradeLevelId)) {
+    return { error: UNSUPPORTED_GRADE_LEVEL_MESSAGE };
+  }
 
   const periodRows = await db
     .select({ schoolYearId: gradingPeriods.schoolYearId })
@@ -522,12 +533,19 @@ export async function removeSectionGrade(input: RemoveInput): Promise<ActionStat
   const { studentId, subjectId, gradingPeriodId } = parsed.data;
 
   const enrollmentRows = await db
-    .select({ enrollmentId: studentEnrollments.id, sectionId: studentEnrollments.sectionId })
+    .select({
+      enrollmentId: studentEnrollments.id,
+      sectionId: studentEnrollments.sectionId,
+      gradeLevelId: studentEnrollments.gradeLevelId,
+    })
     .from(studentEnrollments)
     .where(and(eq(studentEnrollments.studentId, studentId), eq(studentEnrollments.status, "active")))
     .limit(1);
   const enrollment = enrollmentRows[0];
   if (!enrollment) return fail("The student has no active enrollment.");
+  if (!isSupportedGradeLevelId(enrollment.gradeLevelId)) {
+    return fail(UNSUPPORTED_GRADE_LEVEL_MESSAGE);
+  }
   if (!(await canWriteGradesInSection(user, enrollment.sectionId, subjectId))) {
     return fail("You can only remove grades from your assigned subject sheets.");
   }

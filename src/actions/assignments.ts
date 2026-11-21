@@ -22,6 +22,10 @@ import {
   SUBJECT_TEACHER_ROLE_ID,
 } from "@/lib/assignment-rules";
 import { ensureUserRole } from "@/lib/user-roles";
+import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "@/lib/grade-levels";
 import { fail, ok, sessionMetadata, type ActionState } from "./helpers";
 
 /**
@@ -137,6 +141,9 @@ async function loadActiveSection(
   const row = rows[0];
   if (!row) return { error: "That section was not found." };
   if (!row.isActive) return { error: "That section is deactivated — re-activate it first." };
+  if (!isSupportedGradeLevelId(row.gradeLevelId)) {
+    return { error: UNSUPPORTED_GRADE_LEVEL_MESSAGE };
+  }
 
   const adviserName =
     row.adviserFirst || row.adviserLast

@@ -76,7 +76,7 @@ const ids = {
   subjectTeacher: randomUUID(),
   guidance: randomUUID(),
   schoolYear: randomUUID(),
-  gradeLevel: randomUUID(),
+  gradeLevel: "gl-8",
   sectionA: randomUUID(),
   sectionB: randomUUID(),
   studentA: randomUUID(),
@@ -154,7 +154,7 @@ beforeAll(async () => {
   await seedUserWithSession(ids.guidance, "role-guidance", "Gina", "Guidance", TOKENS.guidance);
 
   await db.insert(schoolYears).values({ id: ids.schoolYear, year: "2026-2027", isCurrent: true });
-  await db.insert(gradeLevels).values({ id: ids.gradeLevel, name: "Grade 8", orderIndex: 8 });
+  await db.insert(gradeLevels).values({ id: ids.gradeLevel, name: "Grade 8", orderIndex: 2 });
   await db.insert(sections).values([
     { id: ids.sectionA, schoolYearId: ids.schoolYear, gradeLevelId: ids.gradeLevel, name: "A", adviserId: ids.adviser },
     { id: ids.sectionB, schoolYearId: ids.schoolYear, gradeLevelId: ids.gradeLevel, name: "B", adviserId: ids.admin },

@@ -17,6 +17,10 @@ import { logAudit } from "@/lib/audit";
 import { computeBalance, validateCreditAmount } from "@/lib/employees";
 import { nextEmployeeNumber } from "@/lib/employee-number";
 import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "@/lib/grade-levels";
+import {
   applyTeachingLoads,
   clearTeachingLoads,
   parseTeachingLoads,
@@ -160,13 +164,21 @@ async function validateAdviserAssignment(
   if (!sectionId) return { ok: true, sectionName: null };
 
   const sectionRows = await db
-    .select({ id: sections.id, name: sections.name, isActive: sections.isActive })
+    .select({
+      id: sections.id,
+      name: sections.name,
+      gradeLevelId: sections.gradeLevelId,
+      isActive: sections.isActive,
+    })
     .from(sections)
     .where(eq(sections.id, sectionId))
     .limit(1);
   const section = sectionRows[0];
   if (!section) {
     return { ok: false, error: "Assigned section not found — select a valid section." };
+  }
+  if (!isSupportedGradeLevelId(section.gradeLevelId)) {
+    return { ok: false, error: UNSUPPORTED_GRADE_LEVEL_MESSAGE };
   }
   if (!section.isActive) {
     return { ok: false, error: "That section is deactivated — re-activate it before assigning an adviser." };
