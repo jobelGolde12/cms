@@ -1,6 +1,8 @@
 # Feature — Enrollment
 
 > STATUS: **PLAN**.
+>
+> Grade scope and cleanup rules: [Grade 7–10 Policy](grade-7-10-policy-2026-11.md).
 
 ## Model
 
