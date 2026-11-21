@@ -1,3 +1,8 @@
+import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "./grade-levels";
+
 /**
  * Enrollment invariants (pure — no database imports so they are unit-testable
  * without a connection).
@@ -46,6 +51,9 @@ export function checkSectionPlacement(
       ok: false,
       error: "The selected section does not belong to the chosen school year.",
     };
+  }
+  if (!isSupportedGradeLevelId(gradeLevelId)) {
+    return { ok: false, error: UNSUPPORTED_GRADE_LEVEL_MESSAGE };
   }
   if (section.gradeLevelId !== gradeLevelId) {
     return {

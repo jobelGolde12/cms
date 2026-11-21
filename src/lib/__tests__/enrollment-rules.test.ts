@@ -46,6 +46,18 @@ describe("checkSectionPlacement", () => {
     if (!result.ok) expect(result.error).toMatch(/grade level/i);
   });
 
+  it("rejects unsupported Grade 11 and Grade 12 placements", () => {
+    for (const gradeLevelId of ["gl-11", "gl-12"]) {
+      const result = checkSectionPlacement(
+        { ...section, gradeLevelId },
+        "sy-2026-2027",
+        gradeLevelId,
+      );
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    }
+  });
+
   it("checks the school year before the grade level", () => {
     // Both mismatched — the school-year reason is reported first.
     const result = checkSectionPlacement(section, "sy-other", "gl-other");

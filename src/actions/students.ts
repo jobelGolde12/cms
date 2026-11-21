@@ -25,6 +25,10 @@ import {
   hasSchoolWideStudentScope,
 } from "@/lib/scope";
 import { checkSectionPlacement } from "@/lib/enrollment-rules";
+import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "@/lib/grade-levels";
 import { studentFormSchema, verificationReviewSchema } from "@/lib/schemas";
 import { refreshDuplicateCandidates } from "@/lib/duplicates";
 import { deactivateStudentTokens } from "@/lib/qr";
@@ -123,6 +127,14 @@ async function resolveEnrollmentIntent(
         ...(gradeLevelId ? {} : { gradeLevelId: "Select a grade level" }),
         ...(sectionId ? {} : { sectionId: "Select a section" }),
       },
+    };
+  }
+
+  if (!isSupportedGradeLevelId(gradeLevelId)) {
+    return {
+      ok: false,
+      error: UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+      fieldErrors: { gradeLevelId: UNSUPPORTED_GRADE_LEVEL_MESSAGE },
     };
   }
 

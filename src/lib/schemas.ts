@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SUPPORTED_GRADE_LEVEL_IDS, UNSUPPORTED_GRADE_LEVEL_MESSAGE } from "./grade-levels";
 import {
   APPOINTMENT_STATUSES,
   ASSESSMENT_DOMAINS,
@@ -510,10 +511,14 @@ export const clinicalRecordSchema = z.object({
 /*  Enrollment, grades, attendance                                            */
 /* -------------------------------------------------------------------------- */
 
+const supportedGradeLevelIdSchema = z.enum(SUPPORTED_GRADE_LEVEL_IDS, {
+  error: UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+});
+
 export const enrollmentFormSchema = z.object({
   studentId: z.string().min(1),
   schoolYearId: z.string().min(1, "Select a school year"),
-  gradeLevelId: z.string().min(1, "Select a grade level"),
+  gradeLevelId: supportedGradeLevelIdSchema,
   sectionId: z.string().min(1, "Select a section"),
   status: z.enum(ENROLLMENT_STATUSES).default("active"),
   enrollmentDate: isoDate.optional().or(z.literal("")),
@@ -546,7 +551,7 @@ export const studentQuerySchema = z.object({
   status: z.string().optional().or(z.literal("")),
   lifecycle: z.string().optional().or(z.literal("")),
   sex: z.string().optional().or(z.literal("")),
-  gradeLevel: z.string().optional().or(z.literal("")),
+  gradeLevel: supportedGradeLevelIdSchema.optional().or(z.literal("")),
   sectionId: z.string().optional().or(z.literal("")),
   sort: z.enum(["name", "recent", "oldest"]).default("recent"),
   page: z.coerce.number().int().min(1).max(500).default(1),

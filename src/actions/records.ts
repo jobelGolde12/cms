@@ -30,6 +30,10 @@ import {
   canViewConfidentialBehavior,
 } from "@/lib/scope";
 import { checkSectionPlacement } from "@/lib/enrollment-rules";
+import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "@/lib/grade-levels";
 import type { Permission } from "@/lib/permissions";
 import { invalidateForecasts } from "@/lib/forecasting/storage";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
@@ -75,6 +79,13 @@ export async function saveEnrollment(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const submittedGradeLevelId = String(formData.get("gradeLevelId") ?? "").trim();
+  if (!isSupportedGradeLevelId(submittedGradeLevelId)) {
+    return fail(UNSUPPORTED_GRADE_LEVEL_MESSAGE, {
+      gradeLevelId: UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+    });
+  }
+
   const parsed = enrollmentFormSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return fail("Please fix the highlighted fields.", zodFieldErrors(parsed.error.issues));
   const { studentId, schoolYearId, gradeLevelId, sectionId, status, enrollmentDate } = parsed.data;

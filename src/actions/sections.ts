@@ -6,6 +6,10 @@ import { db } from "@/db";
 import { gradeLevels, schoolYears, sections, users } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import {
+  isSupportedGradeLevelId,
+  UNSUPPORTED_GRADE_LEVEL_MESSAGE,
+} from "@/lib/grade-levels";
 import { z } from "zod";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
 
@@ -55,6 +59,10 @@ async function validateSectionRefs(
   gradeLevelId: string,
   adviserId?: string,
 ): Promise<string | null> {
+  if (!isSupportedGradeLevelId(gradeLevelId)) {
+    return UNSUPPORTED_GRADE_LEVEL_MESSAGE;
+  }
+
   const syRows = await db
     .select({ id: schoolYears.id })
     .from(schoolYears)

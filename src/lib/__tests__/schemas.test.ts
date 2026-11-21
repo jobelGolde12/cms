@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { studentFormSchema, userFormSchema, verificationReviewSchema } from "../schemas";
+import {
+  enrollmentFormSchema,
+  studentFormSchema,
+  studentQuerySchema,
+  userFormSchema,
+  verificationReviewSchema,
+} from "../schemas";
 
 describe("studentFormSchema", () => {
   const validBase = {
@@ -64,6 +70,38 @@ describe("studentFormSchema", () => {
       guardianRelationship: "mother",
     });
     expect(parsed.success).toBe(true);
+  });
+});
+
+describe("grade-level schemas", () => {
+  const enrollmentBase = {
+    studentId: "student-1",
+    schoolYearId: "school-year-1",
+    gradeLevelId: "gl-7",
+    sectionId: "section-1",
+  };
+
+  it("accepts every supported Grade 7–10 enrollment", () => {
+    for (const gradeLevelId of ["gl-7", "gl-8", "gl-9", "gl-10"]) {
+      expect(
+        enrollmentFormSchema.safeParse({ ...enrollmentBase, gradeLevelId }).success,
+      ).toBe(true);
+    }
+  });
+
+  it("rejects Grade 11 and Grade 12 enrollment requests", () => {
+    for (const gradeLevelId of ["gl-11", "gl-12"]) {
+      expect(
+        enrollmentFormSchema.safeParse({ ...enrollmentBase, gradeLevelId }).success,
+      ).toBe(false);
+    }
+  });
+
+  it("rejects unsupported registry grade filters", () => {
+    expect(studentQuerySchema.safeParse({ gradeLevel: "gl-7" }).success).toBe(true);
+    expect(studentQuerySchema.safeParse({ gradeLevel: "gl-10" }).success).toBe(true);
+    expect(studentQuerySchema.safeParse({ gradeLevel: "gl-11" }).success).toBe(false);
+    expect(studentQuerySchema.safeParse({ gradeLevel: "gl-12" }).success).toBe(false);
   });
 });
 

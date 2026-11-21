@@ -52,9 +52,13 @@ const {
   studentGuardians,
   recordVerifications,
   notifications,
+  sections,
+  studentEnrollments,
 } = (await import("@/db/schema")) as typeof import("@/db/schema");
 const { hashToken } = await import("@/lib/auth");
 const { createStudent, updateStudent, reviewVerification } = await import("@/actions/students");
+const { createSection } = await import("@/actions/sections");
+const { saveEnrollment } = await import("@/actions/records");
 
 type ActionState = Awaited<ReturnType<typeof createStudent>>;
 
@@ -160,6 +164,21 @@ describe("createStudent", () => {
     expect(after).toBe(before);
   });
 
+  it("rejects an unsupported Grade 12 enrollment and writes nothing", async () => {
+    mocks.cookie = TOKENS.admin;
+    const form = buildStudentForm();
+    form.set("schoolYearId", "school-year-1");
+    form.set("gradeLevelId", "gl-12");
+    form.set("sectionId", "section-12");
+
+    const before = (await db.select().from(students)).length;
+    const result = await createStudent({ ok: false, error: "" }, form);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    expect((await db.select().from(students)).length).toBe(before);
+  });
+
   it("rejects invalid forms with fieldErrors and does not write", async () => {
     mocks.cookie = TOKENS.admin;
     const form = buildStudentForm();
@@ -170,6 +189,41 @@ describe("createStudent", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.fieldErrors?.firstName).toBeTruthy();
     expect((await db.select().from(students)).length).toBe(before);
+  });
+});
+
+describe("createSection", () => {
+  it("rejects an unsupported Grade 12 section and writes nothing", async () => {
+    mocks.cookie = TOKENS.admin;
+    const form = new FormData();
+    form.set("schoolYearId", "school-year-1");
+    form.set("gradeLevelId", "gl-12");
+    form.set("name", "Unsupported Grade");
+
+    const before = (await db.select().from(sections)).length;
+    const result = await createSection({ ok: false, error: "" }, form);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    expect((await db.select().from(sections)).length).toBe(before);
+  });
+});
+
+describe("saveEnrollment", () => {
+  it("rejects an unsupported Grade 12 enrollment and writes nothing", async () => {
+    mocks.cookie = TOKENS.admin;
+    const form = new FormData();
+    form.set("studentId", "student-without-enrollment");
+    form.set("schoolYearId", "school-year-1");
+    form.set("gradeLevelId", "gl-12");
+    form.set("sectionId", "section-12");
+
+    const before = (await db.select().from(studentEnrollments)).length;
+    const result = await saveEnrollment({ ok: false, error: "" }, form);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Grades 7–10/i);
+    expect((await db.select().from(studentEnrollments)).length).toBe(before);
   });
 });
 

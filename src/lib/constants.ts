@@ -146,14 +146,8 @@ export const RECORD_STATUS_LABELS: Record<RecordStatus, string> = {
 /*  Academic structure                                                         */
 /* -------------------------------------------------------------------------- */
 
-export const GRADE_LEVELS = [
-  "Grade 7",
-  "Grade 8",
-  "Grade 9",
-  "Grade 10",
-  "Grade 11",
-  "Grade 12",
-] as const;
+/** The fixed Junior High School grade catalog (Grades 7–10). */
+export { GRADE_LEVELS } from "./grade-levels";
 
 /**
  * Active grading periods of a school year.
