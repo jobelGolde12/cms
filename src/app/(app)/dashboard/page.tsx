@@ -1,19 +1,25 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { ShieldAlert, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasUserPermission } from "@/lib/permissions";
 import { canViewStudentDevelopment } from "@/lib/scope";
+import { resolveDashboard } from "@/lib/dashboard";
 import {
   recentNotifications,
   unreadNotificationCount,
   adviserSectionsOverview,
+  guidanceDashboardData,
+  healthStats,
+  listHealthRecords,
 } from "@/lib/queries";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SCHOOL } from "@/lib/constants";
 import { dashboardData } from "@/lib/dashboard-data";
 import { officerDashboardData } from "@/lib/employees";
 import { OfficerDashboard } from "@/components/dashboard/officer";
+import { GuidanceDashboard } from "@/components/dashboard/guidance";
+import { NurseDashboard } from "@/components/dashboard/nurse";
 import {
   BarangayDistribution,
   EducationDistribution,
@@ -31,15 +37,84 @@ import ForecastPanel from "@/components/forecast/forecast-panel";
 import { summarizeDashboard } from "@/actions/ai";
 import { AiAnalysisPanel } from "@/components/ai/ai-analysis-panel";
 
-export default async function AppDashboardPage() {
+/**
+ * Authenticated dashboard.
+ *
+ * The destination and the view both come from `resolveDashboard()` — the ONE
+ * role-resolution helper used by login, the proxy and the sidebar. Privileged
+ * widgets are gated by the same permission map the module pages enforce, so a
+ * role can no longer see (or be linked into) another role's data.
+ */
+export default async function AppDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const resolution = resolveDashboard(user);
+
+  const sp = await searchParams;
+  const deniedParam = sp.denied;
+  const denied =
+    typeof deniedParam === "string" && deniedParam.trim() !== ""
+      ? deniedParam
+      : undefined;
+
+  // Controlled authorization feedback (set by requirePermission/proxy).
+  const deniedNotice = denied ? (
+    <div
+      role="alert"
+      className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+    >
+      <ShieldAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>
+        You do not have access to that module with your current role. Ask an
+        administrator if you need it enabled.
+      </span>
+    </div>
+  ) : null;
+
   // Admin Officer gets an employee-records-only dashboard: no student queries
   // run at all on this render path.
-  if (user.role === "admin_officer") {
+  if (resolution.kind === "admin_officer") {
     const officerData = await officerDashboardData();
-    return <OfficerDashboard data={officerData} user={user} />;
+    return (
+      <div className="space-y-5">
+        {deniedNotice}
+        <OfficerDashboard data={officerData} user={user} />
+      </div>
+    );
+  }
+
+  // Guidance Office dashboard — confidential incident work only.
+  if (resolution.kind === "guidance") {
+    const incidents = await guidanceDashboardData(user);
+    return (
+      <div className="space-y-5">
+        {deniedNotice}
+        <GuidanceDashboard
+          user={user}
+          resolution={resolution}
+          incidents={incidents}
+        />
+      </div>
+    );
+  }
+
+  // Nurse dashboard — health & nutrition only.
+  if (resolution.kind === "nurse") {
+    const [stats, records] = await Promise.all([
+      healthStats(),
+      listHealthRecords(5),
+    ]);
+    return (
+      <div className="space-y-5">
+        {deniedNotice}
+        <NurseDashboard resolution={resolution} stats={stats} records={records} />
+      </div>
+    );
   }
 
   const [data, notifications, unread, adviserSections] = await Promise.all([
@@ -50,7 +125,11 @@ export default async function AppDashboardPage() {
   ]);
 
   const canReview = hasUserPermission(user.roles, "verification.review");
-  const canDevelopment = canViewStudentDevelopment(user);
+  const canViewDuplicates = hasUserPermission(user.roles, "duplicates.view");
+  const canViewBehavior =
+    hasUserPermission(user.roles, "behavior.view") &&
+    canViewStudentDevelopment(user);
+  const canForecast = hasUserPermission(user.roles, "reports.view");
 
   const openConcernsTotal = data.openConcerns.reduce((sum, row) => sum + row.value, 0);
 
@@ -59,15 +138,12 @@ export default async function AppDashboardPage() {
       {/* ------------------------- Page header ------------------------- */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-medium text-brand-600">
-            Student Records Overview
-          </p>
+          <p className="text-xs font-medium text-brand-600">{resolution.eyebrow}</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-900 sm:text-[28px]">
-            Enrollment &amp; Performance Overview
+            {resolution.title}
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-[#64748B]">
-            Current enrollment, record verification, academic performance, and
-            student development at {SCHOOL.shortName}.
+            {resolution.description} {SCHOOL.shortName}.
           </p>
         </div>
         <div className="leading-tight md:text-right">
@@ -84,12 +160,14 @@ export default async function AppDashboardPage() {
         </div>
       </div>
 
+      {deniedNotice}
+
       {/* ---------------------------- KPI grid ---------------------------- */}
       <KpiGrid kpis={data.kpis} />
 
       {/* AI narrative summary of the same KPI/distribution dataset —
           interpretation labelled as such, scoped to the viewer's data. */}
-      {hasUserPermission(user.roles, "reports.view") ? (
+      {canForecast ? (
         <AiAnalysisPanel
           feature="dashboardReport"
           action={summarizeDashboard}
@@ -149,18 +227,19 @@ export default async function AppDashboardPage() {
 
           <BarangayDistribution rows={data.byGradeLevel} />
 
-          {canDevelopment ? (
-            <>
-              <SectionCoverageTable rows={data.sectionCoverage} />
-              <BehaviorConcernsCard
-                counts={data.openConcerns}
-                openTotal={openConcernsTotal}
-              />
-            </>
+          {canViewStudentDevelopment(user) ? (
+            <SectionCoverageTable rows={data.sectionCoverage} />
+          ) : null}
+
+          {canViewBehavior ? (
+            <BehaviorConcernsCard
+              counts={data.openConcerns}
+              openTotal={openConcernsTotal}
+            />
           ) : null}
 
           {/* Academic performance forecast (plan §24.1 — after coverage) */}
-          <ForecastPanel />
+          {canForecast ? <ForecastPanel /> : null}
 
           <RecentActivity items={data.activity} />
         </div>
@@ -168,7 +247,9 @@ export default async function AppDashboardPage() {
         {/* ------------------------- Right column ------------------------- */}
         <div className="space-y-5">
           <EducationDistribution rows={data.enrollment} />
-          <ValidationQueueCard counts={data.verification} canReview={canReview} />
+          {canReview || canViewDuplicates ? (
+            <ValidationQueueCard counts={data.verification} canReview={canReview} />
+          ) : null}
           <RecordStatusCard rows={data.recordStatus} />
           <RecentNotifications items={notifications} />
           <SystemStatusCard status={data.system} notifications={unread} />

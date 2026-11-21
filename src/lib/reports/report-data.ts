@@ -752,3 +752,29 @@ export const SCHOOL_HEADER = {
   address: "Sta. Magdalena, Sorsogon",
   region: "Region V — Bicol",
 };
+
+/**
+ * Characters that make a spreadsheet treat a text cell as a formula, or as an
+ * external/DDE reference (=, +, -, @, TAB, CR).
+ */
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+
+/**
+ * Neutralize spreadsheet formula injection for CSV/XLSX exports.
+ *
+ * Every exported cell can contain user-entered free text (student names,
+ * remarks, incident notes). Spreadsheet applications evaluate a *text* cell
+ * that begins with `=`, `+`, `-`, `@`, TAB or CR — so a stored note such as
+ * `=HYPERLINK("http://attacker","click")` would execute when a school
+ * administrator opens the export. A leading apostrophe keeps the value
+ * human-readable while forcing the cell to be treated as text.
+ *
+ * Numbers (scores, counts) are passed through untouched.
+ */
+export function neutralizeCellText(
+  value: string | number | null | undefined,
+): string | number {
+  if (value == null) return "";
+  if (typeof value !== "string") return value;
+  return FORMULA_TRIGGER.test(value) ? `'${value}` : value;
+}

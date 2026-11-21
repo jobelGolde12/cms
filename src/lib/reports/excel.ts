@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { BuiltReport } from "./report-data";
-import { SCHOOL_HEADER } from "./report-data";
+import { neutralizeCellText, SCHOOL_HEADER } from "./report-data";
 import { formatDateTime } from "../utils";
 
 /** Build an .xlsx workbook buffer from a built report. */
@@ -18,7 +18,9 @@ export async function renderReportExcel(report: BuiltReport): Promise<Buffer> {
   const mergeTitleRow = (row: number, value: string, font: Partial<ExcelJS.Font>) => {
     if (colCount > 1) sheet.mergeCells(row, 1, row, colCount);
     const cell = sheet.getCell(row, 1);
-    cell.value = value;
+    // ExcelJS turns a string starting with "=" into a real formula — neutralize
+    // free text (filters, generator name) before it reaches a cell.
+    cell.value = neutralizeCellText(value) as string;
     cell.font = font;
   };
 
@@ -50,7 +52,7 @@ export async function renderReportExcel(report: BuiltReport): Promise<Buffer> {
     const excelRow = sheet.getRow(headerRowNumber + 1 + ri);
     report.columns.forEach((col, ci) => {
       const cell = excelRow.getCell(ci + 1);
-      cell.value = row[col] == null ? "—" : row[col];
+      cell.value = row[col] == null ? "—" : neutralizeCellText(row[col]);
       cell.font = { size: 9, color: { argb: "FF0F172A" } };
     });
   });

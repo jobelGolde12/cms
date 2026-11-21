@@ -15,7 +15,7 @@ import {
   students,
 } from "@/db/schema";
 import { getAuthorizedUser } from "@/lib/auth";
-import { getGradeWriter } from "@/lib/grades";
+import { canWriteGradesInSection, getGradeWriter } from "@/lib/grades";
 import { logAudit } from "@/lib/audit";
 import {
   assessmentFormSchema,
@@ -207,7 +207,10 @@ export async function saveGrade(_prev: ActionState, formData: FormData): Promise
   if (!user) return fail("Only Subject Teachers can record grades.");
 
   const enrollmentRows = await db
-    .select({ studentId: studentEnrollments.studentId })
+    .select({
+      studentId: studentEnrollments.studentId,
+      sectionId: studentEnrollments.sectionId,
+    })
     .from(studentEnrollments)
     .where(eq(studentEnrollments.id, enrollmentId))
     .limit(1);
@@ -215,6 +218,12 @@ export async function saveGrade(_prev: ActionState, formData: FormData): Promise
   if (!enrollment) return fail("Enrollment not found.");
   if (!(await canAccessStudent(user, { studentId: enrollment.studentId }))) {
     return fail("This record is outside your scope.");
+  }
+  // Row-level assignment check: holding `grades.write` is not enough — the
+  // caller must be the assigned teacher for this exact (section, subject)
+  // pair, exactly like the section grade sheet in src/actions/grades.ts.
+  if (!(await canWriteGradesInSection(user, enrollment.sectionId, subjectId))) {
+    return fail("You are not assigned to teach this subject in this section.");
   }
 
   const { ip, userAgent } = await sessionMetadata();
@@ -363,14 +372,27 @@ export async function saveBehavior(_prev: ActionState, formData: FormData): Prom
 
   try {
     if (recordId) {
-      // Confidential (Guidance Office) records may only be modified by
-      // admin/school_admin/guidance — never by teachers/advisers or others.
+      // The record being edited decides which student it belongs to: the
+      // submitted studentId is never trusted for an update, otherwise a caller
+      // in scope of student A could rewrite a behavior record of student B by
+      // passing B's record id together with A's student id.
       const existing = await db
-        .select({ confidential: behaviorRecords.confidential })
+        .select({
+          studentId: behaviorRecords.studentId,
+          confidential: behaviorRecords.confidential,
+        })
         .from(behaviorRecords)
         .where(eq(behaviorRecords.id, recordId))
         .limit(1);
-      if (existing[0]?.confidential && !canViewConfidentialBehavior(user)) {
+      if (!existing[0]) {
+        return fail("That behavior record no longer exists. Refresh the page and try again.");
+      }
+      if (existing[0].studentId !== studentId) {
+        return fail("That behavior record belongs to a different student. Refresh the page and try again.");
+      }
+      // Confidential (Guidance Office) records may only be modified by
+      // admin/school_admin/guidance — never by teachers/advisers or others.
+      if (existing[0].confidential && !canViewConfidentialBehavior(user)) {
         return fail("You do not have permission to modify this record.");
       }
 

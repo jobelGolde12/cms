@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderReportCsv } from "@/lib/reports/csv";
-import type { BuiltReport } from "@/lib/reports/report-data";
+import { neutralizeCellText, type BuiltReport } from "@/lib/reports/report-data";
 
 function makeReport(overrides: Partial<BuiltReport> = {}): BuiltReport {
   return {
@@ -56,5 +56,49 @@ describe("renderReportCsv", () => {
     const csv = renderReportCsv(makeReport());
     expect(csv).toContain("Summary");
     expect(csv).toContain("Total students,2");
+  });
+});
+
+/**
+ * Formula injection: exported cells carry free text (names, remarks, notes).
+ * A cell starting with =, +, -, @, TAB or CR is evaluated as a formula by
+ * spreadsheet apps, so the export must neutralize it while keeping the value
+ * readable.
+ */
+describe("neutralizeCellText", () => {
+  it.each([
+    '=HYPERLINK("http://attacker.example","click")',
+    "+63 917 000 0000",
+    "-1+1",
+    "@SUM(1)",
+    "\tcmd|'/c calc'!A0",
+    "\r=1+1",
+  ])("prefixes a formula trigger with an apostrophe: %j", (payload) => {
+    expect(neutralizeCellText(payload)).toBe(`'${payload}`);
+  });
+
+  it("leaves ordinary text, numbers and empty cells untouched", () => {
+    expect(neutralizeCellText("Peña, Maria")).toBe("Peña, Maria");
+    expect(neutralizeCellText(-5)).toBe(-5);
+    expect(neutralizeCellText(null)).toBe("");
+    expect(neutralizeCellText(undefined)).toBe("");
+  });
+});
+
+describe("renderReportCsv — spreadsheet formula injection", () => {
+  it("neutralizes a formula in an exported cell", () => {
+    const payload = '=HYPERLINK("http://attacker.example","click")';
+    const csv = renderReportCsv(
+      makeReport({ columns: ["Name"], rows: [{ Name: payload }], summary: [] }),
+    );
+    expect(csv).not.toContain(`\r\n${payload}`);
+    expect(csv).toContain(`"'${payload.replace(/"/g, '""')}"`);
+  });
+
+  it("leaves ordinary text and numbers untouched", () => {
+    const csv = renderReportCsv(
+      makeReport({ columns: ["Name", "Grade"], rows: [{ Name: "Peña, Maria", Grade: 92 }], summary: [] }),
+    );
+    expect(csv).toContain('"Peña, Maria",92');
   });
 });

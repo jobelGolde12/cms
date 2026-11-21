@@ -91,14 +91,17 @@ export const ROLE_KEY_TO_ID: Record<Role, string> = {
 };
 
 /**
- * Returns the authenticated user for the current request (deduped per render),
- * or null when unauthenticated/expired/inactive.
+ * Resolve a raw session cookie token into the authenticated user.
+ *
+ * This is the ONE session → user → roles resolver. `getCurrentUser()` (server
+ * components/actions) and the proxy both call it, so they cannot disagree
+ * about whether a session is valid or which roles it carries.
+ *
+ * Returns null for a missing/expired session, an inactive or unapproved
+ * account, or an account whose primary role is not a known application role.
  */
-export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
-  const store = await cookies();
-  const raw = store.get(SESSION_COOKIE_NAME)?.value;
+export async function getSessionUserByToken(raw: string): Promise<SessionUser | null> {
   if (!raw) return null;
-
   const tokenHash = hashToken(raw);
   const rows = await db
     .select({
@@ -145,6 +148,17 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
     role,
     roles,
   };
+}
+
+/**
+ * Returns the authenticated user for the current request (deduped per render),
+ * or null when unauthenticated/expired/inactive.
+ */
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
+  const store = await cookies();
+  const raw = store.get(SESSION_COOKIE_NAME)?.value;
+  if (!raw) return null;
+  return getSessionUserByToken(raw);
 });
 
 /** Page guard: redirect to /login when unauthenticated. */

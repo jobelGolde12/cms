@@ -1,102 +1,73 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME, type Role } from "@/lib/constants";
-import { hashToken, roleNameFromId } from "@/lib/auth";
-import { hasUserPermission } from "@/lib/permissions";
-import { db } from "@/db";
-import { sessions, userRoles, users } from "@/db/schema";
-import { and, eq, gt } from "drizzle-orm";
+import { SESSION_COOKIE_NAME } from "@/lib/constants";
+import { getSessionUserByToken } from "@/lib/auth";
+import {
+  canAccessPath,
+  requiredPermissionForPath,
+  resolveDashboard,
+} from "@/lib/dashboard";
 import { trackEvent } from "@/lib/analytics";
 
 /**
- * Every role an account holds — the primary role first, then the additional
- * roles from `user_roles`. Mirrors `getCurrentUser()` in src/lib/auth.ts so
- * the optimistic gate and the handler-level checks agree.
- */
-async function userRoleKeys(userId: string, primaryRoleId: string): Promise<Role[]> {
-  const roles: Role[] = [];
-  const primary = roleNameFromId(primaryRoleId);
-  if (primary) roles.push(primary);
-  const extra = await db
-    .select({ roleId: userRoles.roleId })
-    .from(userRoles)
-    .where(eq(userRoles.userId, userId));
-  for (const r of extra) {
-    const key = roleNameFromId(r.roleId);
-    if (key && !roles.includes(key)) roles.push(key);
-  }
-  return roles;
-}
-
-/**
- * Optimistic auth gate (cookie presence + DB session validation where needed).
- * Keeps unauthenticated visitors out of protected routes and redirects
- * already-authenticated users away from login/register.
+ * Optimistic authentication/authorization gate.
+ *
+ * Session → user → roles is resolved by the SAME helper the server components
+ * use (`getSessionUserByToken`), so the proxy cannot consider a session valid
+ * that the application would reject (unknown role, unapproved account, …).
+ * That mismatch used to bounce authenticated users between /dashboard and
+ * /login forever.
+ *
+ * This gate is defence in depth: layouts, pages and server actions still
+ * enforce their own permission checks, so a DB hiccup here can only fall
+ * through — never grant access.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const raw = request.cookies.get(SESSION_COOKIE_NAME)?.value;
 
-  // Redirect authenticated users away from auth pages.
+  // Redirect fully-authenticated users away from the sign-in page.
   if (pathname === "/login") {
-    const raw = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-    if (raw) {
-      try {
-        const tokenHash = hashToken(raw);
-        const rows = await db
-          .select({
-            isActive: users.isActive,
-          })
-          .from(sessions)
-          .innerJoin(users, eq(users.id, sessions.userId))
-          .where(
-            and(
-              eq(sessions.tokenHash, tokenHash),
-              gt(sessions.expiresAt, new Date()),
-            ),
-          )
-          .limit(1);
-        if (rows[0] && rows[0].isActive) {
-          await trackEvent("page_viewed", { route: "/dashboard", user_role: "authenticated" });
-          return NextResponse.redirect(new URL("/dashboard", request.url));
-        }
-      } catch {
-        // DB failure or invalid session: fall through to auth page.
+    if (!raw) return NextResponse.next();
+
+    try {
+      const user = await getSessionUserByToken(raw);
+      if (user) {
+        await trackEvent("page_viewed", {
+          route: resolveDashboard(user).path,
+          user_role: user.role,
+        });
+        return NextResponse.redirect(
+          new URL(resolveDashboard(user).path, request.url),
+        );
       }
+    } catch {
+      // Database failure: fall through to the auth page.
     }
-    return NextResponse.next();
+
+    // The cookie exists but does not resolve to a usable session (expired,
+    // inactive/suspended, or an account without a valid role). Clear it,
+    // otherwise /login and /dashboard bounce the user back and forth.
+    const response = NextResponse.next();
+    response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
   }
 
-  // API export routes: reject with JSON 401/403 instead of redirecting.
-  // Handler-level getCurrentUser() + hasUserPermission() checks remain in
-  // place as defense-in-depth (see src/app/api/reports/[type]/route.ts).
+  // API export routes: JSON errors instead of redirects.
   if (pathname.startsWith("/api/reports")) {
-    const raw = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!raw) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
-      const tokenHash = hashToken(raw);
-      const rows = await db
-        .select({ userId: users.id, roleId: users.roleId })
-        .from(sessions)
-        .innerJoin(users, eq(users.id, sessions.userId))
-        .where(
-          and(
-            eq(sessions.tokenHash, tokenHash),
-            gt(sessions.expiresAt, new Date()),
-          ),
-        )
-        .limit(1);
-      const row = rows[0];
-      if (!row) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const user = await getSessionUserByToken(raw);
+      if (!user) {
+        const response = NextResponse.json(
+          { error: "Unauthorized" },
+          { status: 401 },
+        );
+        response.cookies.delete(SESSION_COOKIE_NAME);
+        return response;
       }
-      // Pre-check `reports.export` so unauthorized roles are rejected before
-      // the (potentially heavy) export handler runs. The check resolves over
-      // the UNION of every role the account holds (an account may be both an
-      // Adviser and a Subject Teacher). On DB failure, fall through and let
-      // the handler-level checks decide.
-      const roles = await userRoleKeys(row.userId, row.roleId);
-      if (roles.length > 0 && !hasUserPermission(roles, "reports.export")) {
+      if (!canAccessPath(user, pathname)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     } catch {
@@ -105,42 +76,47 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected routes: redirect unauthenticated users to login.
-  const hasSession = request.cookies.has(SESSION_COOKIE_NAME);
-  if (!hasSession) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
+  // Protected routes: no session cookie → login.
+  if (!raw) return redirectToLogin(request);
 
-  // Best-effort session validation for protected routes (cookie present but may be expired).
   try {
-    const raw = request.cookies.get(SESSION_COOKIE_NAME)!.value;
-    const tokenHash = hashToken(raw);
-    const rows = await db
-      .select({ id: users.id })
-      .from(sessions)
-      .innerJoin(users, eq(users.id, sessions.userId))
-      .where(
-        and(
-          eq(sessions.tokenHash, tokenHash),
-          gt(sessions.expiresAt, new Date()),
-        ),
-      )
-      .limit(1);
-    if (!rows[0]) {
+    const user = await getSessionUserByToken(raw);
+
+    if (!user) {
+      // Stale/revoked/expired session, deactivated account or unknown role.
+      return redirectToLogin(request);
+    }
+
+    // Role/permission gate for the requested module. Unauthorized URLs are
+    // redirected to the account's own dashboard with a safe denial message —
+    // the module itself is never rendered.
+    if (!canAccessPath(user, pathname)) {
       const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.search = "";
-    await trackEvent("login_failed", { result: "unauthorized-access-attempt" });
-    return NextResponse.redirect(url);
+      url.pathname = resolveDashboard(user).path;
+      const denied = requiredPermissionForPath(pathname);
+      url.search = denied ? `?denied=${encodeURIComponent(denied)}` : "";
+      await trackEvent("login_failed", {
+        result: "unauthorized-access-attempt",
+      });
+      return NextResponse.redirect(url);
     }
   } catch {
-    // DB failure: fall through (real validation happens server-side in layouts/pages).
+    // DB failure: fall through (real validation happens server-side in
+    // layouts/pages/actions).
   }
 
   return NextResponse.next();
+}
+
+function redirectToLogin(request: NextRequest): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = "";
+  const response = NextResponse.redirect(url);
+  // Drop the unusable cookie so the login page is not immediately redirected
+  // back to /dashboard.
+  response.cookies.delete(SESSION_COOKIE_NAME);
+  return response;
 }
 
 export const config = {
@@ -160,6 +136,7 @@ export const config = {
     "/employees/:path*",
     "/service-credits/:path*",
     "/sections/:path*",
+    "/assignments/:path*",
     "/qr/:path*",
     "/activity-logs/:path*",
     "/users/:path*",

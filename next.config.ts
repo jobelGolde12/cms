@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
 
+  // Do not advertise the framework/version (fingerprinting aid).
+  poweredByHeader: false,
+
   // Security headers applied to all routes
   async headers() {
     return [
@@ -25,14 +28,22 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Force HTTPS for a year once the browser has seen the header over
+          // HTTPS (browsers ignore it on plain HTTP, so local dev is unaffected).
+          // includeSubDomains is deliberately omitted: the school may host
+          // unrelated HTTP services on sibling hostnames.
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
           {
             key: "Permissions-Policy",
             value: "geolocation=(), microphone=(), camera=()",
           },
+          // Cross-origin isolation: no other origin may open this app in a
+          // popup and retain a script handle to it.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
           },
         ],
       },

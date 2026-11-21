@@ -48,8 +48,9 @@ export async function GET(request: NextRequest) {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
+    // Log the detail server-side; never return internal error text (provider,
+    // model or SQL messages) to the browser.
     console.error("[forecasts:api] generation failed", error);
-    const message = error instanceof Error ? error.message : "Forecast generation failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Forecast generation failed. Please try again." }, { status: 500 });
   }
 }

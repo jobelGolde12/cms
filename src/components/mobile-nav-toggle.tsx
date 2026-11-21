@@ -22,13 +22,33 @@ export function MobileNavToggle({
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  // Escape closes the drawer while it is open.
+  // Escape closes the drawer while it is open, and Tab is kept inside it: the
+  // drawer is a modal dialog (`aria-modal="true"`), so keyboard focus must not
+  // wander into the page behind it.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
         toggleRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const panel = drawerRef.current;
+      if (!panel) return;
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && (active === first || !panel.contains(active))) {
+        e.preventDefault();
+        last.focus();
       }
     };
     window.addEventListener("keydown", onKey);

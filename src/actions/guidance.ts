@@ -83,12 +83,28 @@ export async function saveGuidanceIncident(
 
   try {
     if (recordId) {
+      // The stored record decides which student it belongs to: the submitted
+      // studentId is never trusted for an update, so a caller cannot rewrite a
+      // record that belongs to another student by passing its id.
       const existing = await db
-        .select({ id: behaviorRecords.id })
+        .select({
+          id: behaviorRecords.id,
+          studentId: behaviorRecords.studentId,
+          confidential: behaviorRecords.confidential,
+        })
         .from(behaviorRecords)
         .where(eq(behaviorRecords.id, recordId))
         .limit(1);
       if (!existing[0]) return fail("Incident not found.");
+      if (existing[0].studentId !== studentId) {
+        return fail("That incident belongs to a different student. Refresh the page and try again.");
+      }
+      // The Guidance Office module only manages its own confidential
+      // incidents — a classroom behavior observation is edited in
+      // /development/behavior by the teacher who owns it (admin tier excepted).
+      if (!existing[0].confidential && user.role === "guidance") {
+        return fail("This is a classroom behavior record, not a Guidance Office incident.");
+      }
 
       await db
         .update(behaviorRecords)
@@ -160,12 +176,21 @@ export async function removeGuidanceIncident(formData: FormData): Promise<Action
   const user = guard.user;
 
   const rows = await db
-    .select({ id: behaviorRecords.id, studentId: behaviorRecords.studentId })
+    .select({
+      id: behaviorRecords.id,
+      studentId: behaviorRecords.studentId,
+      confidential: behaviorRecords.confidential,
+    })
     .from(behaviorRecords)
     .where(eq(behaviorRecords.id, recordId))
     .limit(1);
   const row = rows[0];
   if (!row) return fail("Incident not found.");
+  // Same domain rule as the update path: the Guidance Counselor may only
+  // remove confidential incidents of the Guidance Office module.
+  if (!row.confidential && user.role === "guidance") {
+    return fail("This is a classroom behavior record, not a Guidance Office incident.");
+  }
 
   const { ip, userAgent } = await sessionMetadata();
   try {

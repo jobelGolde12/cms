@@ -11,8 +11,11 @@ import {
   getAuthorizedUser,
   getCurrentUser,
   hashPassword,
+  roleNameFromId,
   verifyPassword,
 } from "@/lib/auth";
+import { resolveDashboardForRoles } from "@/lib/dashboard";
+import { roleKeysForUser } from "@/lib/user-roles";
 import { logAudit } from "@/lib/audit";
 import { loginSchema, changePasswordSchema, profileSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
@@ -29,6 +32,30 @@ const ERROR_UNEXPECTED = "Something went wrong while signing in. Please try agai
 type LoginOutcome =
   | { kind: "error"; state: ActionState }
   | { kind: "redirect"; to: string };
+
+/** Error for an account that cannot be mapped to a usable application role. */
+const ERROR_NO_ROLE =
+  "Your account does not have a valid role assigned. Contact the school administrator.";
+
+/**
+ * Resolve the post-login destination from the SAME role data the session
+ * resolver uses. Unknown primary roles are rejected instead of creating a
+ * session that no page would accept (the old behaviour bounced the user
+ * between /login and /dashboard).
+ */
+async function resolveLoginDestination(user: {
+  id: string;
+  roleId: string;
+}): Promise<LoginOutcome> {
+  const primaryRole = roleNameFromId(user.roleId);
+  if (!primaryRole) return { kind: "error", state: fail(ERROR_NO_ROLE) };
+
+  const roles = await roleKeysForUser(user.id, user.roleId);
+  return {
+    kind: "redirect",
+    to: resolveDashboardForRoles(primaryRole, roles).path,
+  };
+}
 
 /**
  * Core login logic. Never calls redirect() — the caller does, outside the
@@ -68,23 +95,55 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
 
   const valid = !!user && (await verifyPassword(password, user.passwordHash));
   if (!valid || !user) {
-    // Fallback: check default credentials when the user is not in the database.
+    // Fallback for deployments that expose the seeded default credentials
+    // through the environment only. The session is ALWAYS issued for the real
+    // `users` row — never for the environment's synthetic id — and the same
+    // active/approved/role gates as the normal path apply.
     const defaultUser = findDefaultCredential(email);
     if (defaultUser && (await verifyPassword(password, defaultUser.passwordHash))) {
-      await createSession(defaultUser.id, {
+      const seededRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, defaultUser.email))
+        .limit(1);
+      const account = seededRows[0];
+
+      if (
+        !account ||
+        !account.isActive ||
+        account.status !== "approved" ||
+        !roleNameFromId(account.roleId)
+      ) {
+        await logAudit({
+          userId: account?.id,
+          action: "LOGIN",
+          entityType: "session",
+          newValues: { reason: "default-credential-missing-or-invalid" },
+          ipAddress: ip,
+          userAgent,
+        });
+        await trackEvent("login_failed", { result: "default-credential" });
+        return { kind: "error", state: fail(ERROR_GENERIC) };
+      }
+
+      await createSession(account.id, {
         ip,
         userAgent,
         ttlMs: rememberMe ? REMEMBER_ME_TTL_MS : undefined,
       });
+      await db
+        .update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, account.id));
       await logAudit({
-        userId: defaultUser.id,
+        userId: account.id,
         action: "LOGIN",
         entityType: "session",
         newValues: { reason: "default-credential" },
         ipAddress: ip,
         userAgent,
       });
-      return { kind: "redirect", to: "/dashboard" };
+      return resolveLoginDestination(account);
     }
 
     await logAudit({
@@ -140,6 +199,22 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
     return { kind: "error", state: fail(reason) };
   }
 
+  // The account must map to a real application role BEFORE a session is
+  // issued. Otherwise the session would exist but every page would reject it.
+  const destination = await resolveLoginDestination(user);
+  if (destination.kind === "error") {
+    await logAudit({
+      userId: user.id,
+      action: "LOGIN",
+      entityType: "session",
+      newValues: { reason: "no-valid-role", roleId: user.roleId },
+      ipAddress: ip,
+      userAgent,
+    });
+    await trackEvent("login_failed", { result: "no-valid-role" });
+    return destination;
+  }
+
   // Second factor: password verified, but NO session is created yet. The
   // short-lived challenge cookie only proves the password step; a complete
   // session can only be issued after the TOTP/recovery code is verified.
@@ -171,7 +246,7 @@ async function performLogin(formData: FormData): Promise<LoginOutcome> {
   });
   await trackEvent("login_completed", { user_role: user.roleId ?? "unknown" });
 
-  return { kind: "redirect", to: "/dashboard" };
+  return destination;
 }
 
 /** Login with server-side rate limiting and a full audit trail. */

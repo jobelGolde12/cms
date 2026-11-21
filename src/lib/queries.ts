@@ -1490,6 +1490,73 @@ export async function listGuidanceIncidents(
   return { rows, total, page, pageSize };
 }
 
+/**
+ * Lightweight Guidance dashboard aggregate.
+ *
+ * Deliberately selects NO encrypted columns (incident narrative, follow-up):
+ * the dashboard shows counts and routing metadata only, so it cannot fail on
+ * a legacy record whose encrypted payload cannot be decoded, and it never
+ * copies confidential narratives onto a summary surface.
+ */
+export async function guidanceDashboardData(user: SessionUser) {
+  const confidentialFilter = confidentialBehaviorFilter(user);
+  const where = confidentialFilter ? and(confidentialFilter) : undefined;
+
+  const [statusRows, totalRow, recent] = await Promise.all([
+    db
+      .select({ status: behaviorRecords.status, n: count() })
+      .from(behaviorRecords)
+      .where(where)
+      .groupBy(behaviorRecords.status),
+    db
+      .select({ n: count() })
+      .from(behaviorRecords)
+      .where(where)
+      .then((rows) => rows[0]?.n ?? 0),
+    db
+      .select({
+        id: behaviorRecords.id,
+        date: behaviorRecords.date,
+        severity: behaviorRecords.severity,
+        status: behaviorRecords.status,
+        categoryName: behaviorCategories.name,
+        studentId: students.id,
+        studentNumber: students.studentNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        gradeLevelName: gradeLevels.name,
+        sectionName: sections.name,
+      })
+      .from(behaviorRecords)
+      .innerJoin(
+        behaviorCategories,
+        eq(behaviorCategories.id, behaviorRecords.categoryId),
+      )
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+      .leftJoin(
+        studentEnrollments,
+        and(
+          eq(studentEnrollments.studentId, students.id),
+          eq(studentEnrollments.status, "active"),
+        ),
+      )
+      .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
+      .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+      .where(where)
+      .orderBy(desc(behaviorRecords.date), asc(students.lastName))
+      .limit(5),
+  ]);
+
+  const byStatus = new Map(statusRows.map((row) => [row.status, row.n]));
+  return {
+    total: totalRow,
+    open: byStatus.get("open") ?? 0,
+    monitored: byStatus.get("monitored") ?? 0,
+    resolved: byStatus.get("resolved") ?? 0,
+    recent,
+  };
+}
+
 /** A single incident for the edit screen (returns null when out of scope). */
 export async function getGuidanceIncident(
   user: SessionUser,

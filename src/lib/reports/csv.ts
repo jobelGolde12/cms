@@ -1,14 +1,15 @@
 import type { BuiltReport } from "./report-data";
-import { SCHOOL_HEADER } from "./report-data";
+import { neutralizeCellText, SCHOOL_HEADER } from "./report-data";
 import { formatDateTime } from "../utils";
 
 /**
  * Escape a single CSV field per RFC 4180: fields containing a comma, quote,
  * CR/LF (or leading/trailing whitespace worth preserving) are wrapped in double
- * quotes and any embedded quote is doubled.
+ * quotes and any embedded quote is doubled. Formula-triggering free text is
+ * neutralized first (see `neutralizeCellText`).
  */
 function escapeCsvField(value: string | number | null | undefined): string {
-  const raw = value == null ? "" : String(value);
+  const raw = String(neutralizeCellText(value));
   if (/[",\r\n]/.test(raw)) {
     return `"${raw.replace(/"/g, '""')}"`;
   }
