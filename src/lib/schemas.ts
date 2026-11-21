@@ -26,13 +26,13 @@ const isoDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date");
 
 /**
- * Student birth-date window (Grades 7–12).
+ * Student birth-date window for the Grade 7–10 JHS records system.
  *
- * - Grades 7–10 riders enter JHS at age 11–12; SHS riders at 15–16. Overage,
- *   returnees, and late-enrollees are common in Philippine public schools, so
- *   the upper bound is generous (24 at entry).
- * - Anything younger than ~9 years at enrollment is not a realistic high
- *   school date of birth (accelerated early admission is not supported).
+ * - JHS riders commonly enter at age 11–12. Overage, returnees, and
+ *   late-enrollees are common in Philippine public schools, so the upper bound
+ *   is generous (24 at entry).
+ * - Anything younger than ~9 years at enrollment is not a realistic JHS date of
+ *   birth (accelerated early admission is not supported).
  * - Future dates are impossible.
  */
 export const MIN_STUDENT_AGE_YEARS = 9;
@@ -60,9 +60,9 @@ export function studentBirthDateIssues(date: string): string | null {
   if (dt > today) return "Birth date cannot be in the future";
   const age = ageFromBirthDateStrict(date);
   if (age < MIN_STUDENT_AGE_YEARS)
-    return `Student must be at least ${MIN_STUDENT_AGE_YEARS} years old for high school`;
+    return `Student must be at least ${MIN_STUDENT_AGE_YEARS} years old for JHS records`;
   if (age > MAX_STUDENT_AGE_YEARS)
-    return `Age ${age} is above the high-school record range (max ${MAX_STUDENT_AGE_YEARS})`;
+    return `Age ${age} is above the JHS record range (max ${MAX_STUDENT_AGE_YEARS})`;
   const year = Number(date.slice(0, 4));
   if (year < 1990) return "Enter a realistic birth date"; // belt-and-braces vs typo years
   return null;
@@ -471,7 +471,7 @@ export const followupFormSchema = z.object({
 /*  Health & nutrition (Nurse domain)                                         */
 /* -------------------------------------------------------------------------- */
 
-/** Realistic high-school weight (kg) and height (cm) windows. */
+/** Realistic JHS weight (kg) and height (cm) windows. */
 export const healthRecordSchema = z
   .object({
     studentId: z.string().min(1),

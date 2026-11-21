@@ -82,7 +82,7 @@ describe("birth date validation", () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
-  it("accepts an in-range high school age", () => {
+  it("accepts an in-range JHS age", () => {
     expect(birthDateError(yearsAgo(14))).toBeNull();
     expect(birthDateError(yearsAgo(12))).toBeNull();
   });
@@ -96,12 +96,12 @@ describe("birth date validation", () => {
   it("rejects today-dated births only via future-date rule (today is allowed at 0 age)", () => {
     // A birth today → age 0 → below minimum anyway.
     const msg = birthDateError(today());
-    expect(msg).toMatch(/Too young for high school/);
+    expect(msg).toMatch(/Too young for JHS/);
   });
 
-  it("rejects ages below 9 (child, not high school)", () => {
+  it("rejects ages below 9 (child, not JHS age)", () => {
     const msg = birthDateError(yearsAgo(5));
-    expect(msg).toMatch(/Too young for high school/);
+    expect(msg).toMatch(/Too young for JHS/);
   });
 
   it("rejects implausible ages above 24", () => {

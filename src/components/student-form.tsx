@@ -265,7 +265,7 @@ export function StudentForm({
           label="Birth date"
           htmlFor="birthDate"
           error={mergedError("birthDate")}
-          hint="Optional when the source lacks it (unknown from imported rosters). Age 9–24 for high school records; today at most."
+          hint="Optional when the source lacks it (unknown from imported rosters). Age 9–24 for JHS records; today at most."
         >
           <Input
             id="birthDate"

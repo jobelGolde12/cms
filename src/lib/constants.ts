@@ -152,8 +152,8 @@ export { GRADE_LEVELS } from "./grade-levels";
 /**
  * Active grading periods of a school year.
  *
- * The school runs THREE terms (DepEd senior high school grading — Terms 1, 2
- * and 3). There is deliberately NO fourth period: the former "Quarter 1–4"
+ * The school runs THREE terms (Terms 1, 2 and 3). There is deliberately NO
+ * fourth period: the former "Quarter 1–4"
  * vocabulary was replaced by terms in the 2026-11 revision.
  */
 export const GRADING_PERIOD_NAMES = [

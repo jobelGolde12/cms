@@ -25,7 +25,7 @@ function ageFrom(date: string): number {
   return age;
 }
 
-/** Realtime-validated birth date: real calendar date, not future, HS age band. */
+/** Realtime-validated birth date: real calendar date, not future, JHS age band. */
 export function birthDateError(value: string): string | null {
   if (!value) return null; // "required" is shown by the form, not the live check
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "Enter a full calendar date";
@@ -38,7 +38,7 @@ export function birthDateError(value: string): string | null {
   if (dt > today) return "Birth date cannot be after today";
   const age = ageFrom(value);
   if (age < MIN_STUDENT_AGE_YEARS)
-    return `Too young for high school (min ${MIN_STUDENT_AGE_YEARS} years old)`;
+    return `Too young for JHS (min ${MIN_STUDENT_AGE_YEARS} years old)`;
   if (age > MAX_STUDENT_AGE_YEARS)
     return `Age ${age} is above the reliable record range (max ${MAX_STUDENT_AGE_YEARS} years)`;
   return null;
