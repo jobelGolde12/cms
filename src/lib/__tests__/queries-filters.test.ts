@@ -84,6 +84,12 @@ describe("studentFilters (registry query builder)", () => {
     expect(sql).toContain("female");
   });
 
+  it("rejects unsupported grade-level filters", async () => {
+    await expect(build(adminUser, { gradeLevel: "gl-12" })).rejects.toThrow(
+      /Grades 7–10/i,
+    );
+  });
+
   it("maps grade level and section filters to EXISTS subqueries", async () => {
     const sql = await build(adminUser, { gradeLevel: "gl-7", sectionId: "sec-99" });
     expect(sql).toContain("exists");

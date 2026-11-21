@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertSupportedGradeLevelId,
   GRADE_LEVEL_DEFINITIONS,
   GRADE_LEVELS,
   isSupportedGradeLevelId,
   isSupportedGradeLevelName,
   nextPromotableGradeLevelName,
   SUPPORTED_GRADE_LEVEL_IDS,
+  UnsupportedGradeLevelError,
 } from "../grade-levels";
 
 describe("Grade 7–10 grade-level policy", () => {
@@ -40,6 +42,12 @@ describe("Grade 7–10 grade-level policy", () => {
     expect(isSupportedGradeLevelName("Grade 12")).toBe(false);
     expect(isSupportedGradeLevelName("grade 10")).toBe(false);
     expect(isSupportedGradeLevelName("")).toBe(false);
+  });
+
+  it("throws a typed error for unsupported grade-level ids", () => {
+    expect(() => assertSupportedGradeLevelId("gl-7")).not.toThrow();
+    expect(() => assertSupportedGradeLevelId("gl-11")).toThrow(UnsupportedGradeLevelError);
+    expect(() => assertSupportedGradeLevelId("gl-12")).toThrow(/Grades 7–10/i);
   });
 
   it("promotes only Grade 7 through Grade 9", () => {

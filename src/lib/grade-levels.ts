@@ -18,11 +18,24 @@ export const SUPPORTED_GRADE_LEVEL_IDS = ["gl-7", "gl-8", "gl-9", "gl-10"] as co
 
 export const UNSUPPORTED_GRADE_LEVEL_MESSAGE = "Grade levels are limited to Grades 7–10.";
 
+export class UnsupportedGradeLevelError extends Error {
+  constructor(message = UNSUPPORTED_GRADE_LEVEL_MESSAGE) {
+    super(message);
+    this.name = "UnsupportedGradeLevelError";
+  }
+}
+
 const supportedIdSet = new Set<string>(SUPPORTED_GRADE_LEVEL_IDS);
 const supportedNameSet = new Set<string>(GRADE_LEVELS);
 
 export function isSupportedGradeLevelId(id: string | null | undefined): boolean {
   return typeof id === "string" && supportedIdSet.has(id);
+}
+
+export function assertSupportedGradeLevelId(
+  id: string | null | undefined,
+): asserts id is (typeof SUPPORTED_GRADE_LEVEL_IDS)[number] {
+  if (!isSupportedGradeLevelId(id)) throw new UnsupportedGradeLevelError();
 }
 
 export function isSupportedGradeLevelName(name: string | null | undefined): boolean {

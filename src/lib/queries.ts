@@ -44,8 +44,14 @@ import { realUsersOnly } from "./dummy-accounts";
 import { userSectionScope, enrollableSectionIds, isAdviser } from "./scope";
 import { currentQrToken } from "./qr";
 import { ageFromBirthDate } from "./utils";
+import {
+  assertSupportedGradeLevelId,
+  SUPPORTED_GRADE_LEVEL_IDS,
+} from "./grade-levels";
 
 export const PAGE_SIZE = 10;
+
+const supportedGradeLevelIds = [...SUPPORTED_GRADE_LEVEL_IDS];
 
 const pendingRecordStatuses: RecordStatus[] = ["pending_validation"];
 
@@ -59,6 +65,7 @@ export async function listGradeLevels() {
   return db
     .select({ id: gradeLevels.id, name: gradeLevels.name })
     .from(gradeLevels)
+    .where(inArray(gradeLevels.id, supportedGradeLevelIds))
     .orderBy(asc(gradeLevels.orderIndex));
 }
 
@@ -78,7 +85,13 @@ export async function listSections(schoolYearId?: string) {
     .from(sections)
     .innerJoin(gradeLevels, eq(gradeLevels.id, sections.gradeLevelId))
     .leftJoin(users, eq(users.id, sections.adviserId))
-    .where(and(eq(sections.schoolYearId, yearId), eq(sections.isActive, true)))
+    .where(
+      and(
+        eq(sections.schoolYearId, yearId),
+        eq(sections.isActive, true),
+        inArray(gradeLevels.id, supportedGradeLevelIds),
+      ),
+    )
     .orderBy(asc(gradeLevels.orderIndex), asc(sections.name));
 }
 
@@ -120,6 +133,7 @@ export async function listActiveSections(
     .where(
       and(
         eq(sections.isActive, true),
+        inArray(gradeLevels.id, supportedGradeLevelIds),
         ids && ids.length > 0 ? inArray(sections.id, ids) : undefined,
       ),
     )
@@ -183,7 +197,12 @@ export async function adviserSectionsOverview(user: SessionUser): Promise<Advise
         eq(studentEnrollments.status, "active"),
       ),
     )
-    .where(eq(sections.adviserId, user.id))
+    .where(
+      and(
+        eq(sections.adviserId, user.id),
+        inArray(gradeLevels.id, supportedGradeLevelIds),
+      ),
+    )
     .groupBy(sections.id, sections.name, gradeLevels.name, schoolYears.year, gradeLevels.orderIndex)
     .orderBy(desc(schoolYears.year), asc(gradeLevels.orderIndex), asc(sections.name));
 
@@ -281,13 +300,15 @@ export async function studentFilters(user: SessionUser, q: StudentQuery): Promis
   if (q.lifecycle && q.lifecycle !== "all")
     conditions.push(eq(students.status, q.lifecycle as StudentStatus));
   if (q.sex) conditions.push(eq(students.sex, q.sex as Sex));
-  if (q.gradeLevel)
+  if (q.gradeLevel) {
+    assertSupportedGradeLevelId(q.gradeLevel);
     conditions.push(sql`exists (
       select 1 from ${studentEnrollments}
       where ${studentEnrollments.studentId} = ${students.id}
         and ${studentEnrollments.gradeLevelId} = ${q.gradeLevel}
         and ${studentEnrollments.status} = 'active'
     )`);
+  }
   if (q.sectionId)
     conditions.push(sql`exists (
       select 1 from ${studentEnrollments}
@@ -358,7 +379,11 @@ export async function listStudents(
     .from(students)
     .leftJoin(
       studentEnrollments,
-      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+      and(
+        eq(studentEnrollments.studentId, students.id),
+        eq(studentEnrollments.status, "active"),
+        inArray(studentEnrollments.gradeLevelId, supportedGradeLevelIds),
+      ),
     )
     .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
     .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
@@ -391,10 +416,20 @@ export async function gradeLevelCounts(): Promise<Record<string, number>> {
     .from(students)
     .innerJoin(
       studentEnrollments,
-      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+      and(
+        eq(studentEnrollments.studentId, students.id),
+        eq(studentEnrollments.status, "active"),
+        inArray(studentEnrollments.gradeLevelId, supportedGradeLevelIds),
+      ),
     )
     .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
-    .where(and(sql`${students.status} = 'active'`, sql`${students.recordStatus} != 'marked_duplicate'`))
+    .where(
+      and(
+        sql`${students.status} = 'active'`,
+        sql`${students.recordStatus} != 'marked_duplicate'`,
+        inArray(gradeLevels.id, supportedGradeLevelIds),
+      ),
+    )
     .groupBy(gradeLevels.name)
     .orderBy(asc(gradeLevels.orderIndex));
 
@@ -510,7 +545,12 @@ export async function getEnrollmentHistory(studentId: string) {
     .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
     .innerJoin(sections, eq(sections.id, studentEnrollments.sectionId))
     .leftJoin(advisor, eq(advisor.id, sections.adviserId))
-    .where(eq(studentEnrollments.studentId, studentId))
+    .where(
+      and(
+        eq(studentEnrollments.studentId, studentId),
+        inArray(gradeLevels.id, supportedGradeLevelIds),
+      ),
+    )
     .orderBy(desc(schoolYears.year));
 
   return rows.map((r) => ({
@@ -552,6 +592,7 @@ export async function getCurrentEnrollment(studentId: string) {
       and(
         eq(studentEnrollments.studentId, studentId),
         eq(studentEnrollments.status, "active"),
+        inArray(gradeLevels.id, supportedGradeLevelIds),
       ),
     )
     .orderBy(desc(schoolYears.year))
@@ -1268,7 +1309,11 @@ export async function listAssessments(
     .innerJoin(students, eq(students.id, assessments.studentId))
     .leftJoin(
       studentEnrollments,
-      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+      and(
+        eq(studentEnrollments.studentId, students.id),
+        eq(studentEnrollments.status, "active"),
+        inArray(studentEnrollments.gradeLevelId, supportedGradeLevelIds),
+      ),
     )
     .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
     .where(and(...conditions))
@@ -1370,7 +1415,11 @@ export async function listStudentIncidents(
     .innerJoin(students, eq(students.id, behaviorRecords.studentId))
     .leftJoin(
       studentEnrollments,
-      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+      and(
+        eq(studentEnrollments.studentId, students.id),
+        eq(studentEnrollments.status, "active"),
+        inArray(studentEnrollments.gradeLevelId, supportedGradeLevelIds),
+      ),
     )
     .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
     .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
@@ -1478,7 +1527,11 @@ export async function listGuidanceIncidents(
     .innerJoin(students, eq(students.id, behaviorRecords.studentId))
     .leftJoin(
       studentEnrollments,
-      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+      and(
+        eq(studentEnrollments.studentId, students.id),
+        eq(studentEnrollments.status, "active"),
+        inArray(studentEnrollments.gradeLevelId, supportedGradeLevelIds),
+      ),
     )
     .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
     .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
@@ -1585,7 +1638,11 @@ export async function getGuidanceIncident(
     .innerJoin(students, eq(students.id, behaviorRecords.studentId))
     .leftJoin(
       studentEnrollments,
-      and(eq(studentEnrollments.studentId, students.id), eq(studentEnrollments.status, "active")),
+      and(
+        eq(studentEnrollments.studentId, students.id),
+        eq(studentEnrollments.status, "active"),
+        inArray(studentEnrollments.gradeLevelId, supportedGradeLevelIds),
+      ),
     )
     .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
     .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
@@ -1653,6 +1710,7 @@ export function performanceFilters(filters: PerformanceFilters): SQL | undefined
   }
 
   if (filters.gradeLevelId) {
+    assertSupportedGradeLevelId(filters.gradeLevelId);
     conditions.push(
       sql`exists (
         select 1 from ${studentEnrollments}

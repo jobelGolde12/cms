@@ -39,6 +39,10 @@ describe("performanceFilters (query builder)", () => {
     expect(sql).toContain("grading_period_id");
   });
 
+  it("rejects unsupported grade-level filters", () => {
+    expect(() => build({ gradeLevelId: "gl-12" })).toThrow(/Grades 7–10/i);
+  });
+
   it("pins to a single grade level via an enrollment EXISTS subquery", () => {
     const sql = build({ gradeLevelId: "gl-7" });
     expect(sql).toContain("exists");
@@ -48,10 +52,10 @@ describe("performanceFilters (query builder)", () => {
   });
 
   it("combines subject search + period + grade level into a single AND clause", () => {
-    const sql = build({ q: "eng", periodId: "gp-1", gradeLevelId: "gl-3" });
+    const sql = build({ q: "eng", periodId: "gp-1", gradeLevelId: "gl-8" });
     expect(sql).toContain("%eng%");
     expect(sql).toContain("gp-1");
-    expect(sql).toContain("gl-3");
+    expect(sql).toContain("gl-8");
   });
 
   it("subjectId takes precedence over q when both are set", () => {
