@@ -23,6 +23,8 @@ export const metadata = { title: "Record Incident · Records Management System" 
  *   Step 1 — search the registry and pick the student (name/section come from
  *            the student records, never typed by hand);
  *   Step 2 — fill in the incident, type, intervention (+ status/severity).
+ *
+ * The Adviser (teacher) sees only students in their own advised sections.
  */
 export default async function NewIncidentPage({
   searchParams,
@@ -74,7 +76,7 @@ export default async function NewIncidentPage({
         <PageHeader
           eyebrow="Guidance Office"
           title="Record incident"
-          description="Confidential by default — visible only to the Guidance Counselor and the administration."
+          description="Confidential by default — visible only to the Guidance Counselor, the adviser, and the administration."
         />
         <Card>
           <CardHeader title="Incident details" description="All fields are re-validated on the server." />

@@ -31,9 +31,11 @@ const STATUS_TONE: Record<string, "verified" | "pending" | "info"> = {
  *
  * Access control is enforced server-side, twice:
  *   1. route guard: behavior.view AND the guidance-confidential role set
- *      (guidance / admin / school_admin) — everyone else redirects;
+ *      (guidance / adviser / admin / school_admin) — everyone else redirects;
  *   2. the query: `confidentialBehaviorFilter` keeps incident rows out of any
- *      role that may not read them, so a forged URL can never list them.
+ *      role that may not read them, so a forged URL can never list them. The
+ *      adviser additionally sees only the students in their own advised
+ *      sections (section-scoped student queries).
  */
 export default async function GuidancePage({
   searchParams,
@@ -69,7 +71,7 @@ export default async function GuidancePage({
       <PageHeader
         eyebrow="Student Development"
         title="Guidance Office"
-        description="Behavioral and disciplinary incidents with the interventions taken. Records are confidential — visible only to the Guidance Counselor and the administration."
+        description="Behavioral and disciplinary incidents with the interventions taken. Records are confidential — visible only to the Guidance Counselor, the adviser of the affected sections, and the administration."
         actions={
           <Link
             href="/guidance/incidents/new"

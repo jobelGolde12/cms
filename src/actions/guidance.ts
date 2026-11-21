@@ -4,33 +4,51 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { behaviorCategories, behaviorRecords, students } from "@/db/schema";
-import { getAuthorizedUser } from "@/lib/auth";
+import { getAuthorizedUser, type SessionUser } from "@/lib/auth";
+import { canAccessStudent } from "@/lib/scope";
 import { logAudit } from "@/lib/audit";
 import { behaviorFormSchema } from "@/lib/schemas";
 import { fail, ok, sessionMetadata, zodFieldErrors, type ActionState } from "./helpers";
+import type { Role } from "@/lib/constants";
 
 /**
- * Guidance Counselor incident actions.
+ * Guidance Office incident actions.
  *
  * Authorization chain (re-established server-side on every call — never
  * trusted from the client):
  *
- *   behavior.write + role ∈ (guidance | admin | school_admin)  →  who may record
- *   student active in the registry                              →  roster integrity
- *   category exists (data-driven incident types)                →  vocabulary integrity
+ *   behavior.write + role ∈ (guidance | admin | school_admin | teacher)  →  who
+ *   incident student inside the caller's own section scope                 →  row scope
+ *   student active in the registry                                        →  roster integrity
+ *   category exists (data-driven incident types)                          →  vocabulary integrity
  *
  * Confidentiality: incidents recorded through the Guidance Office module are
- * ALWAYS confidential — they are readable only by the guidance role and the
- * admin tier, enforced by `confidentialBehaviorFilter` in every query, so no
- * teacher/adviser/registrar/nurse view (or direct API call) can reach them.
+ * ALWAYS confidential — they are readable only by the guidance, admin and
+ * adviser (teacher) roles, enforced by `confidentialBehaviorFilter` in every
+ * query, so no other teacher/registrar/nurse view (or direct API call) can reach
+ * them.
+ *
+ * The Adviser (teacher) role holds the Guidance Office page as the same
+ * module the Guidance Counselor opens — but for the students of THEIR OWN
+ * advised sections only (row-scoped through student scope).
  */
 
-function incidentAuthor(user: { role: string } | null): boolean {
-  return (
-    user?.role === "guidance" ||
-    user?.role === "admin" ||
-    user?.role === "school_admin"
-  );
+/**
+ * The Guidance Office module is open to the Guidance Counselor and to the
+ * Adviser (teacher) — the adviser may manage incidents of the students in
+ * THEIR OWN advised sections only (row scope enforced by `canAccessStudent`).
+ * The admin tier may additionally manage anything.
+ */
+const GUIDANCE_OFFICE_ROLES: readonly Role[] = ["guidance", "teacher"];
+
+function holdsRole(user: SessionUser | null, roles: readonly Role[]): boolean {
+  if (!user) return false;
+  const held = user.roles.length > 0 ? user.roles : [user.role];
+  return roles.some((role) => held.includes(role));
+}
+
+function incidentAuthor(user: SessionUser | null): boolean {
+  return holdsRole(user, [...GUIDANCE_OFFICE_ROLES, "admin", "school_admin"]);
 }
 
 async function guardIncidentAuthor() {
@@ -39,7 +57,7 @@ async function guardIncidentAuthor() {
     return { ok: false as const, error: "You do not have permission to manage incident records." };
   }
   if (!incidentAuthor(user)) {
-    return { ok: false as const, error: "Only the Guidance Counselor (or an administrator) can manage incident records." };
+    return { ok: false as const, error: "Only the Guidance Counselor, the Adviser, or an administrator can manage incident records." };
   }
   return { ok: true as const, user };
 }
@@ -68,6 +86,12 @@ export async function saveGuidanceIncident(
   if (!student) return fail("Student not found.");
   if (student.status !== "active") {
     return fail("Incidents can only be recorded for active students.");
+  }
+  // Row scope: the Adviser may only record an incident for a student inside
+  // one of their own advised sections — the registry search cannot reach other
+  // sections and a crafted form post is rejected here (school-wide roles pass).
+  if (!(await canAccessStudent(user, { studentId }))) {
+    return fail("This student is outside your scope.");
   }
 
   // Vocabulary integrity: incident types are data rows, never free text ids.
@@ -102,7 +126,7 @@ export async function saveGuidanceIncident(
       // The Guidance Office module only manages its own confidential
       // incidents — a classroom behavior observation is edited in
       // /development/behavior by the teacher who owns it (admin tier excepted).
-      if (!existing[0].confidential && user.role === "guidance") {
+      if (!existing[0].confidential && holdsRole(user, GUIDANCE_OFFICE_ROLES)) {
         return fail("This is a classroom behavior record, not a Guidance Office incident.");
       }
 
@@ -139,7 +163,8 @@ export async function saveGuidanceIncident(
         followUp: followUp?.trim() ? followUp.trim() : null,
         status,
         // Guidance Office records are confidential by default (spec): only
-        // guidance + the admin tier can ever read them back.
+        // guidance, the adviser (own sections) and the admin tier can ever read
+        // them back.
         confidential: true,
         recordedBy: user.id,
       });
@@ -166,7 +191,10 @@ export async function saveGuidanceIncident(
   return ok(recordId ? "Incident updated." : "Incident recorded.");
 }
 
-/** Remove an incident draft — admin-tier + guidance only, never teachers. */
+/**
+ * Remove an incident — Guidance Office roles only (the adviser manages the
+ * incidents of the students they advise; the admin tier excepted).
+ */
 export async function removeGuidanceIncident(formData: FormData): Promise<ActionState> {
   const recordId = String(formData.get("id") ?? "");
   if (!recordId) return fail("Invalid remove request.");
@@ -186,9 +214,10 @@ export async function removeGuidanceIncident(formData: FormData): Promise<Action
     .limit(1);
   const row = rows[0];
   if (!row) return fail("Incident not found.");
-  // Same domain rule as the update path: the Guidance Counselor may only
+  // Same domain rule as the update path: the Guidance Counselor (and the
+  // Adviser managing the incidents of their own advised students) may only
   // remove confidential incidents of the Guidance Office module.
-  if (!row.confidential && user.role === "guidance") {
+  if (!row.confidential && holdsRole(user, GUIDANCE_OFFICE_ROLES)) {
     return fail("This is a classroom behavior record, not a Guidance Office incident.");
   }
 

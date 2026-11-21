@@ -321,7 +321,8 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       .orderBy(gradeLevels.orderIndex),
 
     // Open behavior concerns by category (confidential guidance rows excluded
-    // unless the user is guidance/admin — see scope.confidentialBehaviorFilter).
+    // unless the user is guidance/admin/adviser — see
+    // scope.confidentialBehaviorFilter).
     db
       .select({ label: behaviorCategories.name, value: count() })
       .from(behaviorRecords)

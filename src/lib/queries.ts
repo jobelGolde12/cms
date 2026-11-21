@@ -1471,8 +1471,13 @@ export type GuidanceIncidentFilters = {
 /**
  * Guidance Office incident list — concern-type behavior records enriched with
  * the student's registry basics (name, LRN section). Confidential rows are
- * readable only by admin/school_admin/guidance (server-side filter); the
- * guidance pages additionally gate the route by that same role set.
+ * readable only by admin/school_admin/guidance/adviser roles
+ * (server-side filter); the guidance pages additionally gate the route by
+ * that same role set.
+ *
+ * Row scope: school-wide roles see every incident; an Adviser sees only the
+ * incidents of students with an active enrollment in their OWN advised
+ * sections (userSectionScope — the same rule as every other student query).
  */
 export async function listGuidanceIncidents(
   user: SessionUser,
@@ -1481,7 +1486,7 @@ export async function listGuidanceIncidents(
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(100, Math.max(5, filters.pageSize ?? 25));
 
-  const conditions: SQL[] = [];
+  const conditions: SQL[] = [(await userSectionScope(user)) ?? sql`1 = 1`];
   const confidentialFilter = confidentialBehaviorFilter(user);
   if (confidentialFilter) conditions.push(confidentialFilter);
 
@@ -1615,6 +1620,7 @@ export async function getGuidanceIncident(
   user: SessionUser,
   incidentId: string,
 ): Promise<GuidanceIncidentRow | null> {
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
   const rows = await db
     .select({
       id: behaviorRecords.id,
@@ -1646,7 +1652,7 @@ export async function getGuidanceIncident(
     )
     .leftJoin(sections, eq(sections.id, studentEnrollments.sectionId))
     .leftJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
-    .where(eq(behaviorRecords.id, incidentId))
+    .where(and(eq(behaviorRecords.id, incidentId), scope))
     .limit(1);
 
   const row = rows[0];

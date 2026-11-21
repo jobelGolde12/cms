@@ -412,7 +412,8 @@ export async function saveBehavior(_prev: ActionState, formData: FormData): Prom
         return fail("That behavior record belongs to a different student. Refresh the page and try again.");
       }
       // Confidential (Guidance Office) records may only be modified by
-      // admin/school_admin/guidance — never by teachers/advisers or others.
+      // admin/school_admin/guidance/adviser roles — everyone else is blocked
+      // (see scope.canViewConfidentialBehavior).
       if (existing[0].confidential && !canViewConfidentialBehavior(user)) {
         return fail("You do not have permission to modify this record.");
       }

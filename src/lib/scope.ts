@@ -172,12 +172,22 @@ export type StudentScopeRef = {
 
 /**
  * Confidential (Guidance Office) behavior records are readable only by
- * admin, school_admin and guidance roles. Every role that holds
+ * admin, school_admin, guidance and adviser (teacher) roles — the adviser
+ * sees incidents for the students in their OWN advised sections only (enforced
+ * by the section-scoped student queries). Every role that holds
  * `behavior.view` still sees non-confidential classroom records.
+ *
+ * The check resolves over the UNION of the account's roles (an account may
+ * hold the Adviser role in addition to another primary role), mirroring
+ * `hasUserPermission`.
  */
 export function canViewConfidentialBehavior(user: SessionUser): boolean {
-  return (
-    user.role === "admin" || user.role === "school_admin" || user.role === "guidance"
+  return user.roles.some(
+    (role) =>
+      role === "admin" ||
+      role === "school_admin" ||
+      role === "guidance" ||
+      role === "teacher",
   );
 }
 

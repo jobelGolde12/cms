@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
  * Remove an incident record from the Guidance Office roster.
  *
  * The server action re-checks the role chain (behavior.write + guidance /
- * admin / school_admin) and writes an audit entry, so the button is only a
- * convenience — the permission is never trusted from the client.
+ * adviser / admin / school_admin) and writes an audit entry, so the button is
+ * only a convenience — the permission is never trusted from the client.
  */
 export function IncidentDeleteButton({
   incidentId,
