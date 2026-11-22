@@ -9,7 +9,7 @@ import {
   listBehaviorCategories,
   listStudents,
 } from "@/lib/queries";
-import { canViewConfidentialBehavior } from "@/lib/scope";
+import { canAccessStudent, canViewConfidentialBehavior } from "@/lib/scope";
 import { buttonStyles } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -45,6 +45,13 @@ export default async function NewIncidentPage({
 
   // A selected student shows the form (student must still exist + be active).
   if (studentId) {
+    // Re-check the row scope before loading any student details. The registry
+    // picker is already scope-aware, but a hand-edited URL must not expose a
+    // student outside the Adviser's advised sections.
+    if (!(await canAccessStudent(user, { studentId }))) {
+      redirect("/guidance/incidents/new");
+    }
+
     const [profile, enrollment] = await Promise.all([
       getStudentProfile(studentId),
       getCurrentEnrollment(studentId),

@@ -61,8 +61,9 @@ export default async function AppShell({
   const visibleLinks = navLinks.filter(
     (link) =>
       hasUserPermission(user.roles, link.permission) &&
-      // Confidential Guidance Office module: only guidance + admin-tier roles
-      // even see the link (teacher/adviser views never show incident data).
+      // Confidential Guidance Office module: visible to the Guidance
+      // Counselor, admin tier, and Advisers (whose records remain scoped to
+      // their own advised sections).
       (link.href !== "/guidance" || canViewConfidentialBehavior(user)) &&
       // Student Development module: policy-excluded from the guidance role.
       (link.href !== "/development" || canViewStudentDevelopment(user)),

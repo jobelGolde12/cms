@@ -1557,18 +1557,22 @@ export async function listGuidanceIncidents(
  * copies confidential narratives onto a summary surface.
  */
 export async function guidanceDashboardData(user: SessionUser) {
+  const conditions: SQL[] = [(await userSectionScope(user)) ?? sql`1 = 1`];
   const confidentialFilter = confidentialBehaviorFilter(user);
-  const where = confidentialFilter ? and(confidentialFilter) : undefined;
+  if (confidentialFilter) conditions.push(confidentialFilter);
+  const where = and(...conditions);
 
   const [statusRows, totalRow, recent] = await Promise.all([
     db
       .select({ status: behaviorRecords.status, n: count() })
       .from(behaviorRecords)
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
       .where(where)
       .groupBy(behaviorRecords.status),
     db
       .select({ n: count() })
       .from(behaviorRecords)
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
       .where(where)
       .then((rows) => rows[0]?.n ?? 0),
     db

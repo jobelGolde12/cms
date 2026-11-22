@@ -214,6 +214,13 @@ export async function removeGuidanceIncident(formData: FormData): Promise<Action
     .limit(1);
   const row = rows[0];
   if (!row) return fail("Incident not found.");
+  // Row scope: an Adviser may remove only incidents belonging to students in
+  // their own advised sections. Guidance and the admin tier retain school-wide
+  // access. This check runs before deletion so a crafted record id cannot
+  // reach another Adviser's section.
+  if (!(await canAccessStudent(user, { studentId: row.studentId }))) {
+    return fail("This incident is outside your scope.");
+  }
   // Same domain rule as the update path: the Guidance Counselor (and the
   // Adviser managing the incidents of their own advised students) may only
   // remove confidential incidents of the Guidance Office module.

@@ -69,14 +69,14 @@ describe("clinicalRecordSchema validation", () => {
 });
 
 describe("confidentialBehaviorFilter SQL shape", () => {
-  it("returns no filter for guidance/admin/school_admin (they may see all)", () => {
-    for (const role of ["admin", "school_admin", "guidance"] as const) {
+  it("returns no filter for the Guidance Office role set, including scoped Advisers", () => {
+    for (const role of ["admin", "school_admin", "guidance", "teacher"] as const) {
       expect(confidentialBehaviorFilter(userWith(role))).toBeUndefined();
     }
   });
 
-  it("excludes confidential rows for teacher/nurse/registrar/literacy/records", () => {
-    for (const role of ["teacher", "nurse", "registrar", "literacy_coordinator", "records"] as const) {
+  it("excludes confidential rows for nurse/registrar/literacy/records", () => {
+    for (const role of ["nurse", "registrar", "literacy_coordinator", "records"] as const) {
       const filter = confidentialBehaviorFilter(userWith(role));
       expect(filter).toBeDefined();
       // Render the real generated SQL — the excluded predicate must target

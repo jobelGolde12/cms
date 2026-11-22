@@ -84,6 +84,7 @@ describe("route authorization", () => {
     expect(canAccessPath(userOf("guidance"), "/reports")).toBe(false);
     expect(canAccessPath(userOf("guidance"), "/guidance")).toBe(true);
 
+    expect(canAccessPath(userOf("teacher"), "/guidance")).toBe(true);
     expect(canAccessPath(userOf("teacher"), "/users")).toBe(false);
     expect(canAccessPath(userOf("admin_officer"), "/students")).toBe(false);
     expect(canAccessPath(userOf("admin_officer"), "/employees")).toBe(true);

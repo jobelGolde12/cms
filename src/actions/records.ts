@@ -27,7 +27,6 @@ import {
 import {
   canAccessStudent,
   canManageEnrollmentInSection,
-  canViewConfidentialBehavior,
 } from "@/lib/scope";
 import { checkSectionPlacement } from "@/lib/enrollment-rules";
 import {
@@ -411,11 +410,14 @@ export async function saveBehavior(_prev: ActionState, formData: FormData): Prom
       if (existing[0].studentId !== studentId) {
         return fail("That behavior record belongs to a different student. Refresh the page and try again.");
       }
-      // Confidential (Guidance Office) records may only be modified by
-      // admin/school_admin/guidance/adviser roles — everyone else is blocked
-      // (see scope.canViewConfidentialBehavior).
-      if (existing[0].confidential && !canViewConfidentialBehavior(user)) {
-        return fail("You do not have permission to modify this record.");
+      // Confidential Guidance Office records have their own mutation path.
+      // Advisers and Guidance Counselors must use the Guidance Office action;
+      // only the admin tier may make an administrative exception here.
+      const canEditConfidentialOutsideGuidance = user.roles.some(
+        (role) => role === "admin" || role === "school_admin",
+      );
+      if (existing[0].confidential && !canEditConfidentialOutsideGuidance) {
+        return fail("Confidential Guidance Office records can only be changed through the Guidance Office.");
       }
 
       await db
@@ -440,9 +442,9 @@ export async function saveBehavior(_prev: ActionState, formData: FormData): Prom
         severity: scrub(severity),
         followUp: scrub(followUp),
         status,
-        // Records authored by Guidance Office are confidential: only
-        // admin/school_admin/guidance can ever read them back.
-        confidential: user.role === "guidance",
+        // This is a classroom behavior record. Guidance Office incidents are
+        // created through saveGuidanceIncident and are confidential by default.
+        confidential: false,
         recordedBy: user.id,
       });
     }

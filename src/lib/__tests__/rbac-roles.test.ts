@@ -337,17 +337,21 @@ describe("literacy coordinator is assessment-domain only", () => {
 });
 
 describe("guidance data confidentiality", () => {
-  it("confidential behavior records are visible only to admin/school_admin/guidance", () => {
-    for (const role of ["admin", "school_admin", "guidance"] as const) {
+  it("allows confidential behavior records to the Guidance Office role set, including scoped Advisers", () => {
+    for (const role of ["admin", "school_admin", "guidance", "teacher"] as const) {
       expect(canViewConfidentialBehavior(userWith(role))).toBe(true);
     }
-    for (const role of ["teacher", "subject_teacher", "nurse", "registrar", "literacy_coordinator"] as const) {
+    for (const role of ["subject_teacher", "nurse", "registrar", "literacy_coordinator"] as const) {
       expect(canViewConfidentialBehavior(userWith(role))).toBe(false);
     }
   });
 
-  it("teacher keeps classroom behavior access but guidance-only write is withheld from others", () => {
+  it("gives Advisers the Guidance Office behavior workflow", () => {
     expect(hasPermission("teacher", "behavior.view")).toBe(true);
+    expect(hasPermission("teacher", "behavior.write")).toBe(true);
+  });
+
+  it("withholds classroom behavior access from unrelated roles", () => {
     expect(hasPermission("nurse", "behavior.view")).toBe(false);
     expect(hasPermission("registrar", "behavior.view")).toBe(false);
     expect(hasPermission("literacy_coordinator", "behavior.write")).toBe(false);

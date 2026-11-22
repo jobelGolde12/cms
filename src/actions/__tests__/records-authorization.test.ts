@@ -59,9 +59,10 @@ const {
   subjects,
   users,
 } = (await import("@/db/schema")) as typeof import("@/db/schema");
-const { hashToken } = await import("@/lib/auth");
+const { getSessionUserByToken, hashToken } = await import("@/lib/auth");
 const { saveBehavior, saveGrade } = await import("@/actions/records");
 const { removeGuidanceIncident, saveGuidanceIncident } = await import("@/actions/guidance");
+const { guidanceDashboardData, listGuidanceIncidents } = await import("@/lib/queries");
 
 const TOKENS = {
   admin: "token-admin",
@@ -122,6 +123,19 @@ function behaviorForm(fields: { studentId: string; recordId?: string }) {
   form.set("status", "open");
   if (fields.recordId) form.set("id", fields.recordId);
   return form;
+}
+
+async function insertConfidentialIncident(id: string, studentId: string) {
+  await db.insert(behaviorRecords).values({
+    id,
+    studentId,
+    categoryId: ids.category,
+    date: "2026-11-11",
+    description: "Confidential Guidance Office incident",
+    status: "open",
+    confidential: true,
+    recordedBy: ids.guidance,
+  });
 }
 
 function gradeForm(subjectId: string) {
@@ -332,5 +346,113 @@ describe("Guidance incident module domain isolation (SEC-002)", () => {
       .from(behaviorRecords)
       .where(eq(behaviorRecords.studentId, ids.studentB));
     expect(rows.some((r) => r.confidential === true)).toBe(true);
+  });
+});
+
+describe("Adviser Guidance Office access", () => {
+  it("allows an Adviser to record an incident for a student in their own section", async () => {
+    mocks.cookie = TOKENS.adviser;
+    const result = await saveGuidanceIncident(
+      { ok: false, error: "" },
+      behaviorForm({ studentId: ids.studentA }),
+    );
+
+    expect(result.ok).toBe(true);
+    const incidents = await db
+      .select({ confidential: behaviorRecords.confidential })
+      .from(behaviorRecords)
+      .where(eq(behaviorRecords.studentId, ids.studentA));
+    expect(incidents.some((incident) => incident.confidential)).toBe(true);
+  });
+
+  it("rejects an Adviser recording an incident outside their advised sections", async () => {
+    mocks.cookie = TOKENS.adviser;
+    const result = await saveGuidanceIncident(
+      { ok: false, error: "" },
+      behaviorForm({ studentId: ids.studentB }),
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("outside your scope");
+  });
+
+  it("lists Guidance Office incidents only for students in the Adviser's sections", async () => {
+    await insertConfidentialIncident(randomUUID(), ids.studentA);
+    await insertConfidentialIncident(randomUUID(), ids.studentB);
+    const adviser = await getSessionUserByToken(TOKENS.adviser);
+    expect(adviser).not.toBeNull();
+    if (!adviser) return;
+
+    const incidents = await listGuidanceIncidents(adviser, {});
+    expect(incidents.rows.length).toBeGreaterThan(0);
+    expect(incidents.rows.every((row) => row.studentId === ids.studentA)).toBe(true);
+    expect(incidents.rows.some((row) => row.studentId === ids.studentB)).toBe(false);
+  });
+
+  it("keeps the Guidance Office dashboard summary within the Adviser's sections", async () => {
+    await insertConfidentialIncident(randomUUID(), ids.studentA);
+    await insertConfidentialIncident(randomUUID(), ids.studentB);
+    const adviser = await getSessionUserByToken(TOKENS.adviser);
+    expect(adviser).not.toBeNull();
+    if (!adviser) return;
+
+    const dashboard = await guidanceDashboardData(adviser);
+    expect(dashboard.recent.length).toBeGreaterThan(0);
+    expect(dashboard.recent.every((row) => row.studentId === ids.studentA)).toBe(true);
+    expect(dashboard.recent.some((row) => row.studentId === ids.studentB)).toBe(false);
+  });
+
+  it("allows an Adviser to delete an incident for a student in their own section", async () => {
+    const incidentId = randomUUID();
+    await insertConfidentialIncident(incidentId, ids.studentA);
+    mocks.cookie = TOKENS.adviser;
+    const form = new FormData();
+    form.set("id", incidentId);
+
+    const result = await removeGuidanceIncident(form);
+    expect(result.ok).toBe(true);
+
+    const rows = await db
+      .select({ id: behaviorRecords.id })
+      .from(behaviorRecords)
+      .where(eq(behaviorRecords.id, incidentId));
+    expect(rows.length).toBe(0);
+  });
+
+  it("rejects an Adviser deleting an incident outside their advised sections", async () => {
+    const incidentId = randomUUID();
+    await insertConfidentialIncident(incidentId, ids.studentB);
+    mocks.cookie = TOKENS.adviser;
+    const form = new FormData();
+    form.set("id", incidentId);
+
+    const result = await removeGuidanceIncident(form);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("outside your scope");
+
+    const rows = await db
+      .select({ id: behaviorRecords.id })
+      .from(behaviorRecords)
+      .where(eq(behaviorRecords.id, incidentId));
+    expect(rows.length).toBe(1);
+  });
+
+  it("requires confidential incidents to be changed through the Guidance Office action", async () => {
+    const incidentId = randomUUID();
+    await insertConfidentialIncident(incidentId, ids.studentA);
+    mocks.cookie = TOKENS.adviser;
+    const result = await saveBehavior(
+      { ok: false, error: "" },
+      behaviorForm({ studentId: ids.studentA, recordId: incidentId }),
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("Guidance Office");
+
+    const [incident] = await db
+      .select({ description: behaviorRecords.description })
+      .from(behaviorRecords)
+      .where(eq(behaviorRecords.id, incidentId));
+    expect(incident.description).toBe("Confidential Guidance Office incident");
   });
 });
