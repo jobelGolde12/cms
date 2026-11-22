@@ -1373,6 +1373,80 @@ export async function listBehaviorRecords(
     .offset(offset);
 }
 
+export type BehaviorConcernSummary = {
+  total: number;
+  open: number;
+  monitored: number;
+  resolved: number;
+  /** open + monitored over all concern-type records, percent. */
+  unresolvedRate: number;
+  studentsWithOpenConcern: number;
+  totalStudents: number;
+  /** students with an unresolved concern over active students, percent. */
+  studentConcernRate: number;
+};
+
+/**
+ * Concern-only behavior totals for the Student Development list page.
+ * Same scope, confidential filter, and active-student basis as the dashboard
+ * metrics, so the percentages agree with the dashboard card.
+ */
+export async function behaviorConcernSummary(
+  user: SessionUser,
+): Promise<BehaviorConcernSummary> {
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  const conditions: SQL[] = [scope, eq(behaviorCategories.kind, "concern")];
+  const confidentialFilter = confidentialBehaviorFilter(user);
+  if (confidentialFilter) conditions.push(confidentialFilter);
+  const where = and(...conditions);
+
+  const [statusRows, concernStudents, totalStudents] = await Promise.all([
+    db
+      .select({ status: behaviorRecords.status, n: count() })
+      .from(behaviorRecords)
+      .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+      .where(where)
+      .groupBy(behaviorRecords.status),
+    db
+      .select({ n: sql<number>`count(distinct ${behaviorRecords.studentId})` })
+      .from(behaviorRecords)
+      .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+      .where(and(where, inArray(behaviorRecords.status, ["open", "monitored"])))
+      .then((rows) => Number(rows[0]?.n ?? 0)),
+    db
+      .select({ n: count() })
+      .from(students)
+      .where(
+        and(
+          scope,
+          eq(students.status, "active"),
+          sql`${students.recordStatus} != 'marked_duplicate'`,
+        ),
+      )
+      .then((rows) => rows[0]?.n ?? 0),
+  ]);
+
+  const byStatus = new Map(statusRows.map((row) => [row.status, row.n]));
+  const total = statusRows.reduce((sum, row) => sum + row.n, 0);
+  const open = byStatus.get("open") ?? 0;
+  const monitored = byStatus.get("monitored") ?? 0;
+  const resolved = byStatus.get("resolved") ?? 0;
+
+  return {
+    total,
+    open,
+    monitored,
+    resolved,
+    unresolvedRate: total > 0 ? Math.round(((open + monitored) / total) * 100) : 0,
+    studentsWithOpenConcern: concernStudents,
+    totalStudents,
+    studentConcernRate:
+      totalStudents > 0 ? Math.round((concernStudents / totalStudents) * 100) : 0,
+  };
+}
+
 export type StudentIncidentRow = {
   behaviorId: string;
   date: string;
@@ -1557,12 +1631,13 @@ export async function listGuidanceIncidents(
  * copies confidential narratives onto a summary surface.
  */
 export async function guidanceDashboardData(user: SessionUser) {
-  const conditions: SQL[] = [(await userSectionScope(user)) ?? sql`1 = 1`];
+  const scope = (await userSectionScope(user)) ?? sql`1 = 1`;
+  const conditions: SQL[] = [scope];
   const confidentialFilter = confidentialBehaviorFilter(user);
   if (confidentialFilter) conditions.push(confidentialFilter);
   const where = and(...conditions);
 
-  const [statusRows, totalRow, recent] = await Promise.all([
+  const [statusRows, totalRow, concernStudents, totalStudents, recent] = await Promise.all([
     db
       .select({ status: behaviorRecords.status, n: count() })
       .from(behaviorRecords)
@@ -1574,6 +1649,35 @@ export async function guidanceDashboardData(user: SessionUser) {
       .from(behaviorRecords)
       .innerJoin(students, eq(students.id, behaviorRecords.studentId))
       .where(where)
+      .then((rows) => rows[0]?.n ?? 0),
+    // Distinct active students with at least one unresolved concern — drives
+    // the behavioral-concern percentage on the Guidance dashboard.
+    db
+      .select({ n: sql<number>`count(distinct ${behaviorRecords.studentId})` })
+      .from(behaviorRecords)
+      .innerJoin(
+        behaviorCategories,
+        eq(behaviorCategories.id, behaviorRecords.categoryId),
+      )
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+      .where(
+        and(
+          where,
+          eq(behaviorCategories.kind, "concern"),
+          inArray(behaviorRecords.status, ["open", "monitored"]),
+        ),
+      )
+      .then((rows) => Number(rows[0]?.n ?? 0)),
+    db
+      .select({ n: count() })
+      .from(students)
+      .where(
+        and(
+          scope,
+          sql`${students.status} = 'active'`,
+          sql`${students.recordStatus} != 'marked_duplicate'`,
+        ),
+      )
       .then((rows) => rows[0]?.n ?? 0),
     db
       .select({
@@ -1615,6 +1719,10 @@ export async function guidanceDashboardData(user: SessionUser) {
     open: byStatus.get("open") ?? 0,
     monitored: byStatus.get("monitored") ?? 0,
     resolved: byStatus.get("resolved") ?? 0,
+    studentsWithOpenConcern: concernStudents,
+    totalStudents,
+    concernPercent:
+      totalStudents > 0 ? Math.round((concernStudents / totalStudents) * 100) : 0,
     recent,
   };
 }

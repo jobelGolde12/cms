@@ -4,7 +4,7 @@ import { Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { hasUserPermission } from "@/lib/permissions";
 import { canViewStudentDevelopment } from "@/lib/scope";
-import { listBehaviorRecords } from "@/lib/queries";
+import { behaviorConcernSummary, listBehaviorRecords } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 import { Card, CardHeader } from "@/components/ui/card";
 import { TableEmptyState, TableWrap, Td, Th } from "@/components/ui/table";
@@ -25,7 +25,10 @@ export default async function DevelopmentBehaviorPage() {
   if (!canViewStudentDevelopment(user)) redirect("/guidance");
   if (!hasUserPermission(user.roles, "behavior.view")) redirect("/dashboard");
 
-  const rows = await listBehaviorRecords(user, undefined, 1, 100);
+  const [rows, summary] = await Promise.all([
+    listBehaviorRecords(user, undefined, 1, 100),
+    behaviorConcernSummary(user),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -42,6 +45,46 @@ export default async function DevelopmentBehaviorPage() {
           </Link>
         }
       />
+
+      <Card>
+        <CardHeader
+          title="Concern summary"
+          description="Percentages use concern-type records in your scope; active students only."
+          icon={<Users aria-hidden="true" className="h-4 w-4" />}
+        />
+        <div className="grid grid-cols-1 gap-4 px-4 pb-4 sm:grid-cols-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
+              Unresolved concern rate
+            </p>
+            <p className="numeric mt-1 text-2xl font-bold text-brand-900">
+              {summary.unresolvedRate}%
+            </p>
+            <p className="mt-0.5 text-[11px] text-[#64748B]">
+              {summary.open + summary.monitored} of {summary.total} concern records
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
+              Students with an open concern
+            </p>
+            <p className="numeric mt-1 text-2xl font-bold text-brand-900">
+              {summary.studentConcernRate}%
+            </p>
+            <p className="mt-0.5 text-[11px] text-[#64748B]">
+              {summary.studentsWithOpenConcern} of {summary.totalStudents} active students
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
+              Status split
+            </p>
+            <p className="mt-1 text-xs text-brand-700">
+              {summary.open} open · {summary.monitored} monitored · {summary.resolved} resolved
+            </p>
+          </div>
+        </div>
+      </Card>
 
       <Card>
         <CardHeader

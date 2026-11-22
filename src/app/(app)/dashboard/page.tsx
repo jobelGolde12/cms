@@ -21,6 +21,7 @@ import { OfficerDashboard } from "@/components/dashboard/officer";
 import { GuidanceDashboard } from "@/components/dashboard/guidance";
 import { NurseDashboard } from "@/components/dashboard/nurse";
 import {
+  AttendanceCard,
   BarangayDistribution,
   EducationDistribution,
   KpiGrid,
@@ -130,6 +131,7 @@ export default async function AppDashboardPage({
     hasUserPermission(user.roles, "behavior.view") &&
     canViewStudentDevelopment(user);
   const canForecast = hasUserPermission(user.roles, "reports.view");
+  const canViewAttendance = hasUserPermission(user.roles, "attendance.view");
 
   const openConcernsTotal = data.openConcerns.reduce((sum, row) => sum + row.value, 0);
 
@@ -235,7 +237,12 @@ export default async function AppDashboardPage({
             <BehaviorConcernsCard
               counts={data.openConcerns}
               openTotal={openConcernsTotal}
+              percent={data.behaviorConcernRate}
             />
+          ) : null}
+
+          {canViewAttendance ? (
+            <AttendanceCard summary={data.attendance} rows={data.attendanceByGrade} />
           ) : null}
 
           {/* Academic performance forecast (plan §24.1 — after coverage) */}

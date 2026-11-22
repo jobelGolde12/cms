@@ -1,6 +1,7 @@
-import { and, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  attendanceRecords,
   auditLogs,
   behaviorCategories,
   behaviorRecords,
@@ -18,6 +19,7 @@ import {
   type RecordStatus,
 } from "./constants";
 import type { SessionUser } from "./auth";
+import { hasUserPermission } from "./permissions";
 import { userSectionScope, confidentialBehaviorFilter } from "./scope";
 import { dashboardStats } from "./queries";
 
@@ -68,6 +70,23 @@ export type SystemStatus = {
   openInterventions: number;
 };
 
+export type AttendanceSummary = {
+  present: number;
+  late: number;
+  absent: number;
+  total: number;
+  /** present + late over all recorded attendance rows, percent. */
+  rate: number;
+};
+
+export type AttendanceGradeRow = {
+  label: string;
+  present: number;
+  total: number;
+  /** present + late over the grade level's recorded rows, percent. */
+  rate: number;
+};
+
 export type DashboardData = {
   kpis: Kpi[];
   byGradeLevel: GradeLevelRow[];
@@ -78,6 +97,10 @@ export type DashboardData = {
   activity: ActivityItem[];
   sectionCoverage: SectionCoverageRow[];
   openConcerns: { label: string; value: number }[];
+  /** Share of active, in-scope students with at least one open concern. */
+  behaviorConcernRate: number;
+  attendance: AttendanceSummary;
+  attendanceByGrade: AttendanceGradeRow[];
   system: SystemStatus;
 };
 
@@ -221,6 +244,9 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
     activityRows,
     coverageRows,
     concernRows,
+    concernStudentRows,
+    attendanceRow,
+    attendanceGradeRows,
     activeRow,
     openInterventionsRow,
   ] = await Promise.all([
@@ -331,12 +357,70 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       .where(
         and(
           scope,
+          eq(behaviorCategories.kind, "concern"),
           inArray(behaviorRecords.status, ["open", "monitored"]),
           confidentialBehaviorFilter(user) ?? sql`1 = 1`,
         ),
       )
       .groupBy(behaviorCategories.id)
       .orderBy(desc(count())),
+
+    // Distinct ACTIVE students carrying at least one open/monitored concern —
+    // the numerator of the behavior-concern percentage shown on the dashboard.
+    db
+      .select({ n: sql<number>`count(distinct ${behaviorRecords.studentId})` })
+      .from(behaviorRecords)
+      .innerJoin(behaviorCategories, eq(behaviorCategories.id, behaviorRecords.categoryId))
+      .innerJoin(students, eq(students.id, behaviorRecords.studentId))
+      .where(
+        and(
+          scopedActive,
+          eq(behaviorCategories.kind, "concern"),
+          inArray(behaviorRecords.status, ["open", "monitored"]),
+          confidentialBehaviorFilter(user) ?? sql`1 = 1`,
+        ),
+      )
+      .then((rows) => Number(rows[0]?.n ?? 0)),
+
+    // Attendance aggregate over every recorded row in the user's scope.
+    // present + late count as attended (see performanceOverview).
+    db
+      .select({
+        present:
+          sql<number>`sum(case when ${attendanceRecords.status} in ('present', 'late') then 1 else 0 end)`,
+        late:
+          sql<number>`sum(case when ${attendanceRecords.status} = 'late' then 1 else 0 end)`,
+        absent:
+          sql<number>`sum(case when ${attendanceRecords.status} in ('absent_excused', 'absent_unexcused') then 1 else 0 end)`,
+        total: count(),
+      })
+      .from(attendanceRecords)
+      .innerJoin(
+        studentEnrollments,
+        eq(studentEnrollments.id, attendanceRecords.enrollmentId),
+      )
+      .innerJoin(students, eq(students.id, studentEnrollments.studentId))
+      .where(scope)
+      .then((rows) => rows[0]),
+
+    // Same attendance basis, broken down per grade level.
+    db
+      .select({
+        label: gradeLevels.name,
+        present:
+          sql<number>`sum(case when ${attendanceRecords.status} in ('present', 'late') then 1 else 0 end)`,
+        total: count(),
+      })
+      .from(attendanceRecords)
+      .innerJoin(
+        studentEnrollments,
+        eq(studentEnrollments.id, attendanceRecords.enrollmentId),
+      )
+      .innerJoin(students, eq(students.id, studentEnrollments.studentId))
+      .innerJoin(gradeLevels, eq(gradeLevels.id, studentEnrollments.gradeLevelId))
+      .where(scope)
+      .groupBy(gradeLevels.id)
+      .orderBy(asc(gradeLevels.orderIndex), asc(gradeLevels.name)),
 
     // Active (non-archived) records for system status.
     db
@@ -355,6 +439,34 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
   ]);
 
   const total = stats.total || 1;
+
+  const behaviorConcernRate =
+    stats.total > 0
+      ? Math.round((concernStudentRows / stats.total) * 100)
+      : 0;
+
+  const attendanceByGrade: AttendanceGradeRow[] = attendanceGradeRows.map((row) => {
+    const present = Number(row.present ?? 0);
+    const gradeTotal = Number(row.total ?? 0);
+    return {
+      label: row.label,
+      present,
+      total: gradeTotal,
+      rate: gradeTotal > 0 ? Math.round((present / gradeTotal) * 100) : 0,
+    };
+  });
+
+  const attendanceTotal = Number(attendanceRow?.total ?? 0);
+  const attendance: AttendanceSummary = {
+    present: Number(attendanceRow?.present ?? 0),
+    late: Number(attendanceRow?.late ?? 0),
+    absent: Number(attendanceRow?.absent ?? 0),
+    total: attendanceTotal,
+    rate:
+      attendanceTotal > 0
+        ? Math.round(((Number(attendanceRow?.present ?? 0)) / attendanceTotal) * 100)
+        : 0,
+  };
 
   const kpis: Kpi[] = [
     {
@@ -397,10 +509,10 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       key: "behavior",
       label: "Behavior Concerns",
       value: stats.openBehaviorConcerns,
-      description: "Open concern records",
+      description: `Open concern records · ${behaviorConcernRate}% of students`,
       icon: "monitoring",
       tone: "red",
-      progress: null,
+      progress: behaviorConcernRate,
     },
     {
       key: "interventions",
@@ -412,6 +524,26 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       progress: null,
     },
   ];
+
+  // Behavior metrics (count and percentage) only surface for roles that may
+  // read behavior records at all.
+  if (!hasUserPermission(user.roles, "behavior.view")) {
+    const behaviorIndex = kpis.findIndex((kpi) => kpi.key === "behavior");
+    if (behaviorIndex >= 0) kpis.splice(behaviorIndex, 1);
+  }
+
+  // Attendance is only meaningful for roles that may read attendance records.
+  if (hasUserPermission(user.roles, "attendance.view")) {
+    kpis.splice(4, 0, {
+      key: "attendance",
+      label: "Attendance Rate",
+      value: attendance.rate,
+      description: `${attendance.present} of ${attendance.total} attendance entries attended`,
+      icon: "clock",
+      tone: "blue",
+      progress: attendance.rate,
+    });
+  }
 
   const verification: VerificationCounts = {
     verified: stats.verified,
@@ -468,6 +600,9 @@ export async function dashboardData(user: SessionUser): Promise<DashboardData> {
       activeEnrollments: Number(r.activeEnrollments ?? 0),
     })),
     openConcerns: concernRows,
+    behaviorConcernRate,
+    attendance,
+    attendanceByGrade,
     system: {
       databaseOnline: true, // the page could not render otherwise
       activeRecords: activeRow,

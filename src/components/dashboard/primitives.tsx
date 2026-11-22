@@ -30,6 +30,8 @@ import { CountUp } from "./count-up";
 import { AnimatedBar, AnimatedStackedBar } from "./animated-bar";
 import type {
   ActivityItem,
+  AttendanceGradeRow,
+  AttendanceSummary,
   DistributionRow,
   GradeLevelRow,
   Kpi,
@@ -162,6 +164,7 @@ const KPI_LINKS: Record<string, string> = {
   pending: "/students?status=pending_validation",
   enrolled: "/students",
   behavior: "/development/behavior",
+  attendance: "/performance",
   interventions: "/development",
 };
 
@@ -687,9 +690,12 @@ export function SectionCoverageTable({ rows }: { rows: SectionCoverageRow[] }) {
 export function BehaviorConcernsCard({
   counts,
   openTotal,
+  percent,
 }: {
   counts: { label: string; value: number }[];
   openTotal: number;
+  /** Share of active, in-scope students with at least one open concern. */
+  percent: number;
 }) {
   const max = Math.max(1, ...counts.map((c) => c.value));
   return (
@@ -698,6 +704,14 @@ export function BehaviorConcernsCard({
       description={`${openTotal} open concern record${openTotal === 1 ? "" : "s"} in your scope.`}
       action={<PanelLink href="/development/behavior">View records</PanelLink>}
     >
+      <div className="mb-3 flex items-baseline gap-2 border-b border-brand-100 pb-2.5">
+        <span className="numeric text-2xl font-semibold tracking-tight text-brand-900">
+          {percent}%
+        </span>
+        <span className="text-xs text-[#64748B]">
+          of active students have an open concern
+        </span>
+      </div>
       {counts.length === 0 ? (
         <p className="py-6 text-center text-sm text-brand-400">No open behavior concerns.</p>
       ) : (
@@ -708,6 +722,7 @@ export function BehaviorConcernsCard({
               label={row.label}
               value={row.value}
               max={max}
+              total={openTotal}
               rank={i + 1}
               index={i}
               barClassName="bg-amber-500"
@@ -715,6 +730,56 @@ export function BehaviorConcernsCard({
           ))}
         </ul>
       )}
+    </Panel>
+  );
+}
+
+export function AttendanceCard({
+  summary,
+  rows,
+}: {
+  summary: AttendanceSummary;
+  rows: AttendanceGradeRow[];
+}) {
+  const tone = (rate: number) =>
+    rate >= 95 ? "bg-emerald-500" : rate >= 90 ? "bg-amber-500" : "bg-rose-500";
+
+  return (
+    <Panel
+      title="Attendance"
+      description={`${summary.rate}% attendance rate — ${summary.present} of ${summary.total} recorded entries present or late.`}
+      action={<PanelLink href="/performance">Attendance analytics</PanelLink>}
+    >
+      {rows.length === 0 ? (
+        <p className="py-6 text-center text-sm text-brand-400">
+          No attendance recorded yet.
+        </p>
+      ) : (
+        <ul className="space-y-2.5">
+          {rows.map((row) => (
+            <li key={row.label} className="flex min-h-8 items-center gap-3">
+              <span className="w-24 min-w-0 shrink-0 truncate text-xs text-brand-600 sm:w-32 md:w-40">
+                {row.label}
+              </span>
+              <AnimatedBar
+                widthPercent={row.rate}
+                className={tone(row.rate)}
+                trackClassName="h-2 min-w-0 flex-1"
+              />
+              <span className="numeric shrink-0 whitespace-nowrap text-right text-xs font-semibold text-brand-900">
+                {row.rate}%
+                <span className="hidden text-[10px] font-normal text-brand-400 sm:inline">
+                  {" "}
+                  ({row.present}/{row.total})
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-3 border-t border-brand-100 pt-2.5 text-[11px] text-[#64748B]">
+        {summary.absent} absent · {summary.late} late in the recorded set
+      </p>
     </Panel>
   );
 }

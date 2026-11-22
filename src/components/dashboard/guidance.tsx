@@ -55,7 +55,7 @@ export function GuidanceDashboard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Card className="px-4 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
             Incidents on file
@@ -86,6 +86,18 @@ export function GuidanceDashboard({
           </p>
           <p className="numeric mt-1 text-2xl font-bold text-brand-900">
             {incidents.resolved}
+          </p>
+        </Card>
+        <Card className="px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">
+            Concern rate
+          </p>
+          <p className="numeric mt-1 text-2xl font-bold text-brand-900">
+            {incidents.concernPercent}%
+          </p>
+          <p className="mt-0.5 text-[11px] text-[#64748B]">
+            {incidents.studentsWithOpenConcern} of {incidents.totalStudents}
+            {" "}students with an open concern
           </p>
         </Card>
       </div>
