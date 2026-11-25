@@ -81,7 +81,7 @@ const FEATURE_GUIDES = {
   guidanceDraftNote: {
     fields: "{draftNote, evidenceUsed[], considerations[], warnings[], confidence}",
     rules:
-      "draftNote is a professional draft follow-up note for the Guidance Office record; it is a " +
+      "draftNote is a professional draft follow-up note for the Care Center record; it is a " +
       "DRAFT for human editing/confirmation. Ground every statement in incidents/followups in <data>. " +
       "No diagnoses, no predictions of behavior, no verdicts about fault.",
   },

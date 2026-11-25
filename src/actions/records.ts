@@ -417,7 +417,7 @@ export async function saveBehavior(_prev: ActionState, formData: FormData): Prom
         (role) => role === "admin" || role === "school_admin",
       );
       if (existing[0].confidential && !canEditConfidentialOutsideGuidance) {
-        return fail("Confidential Guidance Office records can only be changed through the Guidance Office.");
+        return fail("Confidential Care Center records can only be changed through the Care Center.");
       }
 
       await db

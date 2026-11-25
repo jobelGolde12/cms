@@ -79,10 +79,10 @@ const COPY: Record<Role, DashboardCopy> = {
       "The sections and students covered by your assigned teaching loads.",
   },
   guidance: {
-    eyebrow: "Guidance Office",
-    title: "Guidance Dashboard",
+    eyebrow: "Care Center",
+    title: "Care Center Dashboard",
     description:
-      "Confidential behavioral incidents, interventions and follow-ups handled by the Guidance Office.",
+      "Confidential behavioral incidents, interventions and follow-ups handled by the Care Center.",
   },
   nurse: {
     eyebrow: "Health Services",

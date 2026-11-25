@@ -379,7 +379,7 @@ export async function summarizeGuidanceCase(_prev: AiActionState, formData: Form
   if ("error" in auth) return auth.error;
   const { user } = auth;
   if (!canUseGuidanceAi(user)) {
-    return fail("This feature is restricted to the Guidance Office role set.");
+    return fail("This feature is restricted to the Care Center role set.");
   }
   const limited = rateLimited(user);
   if (limited) return limited;
@@ -422,7 +422,7 @@ export async function draftGuidanceFollowUp(_prev: AiActionState, formData: Form
   const user = await getAuthorizedUser("behavior.view");
   if (!user) return fail("You do not have permission to use this AI feature.");
   if (!canUseGuidanceAi(user)) {
-    return fail("This feature is restricted to the Guidance Office role set.");
+    return fail("This feature is restricted to the Care Center role set.");
   }
   const limited = rateLimited(user);
   if (limited) return limited;

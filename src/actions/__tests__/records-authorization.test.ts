@@ -447,7 +447,7 @@ describe("Adviser Guidance Office access", () => {
     );
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain("Guidance Office");
+    if (!result.ok) expect(result.error).toContain("Care Center");
 
     const [incident] = await db
       .select({ description: behaviorRecords.description })

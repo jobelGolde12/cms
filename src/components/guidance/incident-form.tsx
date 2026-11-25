@@ -170,7 +170,7 @@ export function IncidentForm({
         label="Incident (what happened)"
         htmlFor="incident-description"
         required
-        hint="Describe the incident factually — visible only to the Guidance Office, the adviser, and the administration."
+        hint="Describe the incident factually — visible only to the Care Center, the adviser, and the administration."
         error={state.ok === false ? state.fieldErrors?.["description"] : undefined}
       >
         <textarea

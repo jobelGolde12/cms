@@ -35,7 +35,7 @@ export default async function EditIncidentPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Guidance Office"
+        eyebrow="Care Center"
         title="Edit incident"
         description="Update the incident details, intervention, or case status. Changes are audit-logged."
       />

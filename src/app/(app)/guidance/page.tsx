@@ -18,7 +18,7 @@ import { buttonStyles } from "@/components/ui/button";
 import { RegistryPagination } from "@/components/registry/registry-ui";
 import { IncidentDeleteButton } from "@/components/guidance/incident-delete-button";
 
-export const metadata = { title: "Guidance Office · Records Management System" };
+export const metadata = { title: "Care Center · Records Management System" };
 
 const STATUS_TONE: Record<string, "verified" | "pending" | "info"> = {
   resolved: "verified",
@@ -69,8 +69,8 @@ export default async function GuidancePage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Student Development"
-        title="Guidance Office"
+        eyebrow="Care Center"
+        title="Care Center"
         description="Behavioral and disciplinary incidents with the interventions taken. Records are confidential — visible only to the Guidance Counselor, the adviser of the affected sections, and the administration."
         actions={
           <Link
@@ -180,7 +180,7 @@ export default async function GuidancePage({
                 description={
                   q || categoryId || (status && status !== "all")
                     ? "Try a different search term or clear the filters."
-                    : "Incident records appear here once recorded through the Guidance Office."
+                    : "Incident records appear here once recorded through the Care Center."
                 }
               />
             ) : (

@@ -7,7 +7,7 @@ import { SkeletonBase } from "@/components/loading/skeletons";
  */
 export default function GuidanceLoading() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading guidance incidents">
+    <div className="space-y-6" aria-busy="true" aria-label="Loading care center incidents">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
           <SkeletonBase shimmer className="h-2.5 w-36" />

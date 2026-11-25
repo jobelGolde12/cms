@@ -607,7 +607,7 @@ describe("guidance AI — restricted to the Guidance Office role set", () => {
   it("teacher has behavior.view but NOT confidential scope — DENIED", async () => {
     await loginAs("teacher");
     const out = await summarizeGuidanceCase({ ok: false, error: "", retryable: false }, form({ studentId: s1 }));
-    expect(out).toEqual({ ok: false, error: "This feature is restricted to the Guidance Office role set.", retryable: false });
+    expect(out).toEqual({ ok: false, error: "This feature is restricted to the Care Center role set.", retryable: false });
   });
 
   it("nurse (no behavior.view) is DENIED", async () => {

@@ -50,7 +50,7 @@ export function GuidanceDashboard({
             Record incident
           </Link>
           <Link href="/guidance" className={buttonStyles("secondary", "sm")}>
-            Open Guidance Office
+            Open Care Center
           </Link>
         </div>
       </div>
@@ -110,7 +110,7 @@ export function GuidanceDashboard({
       <Card>
         <CardHeader
           title="Recent incidents"
-          description="Most recent confidential incidents recorded by the Guidance Office."
+          description="Most recent confidential incidents recorded by the Care Center."
           icon={<ShieldAlert aria-hidden="true" className="h-4 w-4" />}
           actions={
             <Link
@@ -137,7 +137,7 @@ export function GuidanceDashboard({
                   colSpan={4}
                   icon={<HeartHandshake className="h-10 w-10" />}
                   title="No incidents recorded"
-                  description="New Guidance Office incidents will appear here."
+                  description="New Care Center incidents will appear here."
                 />
               ) : (
                 incidents.recent.map((row) => (

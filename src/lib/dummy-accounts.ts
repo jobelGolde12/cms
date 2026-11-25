@@ -132,7 +132,7 @@ export const DUMMY_ACCOUNTS: readonly DummyAccountSpec[] = [
     firstName: "Dummy",
     lastName: "Guidance",
     expectedScope:
-      "Guidance Office domain only. No grades, attendance, assessments, interventions, reports, Student Development or official document printing.",
+      "Care Center domain only. No grades, attendance, assessments, interventions, reports, Student Development or official document printing.",
   },
   {
     role: "nurse",

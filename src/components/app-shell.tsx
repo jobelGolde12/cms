@@ -30,7 +30,7 @@ const navLinks: NavLink[] = [
   { label: "Service Credits", href: "/service-credits", icon: "service_credits", permission: "service_credits.view" },
   { label: "Performance", href: "/performance", icon: "performance", permission: "grades.view" },
   { label: "Student Development", href: "/development", icon: "development", permission: "behavior.view" },
-  { label: "Guidance Office", href: "/guidance", icon: "guidance", permission: "behavior.view" },
+  { label: "Care Center", href: "/guidance", icon: "guidance", permission: "behavior.view" },
   { label: "Health & Nutrition", href: "/health", icon: "health", permission: "health.view" },
   { label: "Verification", href: "/verification", icon: "verification", permission: "verification.review" },
   { label: "Duplicate Review", href: "/duplicates", icon: "duplicates", permission: "duplicates.view" },

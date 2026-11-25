@@ -53,7 +53,7 @@ export function IncidentDeleteButton({
         open={open}
         onClose={() => setOpen(false)}
         title="Remove this incident?"
-        description="The incident is deleted from the Guidance Office roster. The removal itself is recorded in the audit log."
+        description="The incident is deleted from the Care Center roster. The removal itself is recorded in the audit log."
       >
         <form action={action} className="space-y-4">
           <input type="hidden" name="id" value={incidentId} />

@@ -62,7 +62,7 @@ export default async function NewIncidentPage({
       return (
         <div className="space-y-6">
           <PageHeader
-            eyebrow="Guidance Office"
+            eyebrow="Care Center"
             title="Record incident"
             description="Incidents can only be recorded for active students."
           />
@@ -81,7 +81,7 @@ export default async function NewIncidentPage({
     return (
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Guidance Office"
+          eyebrow="Care Center"
           title="Record incident"
           description="Confidential by default — visible only to the Guidance Counselor, the adviser, and the administration."
         />
@@ -109,7 +109,7 @@ export default async function NewIncidentPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Guidance Office"
+        eyebrow="Care Center"
         title="Record incident"
         description="Search the registry and select the student involved in the incident."
       />

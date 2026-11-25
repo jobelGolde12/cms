@@ -127,7 +127,7 @@ export async function saveGuidanceIncident(
       // incidents — a classroom behavior observation is edited in
       // /development/behavior by the teacher who owns it (admin tier excepted).
       if (!existing[0].confidential && holdsRole(user, GUIDANCE_OFFICE_ROLES)) {
-        return fail("This is a classroom behavior record, not a Guidance Office incident.");
+        return fail("This is a classroom behavior record, not a Care Center incident.");
       }
 
       await db
@@ -225,7 +225,7 @@ export async function removeGuidanceIncident(formData: FormData): Promise<Action
   // Adviser managing the incidents of their own advised students) may only
   // remove confidential incidents of the Guidance Office module.
   if (!row.confidential && holdsRole(user, GUIDANCE_OFFICE_ROLES)) {
-    return fail("This is a classroom behavior record, not a Guidance Office incident.");
+    return fail("This is a classroom behavior record, not a Care Center incident.");
   }
 
   const { ip, userAgent } = await sessionMetadata();

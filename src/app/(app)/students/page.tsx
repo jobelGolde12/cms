@@ -112,7 +112,7 @@ export default async function StudentsPage({
       {user.role === "guidance" ? (
         <Card>
           <CardHeader
-            title="Guidance: Student Incidents"
+            title="Care Center: Student Incidents"
             description="Students with recorded behavior incidents (latest first)."
             icon={<ShieldCheck aria-hidden="true" className="h-4 w-4" />}
           />
