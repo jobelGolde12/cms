@@ -108,7 +108,10 @@ export function FeatureCard({ feature }: { feature: Feature }) {
  */
 export function WelcomeFeatures() {
   return (
-    <section className="border-y border-brand-200 bg-brand-50/50 py-24 md:py-32 lg:py-40">
+    <section
+      id="capabilities"
+      className="scroll-mt-20 border-y border-brand-200 bg-brand-50/50 py-24 md:py-32 lg:py-40"
+    >
       <EditorialContainer>
         <div className="reveal grid gap-8 md:grid-cols-12 md:items-end">
           <div className="md:col-span-7">

@@ -68,6 +68,10 @@ export type LogoProps = {
   asLink?: boolean;
   className?: string;
   priority?: boolean;
+  /** Hide the long school-name line on phones (keeps the lockup from clipping). */
+  hideSchoolNameOnMobile?: boolean;
+  /** Show only the mark below 360px, where even the wordmark would clip. */
+  markOnlyOnNarrow?: boolean;
 };
 
 export function Logo({
@@ -77,6 +81,8 @@ export function Logo({
   asLink = false,
   className,
   priority = false,
+  hideSchoolNameOnMobile = false,
+  markOnlyOnNarrow = false,
 }: LogoProps) {
   const token = SIZE_STYLES[size];
   const onDark = tone === "onDark";
@@ -101,10 +107,16 @@ export function Logo({
     variant === "lockup" ? (
       <span className="inline-flex min-w-0 items-center gap-3">
         {image}
-        <span className="min-w-0 leading-tight">
+        <span
+          className={cn(
+            "min-w-0 leading-tight",
+            markOnlyOnNarrow && "max-[359px]:hidden",
+          )}
+        >
           <span
             className={cn(
               "block truncate text-[11px] font-extrabold uppercase tracking-[0.12em]",
+              hideSchoolNameOnMobile && "max-sm:hidden",
               onDark ? "text-brand-200" : "text-brand-900",
             )}
           >
@@ -131,6 +143,7 @@ export function Logo({
   return (
     <Link
       href="/"
+      aria-label={markOnlyOnNarrow ? BRAND_NAME : undefined}
       className={cn(
         "group inline-flex items-center rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-600",
         className,

@@ -54,12 +54,13 @@ export function WelcomeAbout() {
             Purpose-built for school governance — the single source of truth
             for learner records in{" "}
             <span className="text-action-700">Sta. Magdalena</span>, supporting
-            evidence-based teaching, guidance, and reporting for Grades 7–12.
+            evidence-based teaching, guidance, and reporting for Grades 7–10.
           </p>
         </EditorialContainer>
       </div>
 
       {/* ── Part 2: text left / detail right (design.md §19 Layout A) ── */}
+      <div id="compliance" className="scroll-mt-20">
       <EditorialContainer className="py-24 md:py-32 lg:py-40">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-24">
           <div>
@@ -114,6 +115,7 @@ export function WelcomeAbout() {
           </div>
         </div>
       </EditorialContainer>
+      </div>
     </section>
   );
 }

@@ -1,96 +1,47 @@
-# Test Cases
+# Functional Test Cases
 
-Execution statuses and evidence live in `execution_results.md`. Cases marked **E2E-BLOCKED** could
-not be driven through a browser (no credentials/HTTPS cookie) and are covered instead at the
-server-action level by the integration/unit suites listed in the evidence column.
+Preconditions unless stated: application running at `http://localhost:3000` (or automated Vitest environment), clean browser state.
 
-## A. Public / unauthenticated surface
+## Welcome navbar / layout (requested scope)
 
 | Test ID | Feature | Description | Preconditions | Steps | Expected Result | Priority |
 |---|---|---|---|---|---|---|
-| FT-001 | Root routing | Anonymous visit to `/` | No session | `GET /` | Redirect (307) to a public page; no protected content | High |
-| FT-002 | Landing page | `/welcome` renders | No session | `GET /welcome` | 200 with institutional landing content | Medium |
-| FT-003 | Login page | `/login` renders | No session | `GET /login` | 200, form with email/password/remember-me | High |
-| FT-004 | Registration page | `/register` renders and states approval is required | No session | `GET /register` | 200, pending-approval messaging | Medium |
-| FT-005 | QR verification entry | `/verify` renders lookup form | No session | `GET /verify` | 200 | Medium |
-| FT-006 | QR verification (invalid token) | `/verify/<short-invalid-token>` | No session | `GET /verify/badtoken123` | 200, "Record not found", no data leak | High |
-| FT-007 | QR verification (bad characters) | Token with illegal characters | No session | `GET /verify/..%2fetc` | Rendered "Invalid token format" path; no 500 | High |
-| FT-008 | Not found | Unknown route | No session | `GET /nonexistent-page` | 404 with friendly page | Medium |
-| FT-009 | Password recovery pages | `/forgot-password`, `/reset-password` render | No session | `GET` both | 200 | Medium |
+| NAV-001 | Mobile header | Brand and menu trigger fit at 320 px | Viewport 320×720, `/welcome` | Load page; measure `scrollWidth` vs viewport | No horizontal overflow; brand mark-only; hamburger fully visible | High |
+| NAV-002 | Mobile header | Brand wordmark at 390 px | Viewport 390×844 | Load `/welcome` | Mark + “Records Management System” visible, no clipping | High |
+| NAV-003 | Tablet header | Compact header at 768 px | Viewport 768×1024 | Load `/welcome` | Brand lockup and hamburger fit; no desktop nav crowding | High |
+| NAV-004 | Desktop nav | Navigation present at ≥1024 px | Viewport 1440×900 | Load page | Section links, Verify, Sign In button visible and aligned | High |
+| NAV-005 | Drawer open | Drawer is opaque and bounded | Viewport 390 px | Click hamburger | Panel opaque white, width ≤ viewport−48 px, close button visible | High |
+| NAV-006 | Drawer close | Backdrop click closes drawer | Drawer open | Click backdrop | Drawer closes, focus returns to trigger | High |
+| NAV-007 | Drawer close | Escape closes drawer | Drawer open, focus inside | Press Escape | Drawer closes, `aria-expanded=false`, focus restored | High |
+| NAV-008 | Keyboard | Focus is trapped in dialog | Drawer open | Tab repeatedly / Shift+Tab from first item | Focus cycles inside panel only | High |
+| NAV-009 | Accessibility | Background inert while drawer open | Drawer open at 390 px | Inspect `#main-content` / footer | `inert` true while open, false after close | Medium |
+| NAV-010 | Anchors | Section links scroll correctly | Desktop viewport | Click “How it works” | Hash `#how-it-works`; section top sits below sticky header | Medium |
+| NAV-011 | Touch targets | Header controls ≥44 px | Viewport 390 px | Measure trigger/close/link boxes | Trigger and close are 44×44 px; menu rows ≥44 px tall | Medium |
+| NAV-012 | Contrast | Drawer helper text readable | Drawer open | Check colour contrast | 11 px labels use `brand-600` on white (AA pass) | Medium |
+| NAV-013 | Copy accuracy | Grade range matches product scope | — | Load `/welcome` and read purpose section | Says “Grades 7–10”, not 7–12 | Medium |
+| NAV-014 | No overflow | All tested viewports | 320/390/768/1024/1440 | Measure document width | `scrollWidth ≤ innerWidth` | High |
 
-## B. Authentication & session
-
-| Test ID | Feature | Description | Preconditions | Steps | Expected Result | Priority |
-|---|---|---|---|---|---|---|
-| FT-010 | Login validation | Wrong credentials produce one generic error | Valid account | Submit bad password | "Invalid email or password." — no account enumeration | High |
-| FT-011 | Login rate limit | >10 attempts/minute per IP | — | 11 rapid submissions | Blocked with "Too many attempts" + audit row `reason: rate-limit` | High |
-| FT-012 | Deactivated account | Login on `isActive=false` | — | Submit valid password | Rejected with deactivation message | High |
-| FT-013 | Pending registration | Login before approval | status=pending | Submit valid password | Rejected with pending-approval message | High |
-| FT-014 | MFA challenge | Password ok + MFA enabled | mfaEnabled | Submit password | No session yet; redirect to `/login/mfa`; challenge cookie only | High |
-| FT-015 | Logout | `/logout` destroys session | Signed in | `GET /logout` | Session row deleted, cookie cleared, redirect `/login` | High |
-| FT-016 | Session expiry | Expired session row | Session past `expiresAt` | Request protected page | Redirect to `/login` | High |
-| FT-017 | Password change | Requires current password | Signed in | Submit wrong current password | Rejected, audited `CHANGE_PASSWORD` with `wrong-current-password` | High |
-| FT-018 | Password reset token | Token single-use, 30-minute TTL, hashed at rest | Issued token | Consume, then reuse | Second use rejected; sessions of the account revoked | High |
-
-## C. Authorization (server-enforced)
+## Application / API / security-relevant automated cases (existing suite)
 
 | Test ID | Feature | Description | Preconditions | Steps | Expected Result | Priority |
 |---|---|---|---|---|---|---|
-| FT-019 | Protected page guard | Anonymous `/dashboard`, `/students` | No session | `GET` both | 307 → `/login` | Critical |
-| FT-020 | Protected API guard | Anonymous API access | No session | `GET /api/reports/student_master_list`, `/api/form137/abc`, `/api/report-card/abc`, `/api/forecasts` | JSON 401 each | Critical |
-| FT-021 | Report export RBAC | Role without `reports.export` | Signed in as nurse/teacher | `GET /api/reports/...` | 403 (proxy pre-check) and handler re-check | Critical |
-| FT-022 | Cross-student behavior write | Adviser posts an existing record id belonging to another student | Adviser of section A; record of student B | `saveBehavior({studentId: A, id: recordOfB})` | Rejected; record unchanged | Critical |
-| FT-023 | Grade without assignment | Subject teacher posts a subject not in their teaching load | Assignment (A, Math) only | `saveGrade(enrollmentA, Science)` | Rejected "not assigned to teach this subject" | Critical |
-| FT-024 | Grade with assignment | Subject teacher posts their assigned subject | Assignment (A, Math) | `saveGrade(enrollmentA, Math)` | Saved | High |
-| FT-025 | Guidance domain isolation (edit) | Guidance posts a classroom (non-confidential) behavior record of another student | Guidance user | `saveGuidanceIncident` | Rejected; record unchanged | High |
-| FT-026 | Guidance domain isolation (delete) | Guidance deletes a classroom behavior record | Guidance user | `removeGuidanceIncident(recordOfClassroom)` | Rejected; record still present | High |
-| FT-027 | Admin guidance write | Admin records a confidential incident | Admin | `saveGuidanceIncident` | Created with `confidential=true` | Medium |
-| FT-028 | Student create RBAC | Nurse creates a student | Nurse session | `createStudent` | Rejected "permission"; no row written | High |
-| FT-029 | Enrollment section scope | Adviser enrolls into another adviser's section | Adviser of A | `saveEnrollment(sectionB)` | Rejected (section outside authorized scope) | Critical |
-| FT-030 | Form 137 IDOR | Teacher requests a print/API document for a student outside their section | Teacher of A, student of B | `GET /api/form137/<idOfB>` | 403 | Critical |
-| FT-031 | Record-status gate | Print official document for a draft record | draft record | `GET /api/form137/<id>` | 409 "not verified yet" | High |
-| FT-032 | Verified-only QR | Generate QR for a non-verified record | draft record | `generateQr` | Rejected | High |
-| FT-033 | Notification ownership | Mark another user's notifications read | Two users | `markNotificationsRead([otherUserIds])` | No rows updated for the other user | High |
-| FT-034 | Settings allow-list | Update a non-editable setting key | `settings.manage` | `updateSystemSetting(key=…unknown)` | "Unknown or protected setting." | High |
-| FT-035 | Duplicate review RBAC | Teacher reviews a duplicate candidate | Teacher session | `reviewDuplicate` | Rejected (no `duplicates.review`) | High |
-
-## D. Validation, errors, data integrity
-
-| Test ID | Feature | Description | Preconditions | Steps | Expected Result | Priority |
-|---|---|---|---|---|---|---|
-| FT-036 | Student form validation | Empty required fields | `students.create` | Submit draft with blank first name | Field errors, nothing written | High |
-| FT-037 | Grade bounds | Grade outside 60–100 | Subject teacher | `saveGrade(grade=120)` | Validation error, nothing written | Medium |
-| FT-038 | Enrollment duplicate | Second enrollment for the same student/SY | Existing enrollment | `saveEnrollment` again | Idempotent upsert, no duplicate row (unique index) | Medium |
-| FT-039 | Health duplicate | Same student + same measurement date | Existing health record | `saveHealthRecord` | Rejected with "edit instead" | Low |
-| FT-040 | Verification workflow | Illegal record-status transition | `pending_validation` | Review with illegal status | Guarded by `canTransition` / mapping table | High |
-| FT-041 | Audit trail | Sensitive mutation logs an audit row | Any authorized mutation | Perform mutation | `audit_logs` row without secrets/PII payloads | High |
-| FT-042 | Error masking | Internal error in an API route | — | Force failure path (code review) | Generic JSON error, details only in server log | Medium |
-
-## E. Exports & documents
-
-| Test ID | Feature | Description | Preconditions | Steps | Expected Result | Priority |
-|---|---|---|---|---|---|---|
-| FT-043 | CSV export | RFC 4180 quoting for commas/quotes/newlines | `reports.export` | Render report CSV | Fields quoted and quotes doubled | Medium |
-| FT-044 | CSV/XLSX formula injection | Cell beginning with `=`, `+`, `-`, `@`, TAB, CR | Free-text field with `=HYPERLINK(...)` | Render CSV/XLSX | Value neutralized with a leading apostrophe; never evaluated | High |
-| FT-045 | XLSX export | Workbook builds from arbitrary column counts | `reports.export` | Render XLSX | Valid buffer, header block merged over real column count | Medium |
-| FT-046 | PDF export | Report/Form 137/report card PDFs | `reports.export` / `documents.print` | Render PDF | Valid PDF bytes; `Cache-Control: private, no-store` on document routes | Medium |
-
-## F. Settings, configuration, reliability
-
-| Test ID | Feature | Description | Preconditions | Steps | Expected Result | Priority |
-|---|---|---|---|---|---|---|
-| FT-047 | System settings persist | Save an editable setting | `settings.manage` | Update `student_number_prefix` | Value persisted + audited (`UPDATE_SETTING`) | Medium |
-| FT-048 | Maintenance mode enforcement | Admin enables maintenance | `maintenance_mode=true`, non-admin session | Open any `(app)` route | Maintenance notice rendered; admin unaffected | High |
-| FT-049 | Notifications | Mark-all-read | Signed in | `markAllNotificationsRead` | Only the caller's rows updated | Low |
-| FT-050 | 404/empty states | Empty registry / empty lists render guidance | No rows | Open `/students` with filters | Empty-state component, no crash | Low |
-
-## G. Blocked / not executed
-
-| Test ID | Feature | Description | Status |
-|---|---|---|---|
-| FT-051 | Authenticated browser walkthrough of all modules | Requires credentials and an interactive browser session | E2E-BLOCKED |
-| FT-052 | Email delivery (password reset) | Mailgun credentials unavailable | BLOCKED |
-| FT-053 | AI assistance features | `AI_API_KEY` unavailable | BLOCKED |
-| FT-054 | Load/performance measurement under concurrency | No load tooling in environment | NOT TESTED |
-| FT-055 | Lighthouse / axe automated accessibility score | Tooling unavailable | NOT TESTED |
-| FT-056 | Remote Drizzle migration / drift check | Destructive against configured DB; no remote credentials | NOT TESTED |
+| AUTH-001 | Login | Valid credentials create session | Seeded test user | Run auth/action tests | Session cookie set; redirect to role dashboard | High |
+| AUTH-002 | Login | Invalid credentials rejected | — | Submit wrong password | Safe error, no user enumeration | High |
+| AUTH-003 | Login | Brute-force throttling | — | Exceed 10 attempts/min from one address | “Too many attempts” response | High |
+| AUTH-004 | Sessions | Expired/revoked session denied | Stale cookie | Request protected route | Redirect to `/login`, cookie cleared | High |
+| AUTH-005 | Password reset | Reset flow validation and single-use token | Test DB | Run `password-reset-flow` tests | Invalid/expired tokens rejected; valid reset works | High |
+| AUTHZ-001 | Proxy gate | Unauthenticated route access | No cookie | Request `/students` | Redirect to `/login` | High |
+| AUTHZ-002 | Proxy gate | Role-restricted route | Authenticated low-privilege user | Request forbidden module | Redirect with denial, module not rendered | High |
+| AUTHZ-003 | Row scope | Subject teacher cannot read another section’s student | Test data | Call AI action with foreign `studentId` | “You do not have access…” error | High |
+| AUTHZ-004 | Guidance AI | Teacher/adviser cannot summarize confidential guidance case | Teacher session | Call `summarizeGuidanceCase` | Restricted error, no provider call | High |
+| AUTHZ-005 | Guidance AI | Teacher cannot draft guidance follow-up | Teacher session | Call `draftGuidanceFollowUp` | `ok:false`, no draft produced | High |
+| AUTHZ-006 | Guidance AI | Guidance/admin/school_admin allowed | Allowed role session | Call both guidance AI actions | Success; audit row written | High |
+| AI-001 | Confidentiality | Confidential incident not sent to model for unauthorised role | Registrar session | Summarize student | Payload lacks confidential text | High |
+| AI-002 | Injection | Prompt-injection record framed as data | Admin session | Summarize student with poisoned record | System contract present; text enclosed as data | High |
+| AI-003 | Cost control | AI rate limit | Same user | 9 requests in window | 9th blocked before provider call | Medium |
+| AI-004 | Integrity | AI actions do not mutate domain tables | Any role | Compare row counts before/after | Only audit rows added | High |
+| TEST-001 | Grade scope | Only Grades 7–10 accepted | — | Write unsupported grade | Rejected with “Grades 7–10” message | High |
+| BUILD-001 | Build | Production compilation | Clean tree | `npm run build` | Exit 0, all routes compiled | High |
+| LINT-001 | Quality | ESLint | — | `npm run lint` | Exit 0 | Medium |
+| TS-001 | Quality | TypeScript | — | `npx tsc --noEmit` | Exit 0 | High |
+| DEP-001 | Dependencies | Production vulnerability scan | — | `npm audit --omit=dev` | No high/critical advisories | Medium |

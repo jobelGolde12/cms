@@ -35,7 +35,7 @@ const steps = [
  */
 export function WelcomeHowItWorks() {
   return (
-    <section className="bg-white py-24 md:py-32 lg:py-40">
+    <section id="how-it-works" className="scroll-mt-20 bg-white py-24 md:py-32 lg:py-40">
       <EditorialContainer>
         {/* Section introduction — editorial label + heading + side copy (§18) */}
         <div className="reveal grid gap-8 md:grid-cols-12 md:items-end">

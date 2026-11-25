@@ -1,99 +1,58 @@
 # Environment Setup
 
-## 1. Operating environment
+## Operating environment
 
 | Item | Value |
 |---|---|
 | OS | Linux |
 | Node.js | v22.23.1 |
 | npm | 10.9.8 |
-| Package manager | npm (both `package-lock.json` and `pnpm-lock.yaml` are present in the repo — see finding BUG-003) |
+| Browser automation | `agent-browser` (Chrome via CDP) |
 | Shell | bash |
-| Working directory | project root |
 
-## 2. Dependency installation
+## Package manager and dependency installation
 
-```bash
-npm install            # already provisioned in this environment
-npm install next@16.4.6 eslint-config-next@16.4.6 zod@4.6.6   # security remediation (this audit)
-npm audit fix          # transitive advisories (this audit)
-```
+- Lockfiles present: `package-lock.json` and `pnpm-lock.yaml`; project scripts use npm conventions.
+- Dependencies were already installed; `npm install` was not required to run the verification commands.
+- Commands used: `npm run dev`, `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`, `npm audit --omit=dev`.
 
-Post-remediation state: `npm install` completes cleanly; `node_modules` is consistent with
-`package-lock.json`.
-
-## 3. Development server
+## Development server
 
 ```bash
-npm run dev     # NODE_OPTIONS="--max-old-space-size=4096 --dns-result-order=ipv4first" next dev
+npm run dev
 ```
 
-Observed output:
+- Next.js 16.4.6 (Turbopack), ready in ~1.6 s.
+- Local URL: `http://localhost:3000`.
+- Console shows a development-only React message: `eval() is not supported ... React requires eval() in development mode`. This is caused by the strict CSP `script-src 'self' 'unsafe-inline'` and does **not** affect the production build (production React does not use `eval`). Not a production defect.
+- No startup crash; no missing-service failure observed.
 
-```
-▲ Next.js 16.3.5 (Turbopack)   ← before the Next.js upgrade performed in this audit
-- Local: http://localhost:3000
-- Environments: .env.local, .env
-✓ Ready in 612ms
-```
-
-The server started with no runtime errors and served `/login` with HTTP 200.
-
-## 4. Production build
+## Build process
 
 ```bash
-npm run build   # next build --webpack
+npm run build
 ```
 
-Observed after the upgrade to Next.js 16.4.6 (final state):
+- Final result: success, compiled in 13.9 s, all routes generated, `/welcome` prerendered as static content.
+- TypeScript build errors are not ignored (`ignoreBuildErrors: false`).
 
-```
-▲ Next.js 16.4.6 (webpack)
-✓ Compiled successfully in 36.4s
-  Running TypeScript ... Finished TypeScript in 25.4s
-✓ Generating static pages using 3 workers (40/40) in 2.2s
-```
+## Database
 
-Exit code 0; no compiler warnings; no TypeScript errors (`ignoreBuildErrors: false`).
+- libSQL/Turso via `@libsql/client` and Drizzle ORM.
+- Integration tests create disposable `.tmp-integration/*.db` files and migrate them from `./drizzle`.
+- No production database was read or modified during this audit beyond application startup reading configured data.
 
-## 5. Quality commands
+## External services
 
-| Command | Purpose | Result in this audit |
+| Service | Variable names (values never read) | Test status |
 |---|---|---|
-| `npx tsc --noEmit` | strict type check | PASS (no output) |
-| `npx eslint` | lint | PASS (no output) |
-| `npx vitest run` | unit + integration tests | PASS — 36 files / 413 tests |
-| `npm audit --omit=dev` | production dependency risk | 2 moderate (uuid via exceljs) |
+| Turso/libSQL | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Local test DBs only |
+| Session config | `SESSION_COOKIE_SECURE`, `NEXT_PUBLIC_APP_URL`, `ENCRYPTION_KEY` | Reviewed by name |
+| Mailgun | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_FROM_EMAIL`, `MAILGUN_FROM_NAME`, `MAILGUN_REGION` | BLOCKED |
+| Seed/admin accounts | `DEFAULT_*_EMAIL`, `DEFAULT_*_PASSWORD_HASH`, `DEFAULT_*_ROLE` etc. | Names only |
 
-## 6. Database setup
+## Environment variable names from `.env.example`
 
-* Engine: Turso / libSQL (SQLite dialect). Local development may use `file:./local.db`; the
-  configured deployment uses the URL in the environment file (value not read or disclosed).
-* Schema: `src/db/schema.ts`; migrations: `drizzle/`; client: `src/db/index.ts`.
-* Scripts: `npm run db:generate`, `npm run db:migrate`, `npm run db:push`, `npm run seed`.
-* **This audit did not mutate the configured database.** All write-path verification used
-  throwaway SQLite files created by the integration tests under `.tmp-integration/`.
-* One read-only query was executed against the configured database to confirm
-  `system_settings.maintenance_mode = false` (so the newly implemented maintenance gate cannot
-  lock out users on deploy). Returned 7 setting rows; no values beyond the setting keys/values
-  listed in `06_Implementation/implementation_log.md` were read.
+`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_COOKIE_SECURE`, `NEXT_PUBLIC_APP_URL`, `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD_HASH`, `DEFAULT_ADMIN_FIRST_NAME`, `DEFAULT_ADMIN_LAST_NAME`, `DEFAULT_ADMIN_ROLE`, `DEFAULT_LGU_*`, `DEFAULT_BARANGAY_*`, `DEFAULT_SCHOOL_ADMIN_*`, `ENCRYPTION_KEY`, `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_FROM_EMAIL`, `MAILGUN_FROM_NAME`, `MAILGUN_REGION`.
 
-## 7. External services
-
-| Service | Variables (names only) | Status in this environment |
-|---|---|---|
-| Turso / libSQL | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, legacy `LIBSQL_URL`, `LIBSQL_AUTH_TOKEN` | Configured (value not read) |
-| Mailgun (password-reset mail) | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_FROM_EMAIL` | Not exercised — **BLOCKED** |
-| AI provider (optional) | `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`, `AI_BASE_URL`, `AI_ENABLED`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Not configured — AI paths return the "not configured" message |
-| Cookie security | `SESSION_COOKIE_SECURE` | Names only; recommended `true` in HTTPS production |
-| Encryption at rest | `ENCRYPTION_KEY` | Referenced by `src/lib/security/encryption.ts`; a development fallback exists and warns when used |
-| Public base URL | `NEXT_PUBLIC_APP_URL` | Used for metadata and QR links |
-
-`.env`, `.env.local` and every other environment file were **not read** during this audit. Variable
-names were derived from `process.env.*` references in source and from the project README.
-
-## 8. Tooling intentionally not used
-
-* Docker (none in the repo).
-* Remote migration/drift commands (destructive risk against the configured database).
-* Browser automation for authenticated flows (no credentials available).
+No secret values were read, printed or written into this documentation.

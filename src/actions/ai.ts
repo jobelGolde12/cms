@@ -356,6 +356,19 @@ export async function analyzeStudentPerformance(_prev: AiActionState, formData: 
 /* -------------------------------------------------------------------------- */
 
 /**
+ * AI guidance assistance is narrower than the guidance module itself: the
+ * documented policy (documentation/ai/ai-features.md) limits these features to
+ * admin, school_admin and guidance. Advisers may read incidents for their own
+ * sections, but they must not generate AI summaries/drafts over confidential
+ * guidance records.
+ */
+function canUseGuidanceAi(user: SessionUser): boolean {
+  return user.roles.some(
+    (role) => role === "admin" || role === "school_admin" || role === "guidance",
+  );
+}
+
+/**
  * Case-history summary for a student from the behavior incident rows the
  * requesting user may read (confidential rows included only for the
  * guidance-confidential role set — enforced inside the query gateway).
@@ -365,7 +378,7 @@ export async function summarizeGuidanceCase(_prev: AiActionState, formData: Form
   const auth = await authorizeStudentFeature("behavior.view", studentId);
   if ("error" in auth) return auth.error;
   const { user } = auth;
-  if (!canViewConfidentialBehavior(user)) {
+  if (!canUseGuidanceAi(user)) {
     return fail("This feature is restricted to the Guidance Office role set.");
   }
   const limited = rateLimited(user);
@@ -408,7 +421,7 @@ export async function draftGuidanceFollowUp(_prev: AiActionState, formData: Form
   const incidentId = String(formData.get("incidentId") ?? "");
   const user = await getAuthorizedUser("behavior.view");
   if (!user) return fail("You do not have permission to use this AI feature.");
-  if (!canViewConfidentialBehavior(user)) {
+  if (!canUseGuidanceAi(user)) {
     return fail("This feature is restricted to the Guidance Office role set.");
   }
   const limited = rateLimited(user);
